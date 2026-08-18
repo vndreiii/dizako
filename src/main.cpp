@@ -3,12 +3,14 @@
 #include <QtQml>
 #include "core/dither.h"
 
+using namespace Dizako;
+
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
 
-    qmlRegisterSingletonInstance<Dizako::DitherEngine>("App", 1, 0, "DitherEngine",
-                                                        new Dizako::DitherEngine);
+    qmlRegisterSingletonInstance<DitherEngine>("App", 1, 0, "DitherEngine",
+                                                        new DitherEngine);
 
     QQmlApplicationEngine engine;
     engine.loadFromModule("App", "Main");

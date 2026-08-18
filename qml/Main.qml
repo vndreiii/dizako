@@ -44,7 +44,7 @@ T.ApplicationWindow {
                     anchors.right: parent.right
                     anchors.rightMargin: 16
                     text: "Export"
-                    enabled: imagePreview.source !== ""
+                    enabled: ditherEngine.processing ? false : (imagePreview.source !== "" && ditherEngine.resultPath().length > 0)
                     onClicked: exportDialog.open()
                 }
             }
@@ -62,12 +62,8 @@ T.ApplicationWindow {
                 }
 
                 AlgorithmList {
-                    Layout.preferredWidth: 260
+                    Layout.preferredWidth: 280
                     Layout.fillHeight: true
-                    onAlgorithmSelected: {
-                        selectedAlg = algorithm
-                        applyDither()
-                    }
                 }
 
                 MD.Card {
@@ -78,6 +74,7 @@ T.ApplicationWindow {
                     MD.CardContent {
                         anchors.fill: parent
                         Flickable {
+                            id: flick
                             anchors.fill: parent
                             contentWidth: imagePreview.width
                             contentHeight: imagePreview.height
@@ -93,13 +90,45 @@ T.ApplicationWindow {
                                 width: Math.min(parent.width, naturalWidth)
                                 height: Math.min(parent.height, naturalHeight)
 
+                                Drag.active: dragArea.drag.active
+                                Drag.supportedActions: Qt.CopyAction
+                                Drag.mimeData: {
+                                    return { "text/uri-list": source }
+                                }
+                                Drag.onActiveChanged: {
+                                    if (!Drag.active && Drag.target === null && source !== "")
+                                        ditherEngine.setSourcePath(source);
+                                }
+
+                                MouseArea {
+                                    id: dragArea
+                                    anchors.fill: parent
+                                    drag.target: parent
+                                    onPressed: {
+                                        if (imagePreview.source !== "")
+                                            dragArea.drag.start();
+                                    }
+                                }
+
                                 onStatusChanged: {
                                     if (status === Image.Ready) {
-                                        ditherEngine.setSourcePath(source);
+                                        if (!ditherEngine.sourcePath || ditherEngine.sourcePath !== source)
+                                            ditherEngine.setSourcePath(source);
                                         statusLabel.text = "";
                                     } else if (status === Image.Error) {
                                         statusLabel.text = "Failed to load image";
                                     }
+                                }
+                            }
+                        }
+
+                        DropArea {
+                            anchors.fill: parent
+                            onDropped: {
+                                if (drop.urls.length > 0) {
+                                    const url = drop.urls[0];
+                                    imagePreview.source = url.toLocalFile();
+                                    statusLabel.text = "";
                                 }
                             }
                         }
@@ -115,6 +144,7 @@ T.ApplicationWindow {
         nameFilters: ["Image files (*.png *.jpg *.jpeg *.bmp *.gif *.tiff *.webp)"]
         onAccepted: {
             imagePreview.source = selectedFile;
+            statusLabel.text = "";
         }
     }
 
@@ -125,23 +155,25 @@ T.ApplicationWindow {
         defaultSuffix: ".png"
         nameFilters: ["PNG files (*.png)", "JPEG files (*.jpg)", "WebP files (*.webp)"]
         onAccepted: {
-            if (ditherEngine.resultPath().length && selectedFile.length) {
-                const src = ditherEngine.resultPath();
-                const dst = selectedFile;
-                const ok = Qt.copy(src, dst);
+            if (selectedFile.length) {
+                const ok = ditherEngine.exportResult(selectedFile);
                 statusLabel.text = ok ? "Exported" : "Export failed";
             }
         }
     }
 
-    property string selectedAlg: "FloydSteinberg"
-
-    function applyDither() {
-        if (imagePreview.source === "")
-            return;
-        const result = ditherEngine.applyDither(selectedAlg);
-        if (result.length)
-            imagePreview.source = result;
+    Connections {
+        target: ditherEngine
+        function onResultPathChanged(path) {
+            if (path.length && imagePreview.source !== path) {
+                imagePreview.source = path;
+                statusLabel.text = ditherEngine.processing ? "Processing..." : "";
+            }
+        }
+        function onProcessingChanged(processing) {
+            statusLabel.text = processing ? "Processing..." : "";
+            appBar.enabled = !processing;
+        }
     }
 
     Text {

@@ -5,7 +5,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FetchContent)
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick QuickControls2)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick QuickControls2 Concurrent)
+find_package(Threads REQUIRED)
 
 FetchContent_Declare(
   qml_material

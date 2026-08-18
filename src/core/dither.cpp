@@ -1,51 +1,214 @@
 #include "core/dither.h"
+#include "core/algorithms.h"
+#include "core/color.h"
 #include <QFile>
 #include <QStandardPaths>
+#include <QImageWriter>
+#include <QDir>
+#include <QtConcurrent/qtconcurrentrun.h>
 
-namespace Dizako {
+using namespace Dizako::Algorithms;
 
-DitherEngine::DitherEngine(QObject *parent)
+Dizako::DitherEngine::DitherEngine(QObject *parent)
     : QObject(parent)
 {
 }
 
-QList<QColor> DitherEngine::palette() const
+Dizako::DitherEngine::~DitherEngine()
 {
-    return m_palette;
+    cancel();
 }
 
-void DitherEngine::setPalette(const QList<QColor> &palette)
+QList<QColor> Dizako::DitherEngine::palette() const
 {
-    if (m_palette == palette)
+    return m_ctx.palette;
+}
+
+void Dizako::DitherEngine::setPalette(const QList<QColor> &palette)
+{
+    if (m_ctx.palette == palette)
         return;
-    m_palette = palette;
-    emit paletteChanged(m_palette);
+    m_ctx.palette = palette;
+    emit paletteChanged(m_ctx.palette);
+    reprocess();
 }
 
-QString DitherEngine::sourcePath() const
+QString Dizako::DitherEngine::sourcePath() const
 {
-    return m_sourcePath;
+    return m_ctx.sourcePath;
 }
 
-void DitherEngine::setSourcePath(const QString &path)
+void Dizako::DitherEngine::setSourcePath(const QString &path)
 {
-    if (m_sourcePath == path)
+    if (m_ctx.sourcePath == path)
         return;
-    m_sourcePath = path;
-    emit sourcePathChanged(m_sourcePath);
+    cancel();
+    m_ctx.sourcePath = path;
+    m_ctx.preview = QImage();
+    m_resultPath.clear();
+    if (!path.isEmpty()) {
+        m_ctx.working = QImage(path);
+        if (!m_ctx.working.isNull())
+            m_ctx.working = prepareWorking(m_ctx.working, m_ctx.palette, m_ctx.grayscale);
+    }
+    emit sourcePathChanged(m_ctx.sourcePath);
+    emit resultPathChanged(m_resultPath);
+    schedulePreview();
 }
 
-QString DitherEngine::resultPath() const
+QString Dizako::DitherEngine::resultPath() const
 {
     return m_resultPath;
 }
 
-QImage DitherEngine::loadImage(const QString &path) const
+QString Dizako::DitherEngine::algorithm() const
 {
-    return QImage(path);
+    return m_ctx.algorithm;
 }
 
-QString DitherEngine::saveImage(const QImage &image) const
+void Dizako::DitherEngine::setAlgorithm(const QString &algorithm)
+{
+    if (m_ctx.algorithm == algorithm)
+        return;
+    m_ctx.algorithm = algorithm;
+    emit algorithmChanged(m_ctx.algorithm);
+    reprocess();
+}
+
+float Dizako::DitherEngine::strength() const
+{
+    return m_ctx.strength;
+}
+
+void Dizako::DitherEngine::setStrength(float strength)
+{
+    if (!qFuzzyCompare(m_ctx.strength, strength)) {
+        m_ctx.strength = strength;
+        emit strengthChanged(m_ctx.strength);
+        reprocess();
+    }
+}
+
+bool Dizako::DitherEngine::serpentine() const
+{
+    return m_ctx.serpentine;
+}
+
+void Dizako::DitherEngine::setSerpentine(bool serpentine)
+{
+    if (m_ctx.serpentine == serpentine)
+        return;
+    m_ctx.serpentine = serpentine;
+    emit serpentineChanged(m_ctx.serpentine);
+    reprocess();
+}
+
+int Dizako::DitherEngine::bayerSize() const
+{
+    return m_ctx.bayerSize;
+}
+
+void Dizako::DitherEngine::setBayerSize(int size)
+{
+    if (m_ctx.bayerSize == size)
+        return;
+    m_ctx.bayerSize = size;
+    emit bayerSizeChanged(m_ctx.bayerSize);
+    reprocess();
+}
+
+int Dizako::DitherEngine::threshold() const
+{
+    return m_ctx.threshold;
+}
+
+void Dizako::DitherEngine::setThreshold(int threshold)
+{
+    if (m_ctx.threshold == threshold)
+        return;
+    m_ctx.threshold = qBound(0, threshold, 255);
+    emit thresholdChanged(m_ctx.threshold);
+    reprocess();
+}
+
+bool Dizako::DitherEngine::invert() const
+{
+    return m_ctx.invert;
+}
+
+void Dizako::DitherEngine::setInvert(bool invert)
+{
+    if (m_ctx.invert == invert)
+        return;
+    m_ctx.invert = invert;
+    emit invertChanged(m_ctx.invert);
+    reprocess();
+}
+
+bool Dizako::DitherEngine::grayscale() const
+{
+    return m_ctx.grayscale;
+}
+
+void Dizako::DitherEngine::setGrayscale(bool grayscale)
+{
+    if (m_ctx.grayscale == grayscale)
+        return;
+    m_ctx.grayscale = grayscale;
+    emit grayscaleChanged(m_ctx.grayscale);
+    reprocess();
+}
+
+bool Dizako::DitherEngine::processing() const
+{
+    QMutexLocker locker(&m_mutex);
+    return m_ctx.running;
+}
+
+void Dizako::DitherEngine::reprocess()
+{
+    if (m_ctx.sourcePath.isEmpty() || m_ctx.working.isNull())
+        return;
+    m_ctx.working = prepareWorking(QImage(m_ctx.sourcePath), m_ctx.palette, m_ctx.grayscale);
+    schedulePreview();
+}
+
+void Dizako::DitherEngine::schedulePreview()
+{
+    cancel();
+    if (m_ctx.sourcePath.isEmpty() || m_ctx.working.isNull())
+        return;
+
+    {
+        QMutexLocker locker(&m_mutex);
+        m_ctx.running = true;
+        m_ctx.canceled = false;
+        m_ctx.preview = QImage();
+    }
+    emit processingChanged(true);
+
+    QFuture<void> future = QtConcurrent::run([this]() {
+        runAlgorithm(m_ctx);
+    });
+    m_watcher.setFuture(future);
+}
+
+void Dizako::DitherEngine::cancel()
+{
+    {
+        QMutexLocker locker(&m_mutex);
+        m_ctx.canceled = true;
+        m_ctx.running = false;
+    }
+    if (m_watcher.isRunning())
+        m_watcher.waitForFinished();
+    {
+        QMutexLocker locker(&m_mutex);
+        m_ctx.canceled = false;
+    }
+}
+
+QString Dizako::DitherEngine::saveImage(const QImage &image) const
 {
     const QString dir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
     const QString path = dir + QDir::separator() + "dizako_result_" +
@@ -55,39 +218,24 @@ QString DitherEngine::saveImage(const QImage &image) const
     return {};
 }
 
-QImage DitherEngine::applyDither(const QImage &image, const QString &algorithm)
+QString Dizako::DitherEngine::applyDither(const QString &algorithm)
 {
-    QImage result = image.convertToFormat(QImage.Format_ARGB32_Premultiplied);
-    Q_UNUSED(algorithm);
-    return result;
-}
-
-QString DitherEngine::applyDither(const QString &algorithm)
-{
-    if (m_sourcePath.isEmpty())
+    if (m_ctx.sourcePath.isEmpty() || m_ctx.working.isNull())
         return {};
 
-    QImage image = loadImage(m_sourcePath);
-    if (image.isNull())
-        return {};
+    m_ctx.algorithm = algorithm;
+    schedulePreview();
 
-    QImage output = applyDither(image, algorithm);
-    const QString path = saveImage(output);
-    if (path.isEmpty())
-        return {};
+    QEventLoop loop;
+    connect(&m_watcher, &QFutureWatcher<void>::finished, &loop, &QEventLoop::quit);
+    loop.exec();
 
-    if (m_resultPath != path) {
-        m_resultPath = path;
-        emit resultPathChanged(m_resultPath);
-    }
     return m_resultPath;
 }
 
-bool DitherEngine::exportResult(const QString &destination)
+bool Dizako::DitherEngine::exportResult(const QString &destination)
 {
     if (m_resultPath.isEmpty())
         return false;
     return QFile::copy(m_resultPath, destination);
-}
-
 }
