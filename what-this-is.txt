@@ -1,0 +1,12 @@
+it's gonna be a dithering app inspired by:
+
+https://github.com/manoelpiovesan/dither-guy
+https://github.com/makew0rld/didder
+https://github.com/Oslonline/dithering-studio
+https://github.com/robertkist/ditherista/
+
+this app is gonna use a Material 3 / Material 3 Expressive UI
+more intuitive controls.
+
+implements all features from the 3 mentioned apps.
+their algorithms and stuff..
