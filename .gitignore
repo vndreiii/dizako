@@ -1,0 +1,7 @@
+/build
+/.cache
+/.pytest_cache
+/.vscode
+/.idea
+*.user
+*.qmlc
