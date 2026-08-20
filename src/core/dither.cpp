@@ -2,6 +2,7 @@
 #include "core/algorithms.h"
 #include "core/color.h"
 #include <QFile>
+#include <QDateTime>
 #include <QStandardPaths>
 #include <QImageWriter>
 #include <QDir>
@@ -12,6 +13,8 @@ using namespace Dizako::Algorithms;
 Dizako::DitherEngine::DitherEngine(QObject *parent)
     : QObject(parent)
 {
+    connect(&m_watcher, &QFutureWatcher<void>::finished,
+            this, &DitherEngine::onPreviewFinished);
 }
 
 Dizako::DitherEngine::~DitherEngine()
@@ -54,6 +57,16 @@ void Dizako::DitherEngine::setSourcePath(const QString &path)
     emit sourcePathChanged(m_ctx.sourcePath);
     emit resultPathChanged(m_resultPath);
     schedulePreview();
+}
+
+void Dizako::DitherEngine::setSourceUrl(const QUrl &url)
+{
+    setSourcePath(url.toLocalFile());
+}
+
+QString Dizako::DitherEngine::localPathFromUrl(const QUrl &url) const
+{
+    return url.toLocalFile();
 }
 
 QString Dizako::DitherEngine::resultPath() const
@@ -191,6 +204,24 @@ void Dizako::DitherEngine::schedulePreview()
         runAlgorithm(m_ctx);
     });
     m_watcher.setFuture(future);
+}
+
+void Dizako::DitherEngine::onPreviewFinished()
+{
+    bool canceled = false;
+    QImage preview;
+    {
+        QMutexLocker locker(&m_mutex);
+        canceled = m_ctx.canceled;
+        preview = m_ctx.preview;
+        m_ctx.running = false;
+    }
+
+    if (!canceled && !preview.isNull()) {
+        m_resultPath = saveImage(preview);
+        emit resultPathChanged(m_resultPath);
+    }
+    emit processingChanged(false);
 }
 
 void Dizako::DitherEngine::cancel()

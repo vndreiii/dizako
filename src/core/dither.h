@@ -6,6 +6,7 @@
 #include <QColor>
 #include <QList>
 #include <QString>
+#include <QUrl>
 #include <QMutex>
 #include <QFutureWatcher>
 #include <QtConcurrent/qtconcurrentrun.h>
@@ -37,6 +38,9 @@ public:
 
     QString sourcePath() const;
     void setSourcePath(const QString &path);
+
+    Q_INVOKABLE void setSourceUrl(const QUrl &url);
+    Q_INVOKABLE QString localPathFromUrl(const QUrl &url) const;
 
     QString resultPath() const;
 
@@ -79,6 +83,9 @@ signals:
     void invertChanged(bool invert);
     void grayscaleChanged(bool grayscale);
     void processingChanged(bool processing);
+
+private slots:
+    void onPreviewFinished();
 
 private:
     void schedulePreview();

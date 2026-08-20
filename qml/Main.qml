@@ -10,11 +10,21 @@ ApplicationWindow {
     id: window
     width: 1280
     height: 800
+    minimumWidth: 960
+    minimumHeight: 640
     visible: true
     title: "Dizako"
 
     Material.theme: Material.Theme.Light
     Material.accent: Material.Blue
+
+    function loadImage(fileUrl) {
+        if (!fileUrl || String(fileUrl).length === 0)
+            return
+        imagePreview.source = fileUrl
+        ditherEngine.setSourceUrl(fileUrl)
+        statusLabel.text = ""
+    }
 
     header: ToolBar {
         id: appBar
@@ -24,7 +34,7 @@ ApplicationWindow {
             anchors.fill: parent
             anchors.leftMargin: 16
             anchors.rightMargin: 16
-            spacing: 16
+            spacing: 12
 
             Label {
                 text: "Dizako"
@@ -37,23 +47,24 @@ ApplicationWindow {
 
             Button {
                 text: "Open"
-                onClicked: fileDialog.open()
                 Layout.alignment: Qt.AlignVCenter
+                onClicked: fileDialog.open()
             }
 
             Button {
                 text: "Export"
-                enabled: !ditherEngine.processing && imagePreview.source !== "" && ditherEngine.resultPath().length > 0
-                onClicked: exportDialog.open()
+                highlighted: true
                 Layout.alignment: Qt.AlignVCenter
+                enabled: !ditherEngine.processing && ditherEngine.resultPath.length > 0
+                onClicked: exportDialog.open()
             }
         }
     }
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 0
         anchors.margins: 16
+        spacing: 16
 
         RowLayout {
             Layout.fillWidth: true
@@ -61,7 +72,7 @@ ApplicationWindow {
             spacing: 16
 
             PaletteSelector {
-                Layout.preferredWidth: 260
+                Layout.preferredWidth: 240
                 Layout.fillHeight: true
                 onPaletteSelected: ditherEngine.setPalette(palette)
             }
@@ -74,14 +85,16 @@ ApplicationWindow {
             Pane {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                padding: 0
                 clip: true
 
                 Flickable {
                     id: flick
                     anchors.fill: parent
-                    contentWidth: imagePreview.width
-                    contentHeight: imagePreview.height
+                    contentWidth: Math.max(width, imagePreview.width)
+                    contentHeight: Math.max(height, imagePreview.height)
                     clip: true
+                    boundsBehavior: Flickable.StopAtBounds
 
                     Image {
                         id: imagePreview
@@ -93,47 +106,54 @@ ApplicationWindow {
                         width: Math.min(parent.width, naturalWidth)
                         height: Math.min(parent.height, naturalHeight)
 
-                        Drag.active: dragArea.drag.active
-                        Drag.supportedActions: Qt.CopyAction
-                        Drag.mimeData: {
-                            return { "text/uri-list": source }
-                        }
-                        Drag.onActiveChanged: {
-                            if (!Drag.active && Drag.target === null && source !== "")
-                                ditherEngine.setSourcePath(source);
-                        }
-
-                        MouseArea {
-                            id: dragArea
-                            anchors.fill: parent
-                            drag.target: parent
-                            onPressed: {
-                                if (imagePreview.source !== "")
-                                    dragArea.drag.start();
-                            }
-                        }
-
                         onStatusChanged: {
-                            if (status === Image.Ready) {
-                                if (!ditherEngine.sourcePath || ditherEngine.sourcePath !== source)
-                                    ditherEngine.setSourcePath(source);
-                                statusLabel.text = "";
-                            } else if (status === Image.Error) {
-                                statusLabel.text = "Failed to load image";
-                            }
+                            if (status === Image.Error)
+                                statusLabel.text = "Failed to load image"
+                            else if (status === Image.Ready)
+                                statusLabel.text = ""
+                        }
+                    }
+
+                    Item {
+                        id: emptyState
+                        anchors.fill: parent
+                        visible: imagePreview.source == "" || imagePreview.status !== Image.Ready
+
+                        Label {
+                            anchors.centerIn: parent
+                            text: "Drop an image here\nor click Open"
+                            horizontalAlignment: Text.AlignHCenter
+                            color: Material.secondaryTextColor
+                            font.pixelSize: 18
+                            lineHeight: 1.4
                         }
                     }
 
                     DropArea {
+                        id: dropArea
                         anchors.fill: parent
+                        onEntered: emptyState.opacity = 0.6
+                        onExited: emptyState.opacity = 1.0
                         onDropped: {
-                            if (drop.urls.length > 0) {
-                                const url = drop.urls[0];
-                                imagePreview.source = url.toLocalFile();
-                                statusLabel.text = "";
-                            }
+                            if (drop.urls.length > 0)
+                                loadImage(drop.urls[0])
                         }
                     }
+                }
+
+                BusyIndicator {
+                    anchors.centerIn: parent
+                    running: ditherEngine.processing
+                }
+
+                Label {
+                    id: statusLabel
+                    anchors.bottom: parent.bottom
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.bottomMargin: 12
+                    text: ""
+                    color: Material.secondaryTextColor
+                    font.pixelSize: 14
                 }
             }
         }
@@ -143,10 +163,7 @@ ApplicationWindow {
         id: fileDialog
         title: "Open Image"
         nameFilters: ["Image files (*.png *.jpg *.jpeg *.bmp *.gif *.tiff *.webp)"]
-        onAccepted: {
-            imagePreview.source = selectedFile;
-            statusLabel.text = "";
-        }
+        onAccepted: loadImage(selectedFile)
     }
 
     FileDialog {
@@ -156,9 +173,9 @@ ApplicationWindow {
         defaultSuffix: ".png"
         nameFilters: ["PNG files (*.png)", "JPEG files (*.jpg)", "WebP files (*.webp)"]
         onAccepted: {
-            if (selectedFile.length) {
-                const ok = ditherEngine.exportResult(selectedFile);
-                statusLabel.text = ok ? "Exported" : "Export failed";
+            if (String(selectedFile).length) {
+                const ok = ditherEngine.exportResult(ditherEngine.localPathFromUrl(selectedFile))
+                statusLabel.text = ok ? "Exported" : "Export failed"
             }
         }
     }
@@ -166,24 +183,14 @@ ApplicationWindow {
     Connections {
         target: ditherEngine
         function onResultPathChanged(path) {
-            if (path.length && imagePreview.source !== path) {
-                imagePreview.source = path;
-                statusLabel.text = ditherEngine.processing ? "Processing..." : "";
+            if (path.length) {
+                imagePreview.source = path
+                statusLabel.text = ""
             }
         }
         function onProcessingChanged(processing) {
-            statusLabel.text = processing ? "Processing..." : "";
-            appBar.enabled = !processing;
+            statusLabel.text = processing ? "Processing..." : ""
+            appBar.enabled = !processing
         }
-    }
-
-    Text {
-        id: statusLabel
-        anchors.bottom: parent.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottomMargin: 16
-        text: ""
-        color: Material.foreground
-        font.pixelSize: 14
     }
 }
