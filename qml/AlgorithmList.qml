@@ -30,7 +30,7 @@ Item {
 
         ListView {
             Layout.fillWidth: true
-            Layout.preferredHeight: 180
+            Layout.preferredHeight: 150
             model: [
                 "FloydSteinberg", "FalseFloydSteinberg", "Atkinson", "JarvisJudiceNinke",
                 "Stucki", "Burkes", "Sierra", "Sierra2", "Sierra2-4A", "SierraLite",
@@ -60,7 +60,7 @@ Item {
             rowSpacing: 10
             columnSpacing: 16
 
-            Label { text: "Strength" }
+            Label { text: "Strength " + Math.round(root.strength) + "%" }
             Slider {
                 Layout.fillWidth: true
                 from: 0; to: 100; value: root.strength
@@ -84,7 +84,7 @@ Item {
                 }
             }
 
-            Label { text: "Threshold" }
+            Label { text: "Threshold " + Math.round(ditherEngine.threshold) }
             Slider {
                 Layout.fillWidth: true
                 from: 0; to: 255; value: ditherEngine.threshold
@@ -94,10 +94,9 @@ Item {
                 }
             }
 
-            Item { Layout.fillWidth: true; Layout.preferredHeight: 1 }
-
             RowLayout {
                 Layout.fillWidth: true
+                Layout.columnSpan: 2
                 spacing: 12
 
                 CheckBox {
@@ -113,6 +112,7 @@ Item {
 
             RowLayout {
                 Layout.fillWidth: true
+                Layout.columnSpan: 2
                 spacing: 12
 
                 CheckBox {
@@ -128,6 +128,7 @@ Item {
 
             RowLayout {
                 Layout.fillWidth: true
+                Layout.columnSpan: 2
                 spacing: 12
 
                 CheckBox {
