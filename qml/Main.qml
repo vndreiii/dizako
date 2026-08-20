@@ -3,8 +3,6 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
 import QtQuick.Controls.Material
-import QtQuick.Controls.Material.impl
-import QtQuick.Templates as T
 
 import App
 
