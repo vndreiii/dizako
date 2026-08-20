@@ -2,134 +2,137 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
-import Qcm.Material as MD
+import QtQuick.Controls.Material
+import QtQuick.Controls.Material.impl
+import QtQuick.Templates as T
 
 import App
 
-T.ApplicationWindow {
+ApplicationWindow {
     id: window
     width: 1280
     height: 800
     visible: true
     title: "Dizako"
 
-    MD.Theme {
-        id: theme
-        color: MD.Color.primary
-    }
+    Material.theme: Material.Theme.Light
+    Material.accent: Material.Blue
 
-    MD.Container {
-        anchors.fill: parent
+    header: ToolBar {
+        id: appBar
+        implicitHeight: 64
 
-        ColumnLayout {
+        RowLayout {
             anchors.fill: parent
-            spacing: 0
+            anchors.leftMargin: 16
+            anchors.rightMargin: 16
+            spacing: 16
 
-            MD.AppBar {
-                id: appBar
-                Layout.fillWidth: true
-                title: "Dizako"
-                Layout.preferredHeight: 64
-
-                MD.Button {
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.left: parent.left
-                    anchors.leftMargin: 16
-                    text: "Open"
-                    onClicked: fileDialog.open()
-                }
-
-                MD.Button {
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.right: parent.right
-                    anchors.rightMargin: 16
-                    text: "Export"
-                    enabled: ditherEngine.processing ? false : (imagePreview.source !== "" && ditherEngine.resultPath().length > 0)
-                    onClicked: exportDialog.open()
-                }
+            Label {
+                text: "Dizako"
+                font.pixelSize: 20
+                font.bold: true
+                Layout.alignment: Qt.AlignVCenter
             }
 
-            RowLayout {
+            Item { Layout.fillWidth: true }
+
+            Button {
+                text: "Open"
+                onClicked: fileDialog.open()
+                Layout.alignment: Qt.AlignVCenter
+            }
+
+            Button {
+                text: "Export"
+                enabled: !ditherEngine.processing && imagePreview.source !== "" && ditherEngine.resultPath().length > 0
+                onClicked: exportDialog.open()
+                Layout.alignment: Qt.AlignVCenter
+            }
+        }
+    }
+
+    ColumnLayout {
+        anchors.fill: parent
+        spacing: 0
+        anchors.margins: 16
+
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: 16
+
+            PaletteSelector {
+                Layout.preferredWidth: 260
+                Layout.fillHeight: true
+                onPaletteSelected: ditherEngine.setPalette(palette)
+            }
+
+            AlgorithmList {
+                Layout.preferredWidth: 280
+                Layout.fillHeight: true
+            }
+
+            Pane {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                spacing: 16
-                padding: 16
+                clip: true
 
-                PaletteSelector {
-                    Layout.preferredWidth: 260
-                    Layout.fillHeight: true
-                    onPaletteSelected: ditherEngine.setPalette(palette)
-                }
-
-                AlgorithmList {
-                    Layout.preferredWidth: 280
-                    Layout.fillHeight: true
-                }
-
-                MD.Card {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
+                Flickable {
+                    id: flick
+                    anchors.fill: parent
+                    contentWidth: imagePreview.width
+                    contentHeight: imagePreview.height
                     clip: true
 
-                    MD.CardContent {
-                        anchors.fill: parent
-                        Flickable {
-                            id: flick
+                    Image {
+                        id: imagePreview
+                        source: ""
+                        cache: false
+                        smooth: true
+                        fillMode: Image.PreserveAspectFit
+                        anchors.centerIn: parent
+                        width: Math.min(parent.width, naturalWidth)
+                        height: Math.min(parent.height, naturalHeight)
+
+                        Drag.active: dragArea.drag.active
+                        Drag.supportedActions: Qt.CopyAction
+                        Drag.mimeData: {
+                            return { "text/uri-list": source }
+                        }
+                        Drag.onActiveChanged: {
+                            if (!Drag.active && Drag.target === null && source !== "")
+                                ditherEngine.setSourcePath(source);
+                        }
+
+                        MouseArea {
+                            id: dragArea
                             anchors.fill: parent
-                            contentWidth: imagePreview.width
-                            contentHeight: imagePreview.height
-                            clip: true
-
-                            Image {
-                                id: imagePreview
-                                source: ""
-                                cache: false
-                                smooth: true
-                                fillMode: Image.PreserveAspectFit
-                                anchors.centerIn: parent
-                                width: Math.min(parent.width, naturalWidth)
-                                height: Math.min(parent.height, naturalHeight)
-
-                                Drag.active: dragArea.drag.active
-                                Drag.supportedActions: Qt.CopyAction
-                                Drag.mimeData: {
-                                    return { "text/uri-list": source }
-                                }
-                                Drag.onActiveChanged: {
-                                    if (!Drag.active && Drag.target === null && source !== "")
-                                        ditherEngine.setSourcePath(source);
-                                }
-
-                                MouseArea {
-                                    id: dragArea
-                                    anchors.fill: parent
-                                    drag.target: parent
-                                    onPressed: {
-                                        if (imagePreview.source !== "")
-                                            dragArea.drag.start();
-                                    }
-                                }
-
-                                onStatusChanged: {
-                                    if (status === Image.Ready) {
-                                        if (!ditherEngine.sourcePath || ditherEngine.sourcePath !== source)
-                                            ditherEngine.setSourcePath(source);
-                                        statusLabel.text = "";
-                                    } else if (status === Image.Error) {
-                                        statusLabel.text = "Failed to load image";
-                                    }
-                                }
+                            drag.target: parent
+                            onPressed: {
+                                if (imagePreview.source !== "")
+                                    dragArea.drag.start();
                             }
                         }
 
-                        DropArea {
-                            anchors.fill: parent
-                            onDropped: {
-                                if (drop.urls.length > 0) {
-                                    const url = drop.urls[0];
-                                    imagePreview.source = url.toLocalFile();
-                                    statusLabel.text = "";
-                                }
+                        onStatusChanged: {
+                            if (status === Image.Ready) {
+                                if (!ditherEngine.sourcePath || ditherEngine.sourcePath !== source)
+                                    ditherEngine.setSourcePath(source);
+                                statusLabel.text = "";
+                            } else if (status === Image.Error) {
+                                statusLabel.text = "Failed to load image";
+                            }
+                        }
+                    }
+
+                    DropArea {
+                        anchors.fill: parent
+                        onDropped: {
+                            if (drop.urls.length > 0) {
+                                const url = drop.urls[0];
+                                imagePreview.source = url.toLocalFile();
+                                statusLabel.text = "";
                             }
                         }
                     }
@@ -182,7 +185,7 @@ T.ApplicationWindow {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottomMargin: 16
         text: ""
-        color: MD.Color.onSurfaceVariant
+        color: Material.foreground
         font.pixelSize: 14
     }
 }

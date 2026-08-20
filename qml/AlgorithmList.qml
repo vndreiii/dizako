@@ -1,14 +1,10 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Dialogs
-import Qcm.Material as MD
-
-import App
 
 Item {
     id: root
-    property var selectedAlgorithm: "FloydSteinberg"
+    property string selectedAlgorithm: "FloydSteinberg"
     property bool serpentine: false
     property int bayerSize: 4
     property int threshold: 128
@@ -26,9 +22,10 @@ Item {
         anchors.margins: 12
         spacing: 12
 
-        MD.Text {
+        Label {
             text: "Algorithm"
             font.pixelSize: 20
+            font.bold: true
         }
 
         ListView {
@@ -40,7 +37,7 @@ Item {
                 "StevensonArce", "Bayer", "BinaryThreshold", "RandomNoise"
             ]
             clip: true
-            delegate: T.ItemDelegate {
+            delegate: ItemDelegate {
                 width: ListView.view.width
                 text: modelData
                 highlighted: root.selectedAlgorithm === modelData
@@ -52,9 +49,10 @@ Item {
             }
         }
 
-        MD.Text {
+        Label {
             text: "Settings"
             font.pixelSize: 20
+            font.bold: true
         }
 
         GridLayout {
@@ -62,7 +60,7 @@ Item {
             rowSpacing: 10
             columnSpacing: 16
 
-            MD.Text { text: "Strength"; color: MD.Color.onSurfaceVariant }
+            Label { text: "Strength" }
             Slider {
                 Layout.fillWidth: true
                 from: 0; to: 100; value: root.strength
@@ -73,8 +71,8 @@ Item {
                 }
             }
 
-            MD.Text { text: "Bayer size"; color: MD.Color.onSurfaceVariant }
-            MD.ComboBox {
+            Label { text: "Bayer size" }
+            ComboBox {
                 Layout.fillWidth: true
                 model: [2, 4, 8, 16, 32]
                 currentIndex: model.indexOf(ditherEngine.bayerSize)
@@ -86,7 +84,7 @@ Item {
                 }
             }
 
-            MD.Text { text: "Threshold"; color: MD.Color.onSurfaceVariant }
+            Label { text: "Threshold" }
             Slider {
                 Layout.fillWidth: true
                 from: 0; to: 255; value: ditherEngine.threshold
@@ -102,7 +100,7 @@ Item {
                 Layout.fillWidth: true
                 spacing: 12
 
-                MD.CheckBox {
+                CheckBox {
                     checked: root.serpentine
                     onToggled: {
                         root.serpentine = checked
@@ -110,14 +108,14 @@ Item {
                         root.settingsChanged()
                     }
                 }
-                MD.Text { text: "Serpentine"; color: MD.Color.onSurface }
+                Label { text: "Serpentine" }
             }
 
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 12
 
-                MD.CheckBox {
+                CheckBox {
                     checked: root.invert
                     onToggled: {
                         root.invert = checked
@@ -125,14 +123,14 @@ Item {
                         root.settingsChanged()
                     }
                 }
-                MD.Text { text: "Invert"; color: MD.Color.onSurface }
+                Label { text: "Invert" }
             }
 
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 12
 
-                MD.CheckBox {
+                CheckBox {
                     checked: root.grayscale
                     onToggled: {
                         root.grayscale = checked
@@ -140,7 +138,7 @@ Item {
                         root.settingsChanged()
                     }
                 }
-                MD.Text { text: "Grayscale source"; color: MD.Color.onSurface }
+                Label { text: "Grayscale source" }
             }
         }
     }
