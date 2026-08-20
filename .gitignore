@@ -1,7 +1,26 @@
+# Node
+node_modules/
+dist/
+*.log
+
+# Tauri / Rust
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# Qt (legacy/) — the original implementation stays on disk, out of the repo
+legacy/
 /build
-/.cache
-/.pytest_cache
-/.vscode
-/.idea
 *.user
 *.qmlc
+
+# Tooling caches
+/.cache
+/.pytest_cache
+/.serena
+
+# Editors / OS
+/.vscode
+/.idea
+.DS_Store
+*.swp
+*.old
