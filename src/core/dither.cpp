@@ -36,6 +36,15 @@ void Dizako::DitherEngine::setPalette(const QList<QColor> &palette)
     reprocess();
 }
 
+void Dizako::DitherEngine::setPaletteColors(const QStringList &colors)
+{
+    QList<QColor> palette;
+    palette.reserve(colors.size());
+    for (const QString &c : colors)
+        palette.append(QColor(c));
+    setPalette(palette);
+}
+
 QString Dizako::DitherEngine::sourcePath() const
 {
     return m_ctx.sourcePath;

@@ -74,7 +74,7 @@ ApplicationWindow {
             PaletteSelector {
                 Layout.preferredWidth: 240
                 Layout.fillHeight: true
-                onPaletteSelected: ditherEngine.setPalette(palette)
+                onPaletteSelected: ditherEngine.setPaletteColors(palette)
             }
 
             AlgorithmList {
@@ -117,7 +117,7 @@ ApplicationWindow {
                     Item {
                         id: emptyState
                         anchors.fill: parent
-                        visible: imagePreview.source == "" || imagePreview.status !== Image.Ready
+                        visible: imagePreview.source == ""
 
                         Label {
                             anchors.centerIn: parent

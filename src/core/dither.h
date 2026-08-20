@@ -6,6 +6,7 @@
 #include <QColor>
 #include <QList>
 #include <QString>
+#include <QStringList>
 #include <QUrl>
 #include <QMutex>
 #include <QFutureWatcher>
@@ -35,6 +36,7 @@ public:
 
     QList<QColor> palette() const;
     void setPalette(const QList<QColor> &palette);
+    Q_INVOKABLE void setPaletteColors(const QStringList &colors);
 
     QString sourcePath() const;
     void setSourcePath(const QString &path);
