@@ -1,4 +1,5 @@
 import type { RGB } from "./types";
+import { cbrtShared, srgbToLinearShared } from "./sharedmath";
 
 export function hexToRgb(hex: string): RGB {
   const h = hex.replace("#", "");
@@ -24,20 +25,20 @@ export function luma(r: number, g: number, b: number): number {
 // ---------------------------------------------------------------- OKLab
 // Björn Ottosson's OKLab. Perceptually uniform, so "nearest colour" in this
 // space actually looks nearest, which sRGB distance frequently does not.
-
-const srgbToLinear = (c: number) => {
-  const v = c / 255;
-  return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-};
+//
+// Transcendentals go through the shared deterministic primitives: library
+// `pow`/`cbrt` differ in the last ulp between engines, and in a strict-`<`
+// nearest-colour scan one flipped ulp cascades into visibly different dither
+// texture (WASM_PLAN §4).
 
 export function rgbToOklab(r: number, g: number, b: number): RGB {
-  const lr = srgbToLinear(r);
-  const lg = srgbToLinear(g);
-  const lb = srgbToLinear(b);
+  const lr = srgbToLinearShared(r);
+  const lg = srgbToLinearShared(g);
+  const lb = srgbToLinearShared(b);
 
-  const l = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb);
-  const m = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb);
-  const s = Math.cbrt(0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb);
+  const l = cbrtShared(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb);
+  const m = cbrtShared(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb);
+  const s = cbrtShared(0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb);
 
   return [
     0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,

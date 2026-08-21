@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { DEFAULT_SETTINGS, type Settings } from "../dither/types";
 import { Button, Segmented, Slider, Switch } from "./primitives";
 import { IconReset } from "./Icons";
@@ -20,7 +21,7 @@ function resetOf(keys: readonly (keyof Settings)[]): Partial<Settings> {
   return p as Partial<Settings>;
 }
 
-export function AdjustPanel({ settings, patch, sourceSize }: Props) {
+function AdjustPanelImpl({ settings, patch, sourceSize }: Props) {
   const scaled = sourceSize
     ? {
         width: Math.max(1, Math.round(sourceSize.width / settings.pixelScale)),
@@ -212,3 +213,5 @@ export function AdjustPanel({ settings, patch, sourceSize }: Props) {
     </div>
   );
 }
+
+export const AdjustPanel = memo(AdjustPanelImpl);

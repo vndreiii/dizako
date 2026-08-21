@@ -124,7 +124,7 @@ export function applyMatugenTheme(colors: Record<string, string>, mode: Mode): v
   const root = document.documentElement;
 
   for (const [key, value] of Object.entries(colors)) {
-    const varName = ROLE_KEYS.includes(key as any) ? kebab(key) : key;
+    const varName = (ROLE_KEYS as readonly string[]).includes(key) ? kebab(key) : key;
     root.style.setProperty(`--md-sys-color-${varName}`, value);
   }
 

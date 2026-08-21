@@ -2,21 +2,25 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { IconButton } from "./primitives";
 import { IconCompare, IconFit, IconTimer, IconZoomIn, IconZoomOut } from "./Icons";
 import type { Rect } from "../dither/region";
+import type { Layer } from "../hooks/useDither";
+import { useI18n } from "../i18n";
 
 interface Props {
   original: ImageData | null;
   /** Whole-image pass, possibly at reduced resolution. */
-  coarse: ImageData | null;
+  coarse: Layer | null;
   /** Source pixels each coarse pixel stands for. */
   coarseScale: number;
   /** Full-resolution pass covering `region`, drawn over the coarse layer. */
-  fine: ImageData | null;
+  fine: Layer | null;
   region: Rect | null;
   busy: boolean;
   refining: boolean;
   ms: number;
-  /** Worker unavailable; running on the main thread. */
+  /** The preferred pipeline rung failed; running somewhere slower. */
   degraded?: boolean;
+  /** Which rung rendered the current frame ("worker", "main", …). */
+  backendLabel?: string;
   /** Reports the visible part of the image, in source pixels. */
   onViewport?: (r: Rect | null) => void;
 }
@@ -31,6 +35,9 @@ const MAX_ZOOM = 32;
  * canvas at the image's natural size becomes a compositing layer of that size -
  * a 16 MP image is a ~64 MB surface, and WebKit simply fails to paint it,
  * leaving the stage blank while every other layer renders fine.
+ *
+ * Only the untouched source goes through here: dither results arrive as
+ * `ImageBitmap`s from the worker and are drawn directly.
  */
 function toBuffer(
   data: ImageData | null,
@@ -52,6 +59,12 @@ function toBuffer(
   c.getContext("2d")!.putImageData(data, 0, 0);
 }
 
+/** Full image size in source pixels, taken from whichever layer we have. */
+function layerSize(layer: ImageData | ImageBitmap | null, coarseScale: number) {
+  if (!layer) return null;
+  return { width: layer.width * coarseScale, height: layer.height * coarseScale };
+}
+
 export function PreviewCanvas({
   original,
   coarse,
@@ -62,13 +75,26 @@ export function PreviewCanvas({
   refining,
   ms,
   degraded = false,
+  backendLabel = "worker",
   onViewport,
 }: Props) {
+  const { t } = useI18n();
   const stageRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLCanvasElement>(null);
+  const originalBuf = useRef<HTMLCanvasElement | null>(null);
+  // Scratch uploads for the rare main-thread-fallback ImageData results.
   const coarseBuf = useRef<HTMLCanvasElement | null>(null);
   const fineBuf = useRef<HTMLCanvasElement | null>(null);
-  const originalBuf = useRef<HTMLCanvasElement | null>(null);
+
+  /** Bitmaps draw directly; raw planes go through an offscreen canvas once. */
+  function asDrawable(
+    layer: Layer,
+    slot: React.MutableRefObject<HTMLCanvasElement | null>,
+  ): CanvasImageSource {
+    if (layer instanceof ImageBitmap) return layer;
+    toBuffer(layer, slot);
+    return slot.current!;
+  }
 
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -82,13 +108,35 @@ export function PreviewCanvas({
   const touchedRef = useRef(false);
   const reportedRef = useRef<string>("");
 
+  /**
+   * Pointer and wheel events land faster than frames; applying them directly
+   * makes React commit several times per frame on high-frequency mice. The
+   * latest event wins and one rAF applies it - same frame budget, no queue.
+   */
+  const pendingGesture = useRef<(() => void) | null>(null);
+  const gestureFrame = useRef<number | undefined>(undefined);
+  const scheduleGesture = useCallback((apply: () => void) => {
+    pendingGesture.current = apply;
+    if (gestureFrame.current !== undefined) return;
+    gestureFrame.current = requestAnimationFrame(() => {
+      gestureFrame.current = undefined;
+      const run = pendingGesture.current;
+      pendingGesture.current = null;
+      run?.();
+    });
+  }, []);
+  useEffect(
+    () => () => {
+      if (gestureFrame.current !== undefined) cancelAnimationFrame(gestureFrame.current);
+    },
+    [],
+  );
+
   /** Full image size in source pixels, taken from whichever layer we have. */
   const sourceSize = useCallback(() => {
     if (original) return { width: original.width, height: original.height };
-    const c = coarseBuf.current;
-    if (c) return { width: c.width * coarseScale, height: c.height * coarseScale };
-    return null;
-  }, [original, coarseScale]);
+    return layerSize(coarse, coarseScale);
+  }, [original, coarse, coarseScale]);
 
   /**
    * Paints the visible region only. The canvas is always exactly the size of
@@ -120,8 +168,7 @@ export function PreviewCanvas({
     g.clearRect(0, 0, cw, ch);
 
     const size = sourceSize();
-    const base = coarseBuf.current;
-    if (!size || !base) return;
+    if (!size || !coarse) return;
 
     const w = size.width * zoom;
     const h = size.height * zoom;
@@ -133,18 +180,22 @@ export function PreviewCanvas({
     g.imageSmoothingEnabled = zoom < 1;
     g.imageSmoothingQuality = "high";
 
+    // A blurred shadow is one of the slowest 2D-canvas operations in WebKitGTK
+    // and panning repaints continuously, so it is skipped mid-drag.
     g.save();
-    g.shadowColor = "rgba(0, 0, 0, 0.45)";
-    g.shadowBlur = 18;
-    g.shadowOffsetY = 4;
-    g.drawImage(base, x, y, w, h);
+    if (!dragRef.current && !splitDragRef.current) {
+      g.shadowColor = "rgba(0, 0, 0, 0.45)";
+      g.shadowBlur = 18;
+      g.shadowOffsetY = 4;
+    }
+    g.drawImage(asDrawable(coarse, coarseBuf), x, y, w, h);
     g.restore();
 
     // The sharp pass goes over the top, aligned to the region it covers. Until
     // it lands, the coarse layer showing through is what makes a slider drag
     // feel immediate.
-    const sharp = fineBuf.current;
-    if (sharp) {
+    if (fine) {
+      const sharp = asDrawable(fine, fineBuf);
       if (region) {
         g.drawImage(sharp, x + region.x * zoom, y + region.y * zoom, region.width * zoom, region.height * zoom);
       } else {
@@ -181,7 +232,7 @@ export function PreviewCanvas({
         onViewport(next);
       }
     }
-  }, [zoom, pan, compare, split, region, sourceSize, onViewport]);
+  }, [zoom, pan, compare, split, region, sourceSize, coarse, fine, onViewport]);
 
   const fit = useCallback(() => {
     const stage = stageRef.current;
@@ -195,16 +246,6 @@ export function PreviewCanvas({
     setZoom(Math.max(MIN_ZOOM, scale));
     setPan({ x: 0, y: 0 });
   }, [sourceSize]);
-
-  useEffect(() => {
-    toBuffer(coarse, coarseBuf);
-    draw();
-  }, [coarse, draw]);
-
-  useEffect(() => {
-    toBuffer(fine, fineBuf);
-    draw();
-  }, [fine, draw]);
 
   useEffect(() => {
     toBuffer(original, originalBuf);
@@ -250,7 +291,7 @@ export function PreviewCanvas({
     e.preventDefault();
     touchedRef.current = true;
     const factor = Math.exp(-e.deltaY * 0.0015);
-    setZoom((z) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z * factor)));
+    scheduleGesture(() => setZoom((z) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z * factor))));
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
@@ -264,12 +305,12 @@ export function PreviewCanvas({
   const onPointerMove = (e: React.PointerEvent) => {
     if (splitDragRef.current && stageRef.current) {
       const r = stageRef.current.getBoundingClientRect();
-      setSplit(Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)));
+      scheduleGesture(() => setSplit(Math.min(1, Math.max(0, (e.clientX - r.left) / r.width))));
       return;
     }
     const d = dragRef.current;
     if (!d) return;
-    setPan({ x: d.px + (e.clientX - d.x), y: d.py + (e.clientY - d.y) });
+    scheduleGesture(() => setPan({ x: d.px + (e.clientX - d.x), y: d.py + (e.clientY - d.y) }));
   };
 
   const endDrag = () => {
@@ -329,16 +370,16 @@ export function PreviewCanvas({
       {hasImage && (
         <div className="preview__hud">
           <div className="preview__hud-group">
-            <IconButton label="Fit to window" onClick={fit}>
+            <IconButton label={t("hud.fit")} onClick={fit}>
               <IconFit />
             </IconButton>
-            <IconButton label="Zoom out" onClick={() => zoomBy(1 / 1.4)}>
+            <IconButton label={t("hud.zoomOut")} onClick={() => zoomBy(1 / 1.4)}>
               <IconZoomOut />
             </IconButton>
             <input
               type="text"
               className="preview__zoom"
-              title="Zoom percentage"
+              title={t("hud.zoomPercent")}
               value={isZoomFocused ? zoomInput : Math.round(zoom * 100) + "%"}
               onFocus={() => {
                 setZoomInput(Math.round(zoom * 100).toString());
@@ -356,13 +397,13 @@ export function PreviewCanvas({
                 if (e.key === "Enter") e.currentTarget.blur();
               }}
             />
-            <IconButton label="Zoom in" onClick={() => zoomBy(1.4)}>
+            <IconButton label={t("hud.zoomIn")} onClick={() => zoomBy(1.4)}>
               <IconZoomIn />
             </IconButton>
           </div>
           <div className="preview__hud-group">
             <IconButton
-              label="Compare with original"
+              label={t("hud.compare")}
               selected={compare}
               onClick={() => setCompare((c) => !c)}
             >
@@ -377,14 +418,14 @@ export function PreviewCanvas({
             )}
             <span className={`preview__timing ${refining ? "is-busy" : ""}`}>
               <IconTimer />
-              {refining ? "refining…" : `${ms.toFixed(0)} ms`}
+              {refining ? t("hud.refining") : `${ms.toFixed(0)} ms`}
             </span>
             {degraded && (
               <span
                 className="is-degraded"
-                title="Web worker unavailable - dithering on the main thread"
+                title="Preferred render pipeline unavailable - dithering on a slower rung"
               >
-                main thread
+                {backendLabel === "worker" ? "main thread" : backendLabel}
               </span>
             )}
           </div>

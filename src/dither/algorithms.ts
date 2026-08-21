@@ -1,5 +1,6 @@
 import type { MatchMode, PaletteLayer, Settings } from "./types";
 import { hexToRgb, luma, rgbToHex, rgbToOklab } from "./color";
+import { powShared, sinCosDeg, sinRad } from "./sharedmath";
 import {
   blueNoise,
   cachedBayer,
@@ -61,7 +62,19 @@ const FALLBACK: PaletteLayer[] = [
   { id: "w", hex: "#ffffff", level: 1, width: 2, enabled: true },
 ];
 
+/**
+ * Compiled palettes are pure functions of `(layers, limit, bias)` and are hit
+ * once per render job - including every slider tick of a drag. Palette edits
+ * are the common case during tuning, so the compile work (OKLab conversions,
+ * band edges, sorts) is memoised on a cheap serialisation of the inputs.
+ */
+const paletteCache = new Map<string, Palette>();
+
 export function compilePalette(layers: PaletteLayer[], limit = Infinity, bias = 0): Palette {
+  const key = `${limit}|${bias}|${JSON.stringify(layers)}`;
+  const hit = paletteCache.get(key);
+  if (hit) return hit;
+
   let live = layers.filter((l) => l.enabled);
   if (live.length === 0) live = FALLBACK;
   if (live.length > limit) live = live.slice(0, Math.max(1, Math.floor(limit)));
@@ -118,6 +131,8 @@ export function compilePalette(layers: PaletteLayer[], limit = Infinity, bias = 
     p.tone[i] = (lo + acc) / 2;
   }
   p.bandEdge[n - 1] = 1;
+  if (paletteCache.size > 64) paletteCache.clear();
+  paletteCache.set(key, p);
   return p;
 }
 
@@ -226,7 +241,7 @@ function matcherFor(mode: MatchMode): Matcher {
  */
 function toneCurve(s: Settings): Uint8ClampedArray {
   const lut = new Uint8ClampedArray(256);
-  const gain = Math.pow(2, s.exposure);
+  const gain = powShared(2, s.exposure);
   const bright = s.brightness * 2.55;
   const c = Math.max(-255, Math.min(255, s.contrast * 2.55));
   const cf = (259 * (c + 255)) / (255 * (259 - c));
@@ -234,7 +249,7 @@ function toneCurve(s: Settings): Uint8ClampedArray {
   for (let i = 0; i < 256; i++) {
     let v = i * gain + bright;
     v = cf * (v - 128) + 128;
-    v = Math.pow(Math.max(0, v) / 255, invGamma) * 255;
+    v = powShared(Math.max(0, v) / 255, invGamma) * 255;
     lut[i] = clamp255(v);
   }
   return lut;
@@ -283,9 +298,9 @@ function boxBlur(buf: Float32Array, w: number, h: number, radius: number) {
 
 /** Rotates hue in place using the standard luma-preserving RGB rotation. */
 function hueMatrix(deg: number): number[] {
-  const a = (deg * Math.PI) / 180;
-  const c = Math.cos(a);
-  const s = Math.sin(a);
+  // Shared deterministic sincos: library cos/sin differ per engine in the
+  // last ulp and the matrix feeds every pixel of a graded frame.
+  const [s, c] = sinCosDeg(deg);
   const lr = 0.213;
   const lg = 0.715;
   const lb = 0.072;
@@ -305,8 +320,47 @@ function hueMatrix(deg: number): number[] {
 /**
  * Decodes the source into a float working buffer and applies everything that
  * happens before the dither itself: grading, then filtering.
+ *
+ * The result depends only on the source pixels and the tone/filter subset of
+ * settings, so it is memoised on exactly that. Palette or dither-parameter
+ * edits then skip grading entirely - which is the dominant cost whenever blur
+ * or sharpen is engaged. Cached buffers are shared between jobs and must stay
+ * read-only; every pass treats `src` as input-only (error planes are private).
  */
-function prepare(image: ImageData, s: Settings): Float32Array {
+const prepareIds = new WeakMap<object, number>();
+let prepareNextId = 1;
+const prepareCache = new Map<string, Float32Array>();
+
+function prepareKey(image: ImageData, s: Settings): string {
+  let id = prepareIds.get(image);
+  if (id === undefined) {
+    id = ++prepareNextId;
+    prepareIds.set(image, id);
+  }
+  return [
+    id,
+    image.width,
+    image.height,
+    s.brightness,
+    s.contrast,
+    s.gamma,
+    s.exposure,
+    s.saturation,
+    s.hueShift,
+    s.temperature,
+    s.tint,
+    s.grayscale ? 1 : 0,
+    s.invert ? 1 : 0,
+    s.blur,
+    s.sharpen,
+  ].join("|");
+}
+
+export function prepare(image: ImageData, s: Settings): Float32Array {
+  const key = prepareKey(image, s);
+  const hit = prepareCache.get(key);
+  if (hit) return hit;
+
   const { width: w, height: h, data } = image;
   const buf = new Float32Array(w * h * 3);
   const lut = toneCurve(s);
@@ -370,6 +424,8 @@ function prepare(image: ImageData, s: Settings): Float32Array {
     }
   }
 
+  if (prepareCache.size > 8) prepareCache.clear();
+  prepareCache.set(key, buf);
   return buf;
 }
 
@@ -770,6 +826,27 @@ function hilbertXY(n: number, d: number): [number, number] {
  * preferred direction the result has none of the diagonal worming that row-wise
  * diffusion produces.
  */
+const hilbertCache = new Map<number, Int32Array>();
+
+/** Cached `x,y` pairs for the curve of side `n`; identical to live computation. */
+function hilbertCurve(n: number): Int32Array | null {
+  // Bound the memory: beyond this side length a pass is minutes anyway, so
+  // just compute coordinates inline as before.
+  if (n > 1024) return null;
+  let cached = hilbertCache.get(n);
+  if (!cached) {
+    const total = n * n;
+    cached = new Int32Array(total * 2);
+    for (let d = 0; d < total; d++) {
+      const [x, y] = hilbertXY(n, d);
+      cached[d * 2] = x;
+      cached[d * 2 + 1] = y;
+    }
+    hilbertCache.set(n, cached);
+  }
+  return cached;
+}
+
 function riemersmaPass(c: Ctx) {
   const { w, h, src, p, s } = c;
   const side = 1 << Math.ceil(Math.log2(Math.max(w, h, 2)));
@@ -780,7 +857,7 @@ function riemersmaPass(c: Ctx) {
   const weights = new Float32Array(qLen);
   let wsum = 0;
   for (let k = 0; k < qLen; k++) {
-    weights[k] = Math.pow(decay, k);
+    weights[k] = powShared(decay, k);
     wsum += weights[k];
   }
   for (let k = 0; k < qLen; k++) weights[k] /= wsum;
@@ -791,8 +868,16 @@ function riemersmaPass(c: Ctx) {
   let head = 0;
 
   const total = side * side;
+  const curve = hilbertCurve(side);
   for (let d = 0; d < total; d++) {
-    const [x, y] = hilbertXY(side, d);
+    let x: number;
+    let y: number;
+    if (curve) {
+      x = curve[d * 2];
+      y = curve[d * 2 + 1];
+    } else {
+      [x, y] = hilbertXY(side, d);
+    }
     if (x >= w || y >= h) continue;
     const i = y * w + x;
     const j = i * 3;
@@ -852,6 +937,45 @@ function classMatrix(size: number): Int32Array {
 
 const classCache = new Map<number, Int32Array>();
 
+/**
+ * Per-rank pixel lists, built in the same y-major scan order the naive
+ * implementation walks the image in. Diffusion is order-dependent, so keeping
+ * that sequence identical makes this rewrite byte-exact while dropping the
+ * cost from a full-image scan per rank to one counting pass plus O(pixels).
+ */
+const rankListCache = new Map<string, Int32Array[]>();
+
+function rankListsFor(cm: Int32Array, size: number, w: number, h: number): Int32Array[] {
+  const key = `${size}|${w}x${h}`;
+  const hit = rankListCache.get(key);
+  if (hit) return hit;
+
+  const cells = size * size;
+  const counts = new Int32Array(cells);
+  for (let y = 0; y < h; y++) {
+    const row = y % size;
+    for (let x = 0; x < w; x++) counts[row * size + (x % size)]++;
+  }
+  // A rank owns every pixel whose *cell* maps to it, so its list needs the
+  // summed population of those cells - not the population of cell `rank`.
+  const rankTotals = new Int32Array(cells);
+  for (let cIdx = 0; cIdx < cells; cIdx++) rankTotals[cm[cIdx]] += counts[cIdx];
+
+  const lists: Int32Array[] = [];
+  const cursors = new Int32Array(cells);
+  for (let r = 0; r < cells; r++) lists.push(new Int32Array(rankTotals[r]));
+  for (let y = 0; y < h; y++) {
+    const row = y % size;
+    for (let x = 0; x < w; x++) {
+      const cell = row * size + (x % size);
+      lists[cm[cell]][cursors[cell]++] = y * w + x;
+    }
+  }
+  if (rankListCache.size > 8) rankListCache.clear();
+  rankListCache.set(key, lists);
+  return lists;
+}
+
 function dotDiffusePass(c: Ctx) {
   const { w, h, src, p, s } = c;
   const size = Math.max(2, 1 << Math.round(Math.log2(Math.max(2, s.dotClassSize))));
@@ -873,43 +997,44 @@ function dotDiffusePass(c: Ctx) {
     [-1, -1, 1],
   ];
 
+  const lists = rankListsFor(cm, size, w, h);
   for (let rank = 0; rank < ranks; rank++) {
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        if (cm[(y % size) * size + (x % size)] !== rank) continue;
-        const i = y * w + x;
-        const j = i * 3;
-        const r = src[j] + err[j];
-        const g = src[j + 1] + err[j + 1];
-        const b = src[j + 2] + err[j + 2];
-        const idx = c.match(p, r, g, b);
-        put(c, i, idx);
+    const pixels = lists[rank];
+    for (let n = 0; n < pixels.length; n++) {
+      const i = pixels[n];
+      const j = i * 3;
+      const r = src[j] + err[j];
+      const g = src[j + 1] + err[j + 1];
+      const b = src[j + 2] + err[j + 2];
+      const idx = c.match(p, r, g, b);
+      put(c, i, idx);
 
-        const er = (r - p.r[idx]) * s.strength;
-        const eg = (g - p.g[idx]) * s.strength;
-        const eb = (b - p.b[idx]) * s.strength;
+      const er = (r - p.r[idx]) * s.strength;
+      const eg = (g - p.g[idx]) * s.strength;
+      const eb = (b - p.b[idx]) * s.strength;
 
-        // Only neighbours that are still undecided may receive error.
-        let div = 0;
-        for (const [dx, dy, weight] of neighbours) {
-          const nx = x + dx;
-          const ny = y + dy;
-          if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
-          if (cm[(ny % size) * size + (nx % size)] <= rank) continue;
-          div += weight;
-        }
-        if (div === 0) continue;
-        for (const [dx, dy, weight] of neighbours) {
-          const nx = x + dx;
-          const ny = y + dy;
-          if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
-          if (cm[(ny % size) * size + (nx % size)] <= rank) continue;
-          const f = weight / div;
-          const nj = (ny * w + nx) * 3;
-          err[nj] += er * f;
-          err[nj + 1] += eg * f;
-          err[nj + 2] += eb * f;
-        }
+      // Only neighbours that are still undecided may receive error.
+      const x = i % w;
+      const y = (i / w) | 0;
+      let div = 0;
+      for (const [dx, dy, weight] of neighbours) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+        if (cm[(ny % size) * size + (nx % size)] <= rank) continue;
+        div += weight;
+      }
+      if (div === 0) continue;
+      for (const [dx, dy, weight] of neighbours) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+        if (cm[(ny % size) * size + (nx % size)] <= rank) continue;
+        const f = weight / div;
+        const nj = (ny * w + nx) * 3;
+        err[nj] += er * f;
+        err[nj + 1] += eg * f;
+        err[nj + 2] += eb * f;
       }
     }
   }
@@ -961,7 +1086,7 @@ function ominoPass(c: Ctx) {
     //
     // The half-line offset keeps 0° neutral. 180° flips alternating lines
     // against each other, and 360° puts every line back in step.
-    const bias = phase === 0 ? 0 : Math.sin((l + 0.5) * phase) * 110;
+    const bias = phase === 0 ? 0 : sinRad((l + 0.5) * phase) * 110;
     let cr = 0;
     let cg = 0;
     let cb = 0;
@@ -1026,18 +1151,27 @@ export function dither(image: ImageData, s: Settings): ImageData {
       orderedPass(ctx, (x, y) => m[(y % n) * n + (x % n)]);
       break;
     }
-    case "halftone":
-      orderedPass(ctx, (x, y) => clusteredDot(x, y, cell, angle));
+    case "halftone": {
+      const [sinA, cosA] = sinCosDeg(angle);
+      orderedPass(ctx, (x, y) => clusteredDot(x, y, cell, cosA, sinA));
       break;
-    case "cluster-diagonal":
-      orderedPass(ctx, (x, y) => diagonalCluster(x, y, cell, angle));
+    }
+    case "cluster-diagonal": {
+      const [sinA, cosA] = sinCosDeg(angle);
+      orderedPass(ctx, (x, y) => diagonalCluster(x, y, cell, cosA, sinA));
       break;
-    case "halftone-line":
-      orderedPass(ctx, (x, y) => lineScreen(x, y, cell, angle));
+    }
+    case "halftone-line": {
+      const [sinA, cosA] = sinCosDeg(angle);
+      orderedPass(ctx, (x, y) => lineScreen(x, y, cell, cosA, sinA));
       break;
-    case "diagonal-line":
-      orderedPass(ctx, (x, y) => diagonalHatch(x, y, cell, angle));
+    }
+    case "diagonal-line": {
+      const [sinA, cosA] = sinCosDeg(angle);
+      const [sinB, cosB] = sinCosDeg(angle + 90);
+      orderedPass(ctx, (x, y) => diagonalHatch(x, y, cell, cosA, sinA, cosB, sinB));
       break;
+    }
     case "checker":
       orderedPass(ctx, (x, y) => checkerMask(x, y, cell));
       break;

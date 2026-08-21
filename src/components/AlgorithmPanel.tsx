@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useI18n } from "../i18n";
 import {
   ALGORITHMS,
@@ -57,7 +58,7 @@ const RESET_KEYS: Record<ParamKey, Array<keyof Settings>> = {
   ],
 };
 
-export function AlgorithmPanel({ settings, patch }: Props) { const { t } = useI18n();
+function AlgorithmPanelImpl({ settings, patch }: Props) { const { t } = useI18n();
   const meta = ALGORITHMS.find((a) => a.id === settings.algorithm) ?? ALGORITHMS[0];
   const has = (p: ParamKey) => meta.params.includes(p);
 
@@ -321,3 +322,5 @@ export function AlgorithmPanel({ settings, patch }: Props) { const { t } = useI1
     </div>
   );
 }
+
+export const AlgorithmPanel = memo(AlgorithmPanelImpl);

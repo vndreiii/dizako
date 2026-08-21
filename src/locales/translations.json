@@ -48,7 +48,21 @@
     "picker.square": "Square",
     "picker.compound": "Compound",
     "picker.shades": "Shades",
-    "settings.matugen": "Matugen"
+    "settings.matugen": "Matugen",
+    "hud.fit": "Fit to window",
+    "hud.zoomIn": "Zoom in",
+    "hud.zoomOut": "Zoom out",
+    "hud.zoomPercent": "Zoom percentage",
+    "hud.compare": "Compare with original",
+    "hud.refining": "refining…",
+    "hud.dithering": "Dithering",
+    "app.exported": "Exported PNG",
+    "app.exportFailed": "Export failed",
+    "app.notImage": "That file is not an image",
+    "app.couldNotWrite": "Could not write the file",
+    "app.loaded": "Loaded {name} ({w}×{h})",
+    "app.loadedReduced": "Loaded {name} - reduced from {fw}×{fh} to {w}×{h}",
+    "app.loadFailed": "Could not read {name}: {error}"
   },
   "es": {
     "tabs.algorithm": "Algoritmo",

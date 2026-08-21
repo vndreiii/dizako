@@ -17,10 +17,10 @@ import {
 import { SettingsSheet } from "./components/SettingsSheet";
 import { WindowControls } from "./components/WindowControls";
 import { useDither } from "./hooks/useDither";
-import { dither } from "./dither/algorithms";
 import type { Rect } from "./dither/region";
 import { savePng } from "./hooks/saveImage";
 import { DEFAULT_SETTINGS, type Settings } from "./dither/types";
+import { loadSession, saveSession } from "./session";
 import {
   applyTheme,
   applyMatugenTheme,
@@ -129,17 +129,18 @@ function downscale(src: ImageData, factor: number): ImageData {
   return ctx.getImageData(0, 0, w, h);
 }
 
+/** Read once per launch; every key falls back to defaults when absent. */
+const restoredSession = loadSession();
+
 export default function App() {
   const { t } = useI18n();
-  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<Settings>(restoredSession.settings ?? DEFAULT_SETTINGS);
   const [tab, setTab] = useState<Tab>("algorithm");
   const [native, setNative] = useState<ImageData | null>(null);
   const [fileName, setFileName] = useState("");
-  const [mode, setMode] = useState<Mode>(() =>
-    window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark",
-  );
-  const [seed, setSeed] = useState(DEFAULT_SEED);
-  const [themeSource, setThemeSource] = useState<ThemeSource>("preset");
+  const [mode, setMode] = useState<Mode>(() => restoredSession.appearance?.mode ?? (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"));
+  const [seed, setSeed] = useState(restoredSession.appearance?.seed ?? DEFAULT_SEED);
+  const [themeSource, setThemeSource] = useState<ThemeSource>(restoredSession.appearance?.themeSource ?? "preset");
   const [dynamicSeed, setDynamicSeed] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -232,11 +233,19 @@ export default function App() {
   );
 
   const [viewport, setViewport] = useState<Rect | null>(null);
-  const { coarse, coarseScale, fine, region, busy, refining, ms, degraded } = useDither(
-    source,
-    settings,
-    viewport,
-  );
+  const {
+    coarse,
+    coarseScale,
+    fine,
+    region,
+    busy,
+    refining,
+    ms,
+    degraded,
+    backendLabel,
+    exporting,
+    requestExport,
+  } = useDither(source, settings, viewport);
   const hasResult = Boolean(coarse);
 
   const load = useCallback(
@@ -249,13 +258,18 @@ export default function App() {
         setDynamicSeed(seedFromImageData(data));
         if (clampedFrom) {
           snack(
-            `Loaded ${file.name} - reduced from ${clampedFrom.width}×${clampedFrom.height} to ${data.width}×${data.height}`,
+            t("app.loadedReduced")
+              .replace("{name}", file.name)
+              .replace("{fw}", String(clampedFrom.width))
+              .replace("{fh}", String(clampedFrom.height))
+              .replace("{w}", String(data.width))
+              .replace("{h}", String(data.height)),
           );
         } else {
-          snack(`Loaded ${file.name} (${data.width}×${data.height})`);
+          snack(t("app.loaded").replace("{name}", file.name).replace("{w}", String(data.width)).replace("{h}", String(data.height)));
         }
       } catch (err) {
-        snack(`Could not read ${file.name}: ${(err as Error).message}`, "error");
+        snack(t("app.loadFailed").replace("{name}", file.name).replace("{error}", (err as Error).message), "error");
       } finally {
         setDecoding(false);
       }
@@ -263,29 +277,28 @@ export default function App() {
     [snack],
   );
 
-  const exportPng = useCallback(() => {
-    if (!source) return;
-    // The preview is allowed to be coarse or cropped to the viewport; an export
-    // never is. This runs its own full-resolution pass over the whole image.
-    const full = dither(source, settings);
-    const canvas = document.createElement("canvas");
-    canvas.width = full.width;
-    canvas.height = full.height;
-    canvas.getContext("2d")!.putImageData(full, 0, 0);
-    canvas.toBlob(async (blob) => {
-      if (!blob) {
-        snack("Export failed", "error");
-        return;
-      }
-      const base = fileName.replace(/\.[^.]+$/, "") || "dizako";
-      try {
-        const result = await savePng(blob, `${base}-${settings.algorithm}.png`);
-        if (result === "saved") snack("Exported PNG");
-      } catch {
-        snack("Could not write the file", "error");
-      }
-    }, "image/png");
-  }, [source, settings, fileName, snack]);
+  /**
+   * Export runs through the render worker at native resolution and encodes
+   * there too, so the UI stays responsive for the whole job. The result is
+   * the exact pixels a full-resolution preview of these settings would show.
+   */
+  const exportPng = useCallback(async () => {
+    if (!source || exporting) return;
+    const result = await requestExport(settings);
+    if (result === "cancelled") return;
+    const base = fileName.replace(/\.[^.]+$/, "") || "dizako";
+    try {
+      const saved = await savePng(result.blob, `${base}-${settings.algorithm}.png`);
+      if (saved === "saved") snack(t("app.exported"));
+    } catch {
+      snack(t("app.couldNotWrite"), "error");
+    }
+  }, [source, settings, fileName, snack, t, exporting, requestExport]);
+
+  // Persist everything that used to reset on launch.
+  useEffect(() => {
+    saveSession(settings, { mode, themeSource, seed });
+  }, [settings, mode, themeSource, seed]);
 
   /**
    * App-level keyboard and pointer behaviour.
@@ -316,6 +329,15 @@ export default function App() {
         if (editable(e.target)) return;
         e.preventDefault();
         redo();
+      } else if (k === "o") {
+        // Editor-standard open; the browser file dialog default is useless here.
+        e.preventDefault();
+        inputRef.current?.click();
+      } else if (k === "e" || k === "s") {
+        // Ctrl+E exports; Ctrl+S is accepted as the muscle-memory alias.
+        if (editable(e.target)) return;
+        e.preventDefault();
+        void exportPng();
       } else if (k === "a") {
         // Inside a field, select-all is exactly right; anywhere else it selects
         // every label in the UI, which is only ever an accident.
@@ -357,7 +379,7 @@ export default function App() {
       setDragOver(false);
       const file = e.dataTransfer?.files?.[0];
       if (file?.type.startsWith("image/")) void load(file);
-      else if (file) snack("That file is not an image", "error");
+      else if (file) snack(t("app.notImage"), "error");
     };
     window.addEventListener("dragover", over);
     window.addEventListener("dragleave", leave);
@@ -376,7 +398,7 @@ export default function App() {
           <img src="/icon.png" alt="Dizako logo" className="topbar__mark" draggable={false} />
           <div>
             <h1 className="topbar__title">Dizako</h1>
-            <p className="topbar__sub">{fileName || "No image loaded"}</p>
+            <p className="topbar__sub">{fileName || t("topbar.noImage")}</p>
           </div>
         </div>
 
@@ -384,8 +406,13 @@ export default function App() {
           <Button variant="outlined" icon={<IconUpload />} onClick={() => inputRef.current?.click()}>
             Open
           </Button>
-          <Button variant="filled" icon={<IconDownload />} disabled={!hasResult} onClick={exportPng}>
-            Export
+          <Button
+            variant="filled"
+            icon={<IconDownload />}
+            disabled={!hasResult || exporting}
+            onClick={() => void exportPng()}
+          >
+            {exporting ? "Exporting…" : "Export"}
           </Button>
           <WindowControls />
         </div>
@@ -446,6 +473,7 @@ export default function App() {
               refining={refining}
               ms={ms}
               degraded={degraded}
+              backendLabel={backendLabel}
               onViewport={setViewport}
             />
           ) : decoding ? (
@@ -460,10 +488,7 @@ export default function App() {
                 <IconImage />
               </div>
               <h2 className="empty__title">{t("empty.dropTitle")}</h2>
-              <p className="empty__body">
-                PNG, JPEG, WebP, GIF or AVIF. Everything is processed locally - nothing leaves your
-                machine.
-              </p>
+              <p className="empty__body">{t("empty.dropBody")}</p>
               <Button variant="filled" icon={<IconUpload />} onClick={() => inputRef.current?.click()}>
                 Choose image
               </Button>

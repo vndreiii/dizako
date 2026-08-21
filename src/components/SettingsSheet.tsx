@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { IconAuto, IconClose, IconDark, IconLight, IconPalette } from "./Icons";
-import { useI18n } from "../i18n";
+import { useI18n, type Locale } from "../i18n";
 import { SEED_PRESETS, type Mode, type ThemeSource } from "../theme/theme";
 
 interface Props {
@@ -179,7 +179,7 @@ export function SettingsSheet({
                   key={lang}
                   style={{ width: 'auto', padding: '4px 12px', background: locale === lang ? 'var(--md-sys-color-primary)' : 'var(--md-sys-color-surface-container-highest)', color: locale === lang ? 'var(--md-sys-color-on-primary)' : 'var(--md-sys-color-on-surface)', border: 'none', borderRadius: '8px', cursor: 'pointer', fontFamily: 'var(--m3-font-body)', fontWeight: 500, textTransform: 'uppercase' }}
                   aria-pressed={locale === lang}
-                  onClick={() => setLocale(lang as any)}
+                  onClick={() => setLocale(lang as Locale)}
                 >
                   {lang}
                 </button>

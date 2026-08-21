@@ -6,6 +6,8 @@
  * pixels round up and which round down.
  */
 
+import { BLUE_NOISE_TILE } from "./tables";
+
 /** Canonical recursive Bayer matrix, normalised to 0..1. */
 export function bayerMatrix(n: number): Float32Array {
   let size = 1;
@@ -49,7 +51,11 @@ export function cachedBayer(n: number): Float32Array {
  * settled pattern is then ranked to produce the mask. Generation is not cheap,
  * so tiles are built once and cached for the life of the worker.
  */
-function voidAndCluster(size: number): Float32Array {
+/**
+ * Kept exported even though the runtime consumes the frozen tile: this is
+ * the generator that tools/gen-tables.mjs executes to (re)produce it.
+ */
+export function voidAndCluster(size: number): Float32Array {
   const n = size * size;
   const binary = new Uint8Array(n);
   const initial = Math.max(1, Math.round(n * 0.1));
@@ -190,10 +196,20 @@ function voidAndCluster(size: number): Float32Array {
 }
 
 const blueCache = new Map<number, Float32Array>();
+
+/**
+ * The settled tile is a committed constant (tables.ts, generated once by
+ * tools/gen-tables.mjs from {@link voidAndCluster}): regenerating per boot
+ * would burn tens of milliseconds and cross-engine parity would depend on
+ * `Math.exp` agreeing everywhere. `fround` reproduces the historical
+ * Float32Array store exactly.
+ */
 export function blueNoise(size = 64): Float32Array {
   let m = blueCache.get(size);
   if (!m) {
-    m = voidAndCluster(size);
+    const n = size * size;
+    m = new Float32Array(n);
+    for (let i = 0; i < n; i++) m[i] = Math.fround((BLUE_NOISE_TILE[i] + 0.5) / n);
     blueCache.set(size, m);
   }
   return m;
@@ -204,17 +220,15 @@ export function ign(x: number, y: number): number {
   return (52.9829189 * ((0.06711056 * x + 0.00583715 * y) % 1)) % 1;
 }
 
-/** Rotates a coordinate into screen space for the halftone family. */
-function rotate(x: number, y: number, deg: number): [number, number] {
-  const a = (deg * Math.PI) / 180;
-  const c = Math.cos(a);
-  const s = Math.sin(a);
+/** Rotates a coordinate into screen space using precomputed shared sincos. */
+function rotate(x: number, y: number, c: number, s: number): [number, number] {
   return [x * c - y * s, x * s + y * c];
 }
 
-/** Clustered dot: a spot function growing from the centre of each cell. */
-export function clusteredDot(x: number, y: number, cell: number, angle: number): number {
-  const [rx, ry] = rotate(x, y, angle);
+/** Clustered dot: a spot function growing from the centre of each cell.
+ *  Callers hoist the trig out of the per-pixel loop (WASM_PLAN §4.3). */
+export function clusteredDot(x: number, y: number, cell: number, cosA: number, sinA: number): number {
+  const [rx, ry] = rotate(x, y, cosA, sinA);
   const u = ((rx % cell) + cell) % cell;
   const v = ((ry % cell) + cell) % cell;
   const dx = (u / cell) * 2 - 1;
@@ -224,8 +238,8 @@ export function clusteredDot(x: number, y: number, cell: number, angle: number):
 }
 
 /** Diagonal cluster: a rotated-square spot, closer to a classic 45° screen. */
-export function diagonalCluster(x: number, y: number, cell: number, angle: number): number {
-  const [rx, ry] = rotate(x, y, angle);
+export function diagonalCluster(x: number, y: number, cell: number, cosA: number, sinA: number): number {
+  const [rx, ry] = rotate(x, y, cosA, sinA);
   const u = ((rx % cell) + cell) % cell;
   const v = ((ry % cell) + cell) % cell;
   const dx = (u / cell) * 2 - 1;
@@ -234,16 +248,24 @@ export function diagonalCluster(x: number, y: number, cell: number, angle: numbe
 }
 
 /** Line screen: rules perpendicular to the screen angle. */
-export function lineScreen(x: number, y: number, cell: number, angle: number): number {
-  const [, ry] = rotate(x, y, angle);
+export function lineScreen(x: number, y: number, cell: number, cosA: number, sinA: number): number {
+  const [, ry] = rotate(x, y, cosA, sinA);
   const v = ((ry % cell) + cell) % cell;
   return Math.abs(v / cell - 0.5) * 2;
 }
 
 /** Crosshatch of two line screens 90° apart. */
-export function diagonalHatch(x: number, y: number, cell: number, angle: number): number {
-  const a = lineScreen(x, y, cell, angle);
-  const b = lineScreen(x, y, cell, angle + 90);
+export function diagonalHatch(
+  x: number,
+  y: number,
+  cell: number,
+  cosA: number,
+  sinA: number,
+  cosB: number,
+  sinB: number,
+): number {
+  const a = lineScreen(x, y, cell, cosA, sinA);
+  const b = lineScreen(x, y, cell, cosB, sinB);
   return Math.min(0.999, Math.min(a, b));
 }
 
