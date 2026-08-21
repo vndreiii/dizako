@@ -173,28 +173,17 @@ export function SettingsSheet({
               <span className="setting__label">{t("settings.language")}</span>
               <span className="setting__hint">{t("settings.languageHint")}</span>
             </div>
-            <div className="m3-segmented" role="group" aria-label="Language">
-              <button
-                className={`m3-segmented__item ${locale === "en" ? "is-selected" : ""}`}
-                aria-pressed={locale === "en"}
-                onClick={() => setLocale("en")}
-              >
-                EN
-              </button>
-              <button
-                className={`m3-segmented__item ${locale === "es" ? "is-selected" : ""}`}
-                aria-pressed={locale === "es"}
-                onClick={() => setLocale("es")}
-              >
-                ES
-              </button>
-              <button
-                className={`m3-segmented__item ${locale === "fr" ? "is-selected" : ""}`}
-                aria-pressed={locale === "fr"}
-                onClick={() => setLocale("fr")}
-              >
-                FR
-              </button>
+            <div className="swatches" style={{ gap: '8px', flexWrap: 'wrap' }} role="group" aria-label="Language">
+              {['en','es','fr','de','it','pt','ru','ja','zh','bs','sr','ko','ar','hi','tr','pl','nl','sv'].map(lang => (
+                <button
+                  key={lang}
+                  style={{ width: 'auto', padding: '4px 12px', background: locale === lang ? 'var(--md-sys-color-primary)' : 'var(--md-sys-color-surface-container-highest)', color: locale === lang ? 'var(--md-sys-color-on-primary)' : 'var(--md-sys-color-on-surface)', border: 'none', borderRadius: '8px', cursor: 'pointer', fontFamily: 'var(--m3-font-body)', fontWeight: 500, textTransform: 'uppercase' }}
+                  aria-pressed={locale === lang}
+                  onClick={() => setLocale(lang as any)}
+                >
+                  {lang}
+                </button>
+              ))}
             </div>
           </div>
         </section>

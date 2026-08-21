@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import translations from './locales/translations.json';
 
-export type Locale = 'en' | 'es' | 'fr';
+export type Locale = "en" | "es" | "fr" | "de" | "it" | "pt" | "ru" | "ja" | "zh" | "bs" | "sr" | "ko" | "ar" | "hi" | "tr" | "pl" | "nl" | "sv";
 
 const locales = translations as Record<Locale, any>;
 

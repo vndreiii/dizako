@@ -3,6 +3,7 @@ import { AdjustPanel } from "./components/AdjustPanel";
 import { AlgorithmPanel } from "./components/AlgorithmPanel";
 import { PalettePanel } from "./components/PalettePanel";
 import { PreviewCanvas } from "./components/PreviewCanvas";
+import { useI18n } from "./i18n";
 import { Button, useSnackbar } from "./components/primitives";
 import {
   IconDownload,
@@ -31,10 +32,10 @@ import {
 
 type Tab = "algorithm" | "palette" | "image";
 
-const TABS: Array<{ id: Tab; label: string; icon: React.ReactNode }> = [
-  { id: "algorithm", label: "Algorithm", icon: <IconGrid /> },
-  { id: "palette", label: "Palette", icon: <IconPalette /> },
-  { id: "image", label: "Image", icon: <IconTune /> },
+const TABS: Array<{ id: Tab; icon: React.ReactNode }> = [
+  { id: "algorithm", icon: <IconGrid /> },
+  { id: "palette", icon: <IconPalette /> },
+  { id: "image", icon: <IconTune /> },
 ];
 
 /**
@@ -414,7 +415,7 @@ export default function App() {
             <span className="rail__pill">
               <IconSettings />
             </span>
-            <span className="rail__label">Settings</span>
+            <span className="rail__label">{t("settings.title")}</span>
           </button>
         </nav>
 
@@ -449,15 +450,15 @@ export default function App() {
           ) : decoding ? (
             <div className="empty">
               <span className="preview__spinner" aria-hidden="true" />
-              <h2 className="empty__title">Reading image…</h2>
-              <p className="empty__body">Large images take a moment to decode.</p>
+              <h2 className="empty__title">{t("empty.readingTitle")}</h2>
+              <p className="empty__body">{t("empty.readingBody")}</p>
             </div>
           ) : (
             <div className="empty">
               <div className="empty__art" aria-hidden="true">
                 <IconImage />
               </div>
-              <h2 className="empty__title">Drop an image to begin</h2>
+              <h2 className="empty__title">{t("empty.dropTitle")}</h2>
               <p className="empty__body">
                 PNG, JPEG, WebP, GIF or AVIF. Everything is processed locally - nothing leaves your
                 machine.
@@ -499,7 +500,7 @@ export default function App() {
         <div className="dropveil">
           <div className="dropveil__card">
             <IconUpload />
-            <span>Drop to load</span>
+            <span>{t("empty.dropToLoad") || "Drop to load"}</span>
           </div>
         </div>
       )}
