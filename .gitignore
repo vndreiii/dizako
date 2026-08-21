@@ -24,3 +24,13 @@ legacy/
 .DS_Store
 *.swp
 *.old
+
+# User specified ignores
+what-this-is.txt
+TODO.md
+SUMMARY.md
+dizako_mascot_full_body.jpg
+dizako_icon.png
+dizako_icon.jpg
+patch_*.js
+TRANSLATIONS_TODO_FILL.json
