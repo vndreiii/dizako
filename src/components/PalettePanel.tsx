@@ -1,3 +1,4 @@
+import { useI18n } from "../i18n";
 import { useMemo, useState } from "react";
 import { PALETTE_GROUPS } from "../dither/palettes";
 import {
@@ -72,7 +73,7 @@ function randomStack(n: number): string[] {
   });
 }
 
-export function PalettePanel({ settings, patch, source }: Props) {
+export function PalettePanel({ settings, patch, source }: Props) { const { t } = useI18n();
   const layers = settings.layers;
   const [editing, setEditing] = useState<string | "new" | null>(null);
 
