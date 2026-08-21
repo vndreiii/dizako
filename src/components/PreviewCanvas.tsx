@@ -1,14 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { IconButton } from "./primitives";
-import { IconCompare, IconFit, IconZoomIn, IconZoomOut } from "./Icons";
+import { IconCompare, IconFit, IconTimer, IconZoomIn, IconZoomOut } from "./Icons";
+import type { Rect } from "../dither/region";
 
 interface Props {
   original: ImageData | null;
-  result: ImageData | null;
+  /** Whole-image pass, possibly at reduced resolution. */
+  coarse: ImageData | null;
+  /** Source pixels each coarse pixel stands for. */
+  coarseScale: number;
+  /** Full-resolution pass covering `region`, drawn over the coarse layer. */
+  fine: ImageData | null;
+  region: Rect | null;
   busy: boolean;
+  refining: boolean;
   ms: number;
   /** Worker unavailable; running on the main thread. */
   degraded?: boolean;
+  /** Reports the visible part of the image, in source pixels. */
+  onViewport?: (r: Rect | null) => void;
 }
 
 const MIN_ZOOM = 0.05;
@@ -18,7 +28,7 @@ const MAX_ZOOM = 32;
  * Copies an ImageData into an offscreen canvas we can `drawImage` from.
  *
  * These buffers are deliberately kept out of the document. An in-document
- * canvas at the image's natural size becomes a compositing layer of that size —
+ * canvas at the image's natural size becomes a compositing layer of that size -
  * a 16 MP image is a ~64 MB surface, and WebKit simply fails to paint it,
  * leaving the stage blank while every other layer renders fine.
  */
@@ -42,10 +52,22 @@ function toBuffer(
   c.getContext("2d")!.putImageData(data, 0, 0);
 }
 
-export function PreviewCanvas({ original, result, busy, ms, degraded = false }: Props) {
+export function PreviewCanvas({
+  original,
+  coarse,
+  coarseScale,
+  fine,
+  region,
+  busy,
+  refining,
+  ms,
+  degraded = false,
+  onViewport,
+}: Props) {
   const stageRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLCanvasElement>(null);
-  const resultBuf = useRef<HTMLCanvasElement | null>(null);
+  const coarseBuf = useRef<HTMLCanvasElement | null>(null);
+  const fineBuf = useRef<HTMLCanvasElement | null>(null);
   const originalBuf = useRef<HTMLCanvasElement | null>(null);
 
   const [zoom, setZoom] = useState(1);
@@ -56,10 +78,19 @@ export function PreviewCanvas({ original, result, busy, ms, degraded = false }: 
   const splitDragRef = useRef(false);
   /** Until the user zooms or pans, the view keeps re-fitting as the stage resizes. */
   const touchedRef = useRef(false);
+  const reportedRef = useRef<string>("");
+
+  /** Full image size in source pixels, taken from whichever layer we have. */
+  const sourceSize = useCallback(() => {
+    if (original) return { width: original.width, height: original.height };
+    const c = coarseBuf.current;
+    if (c) return { width: c.width * coarseScale, height: c.height * coarseScale };
+    return null;
+  }, [original, coarseScale]);
 
   /**
    * Paints the visible region only. The canvas is always exactly the size of
-   * the stage, so zoom and pan are just draw parameters — no oversized element
+   * the stage, so zoom and pan are just draw parameters - no oversized element
    * and no oversized compositing layer, at any zoom level.
    */
   const draw = useCallback(() => {
@@ -86,15 +117,16 @@ export function PreviewCanvas({ original, result, busy, ms, degraded = false }: 
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, cw, ch);
 
-    const buf = resultBuf.current;
-    if (!buf) return;
+    const size = sourceSize();
+    const base = coarseBuf.current;
+    if (!size || !base) return;
 
-    const w = buf.width * zoom;
-    const h = buf.height * zoom;
+    const w = size.width * zoom;
+    const h = size.height * zoom;
     const x = (cw - w) / 2 + pan.x;
     const y = (ch - h) / 2 + pan.y;
 
-    // Nearest-neighbour at or above 1:1 — dithering is a per-pixel art form and
+    // Nearest-neighbour at or above 1:1 - dithering is a per-pixel art form and
     // smoothing the preview would hide exactly what the user is tuning.
     g.imageSmoothingEnabled = zoom < 1;
     g.imageSmoothingQuality = "high";
@@ -103,8 +135,20 @@ export function PreviewCanvas({ original, result, busy, ms, degraded = false }: 
     g.shadowColor = "rgba(0, 0, 0, 0.45)";
     g.shadowBlur = 18;
     g.shadowOffsetY = 4;
-    g.drawImage(buf, x, y, w, h);
+    g.drawImage(base, x, y, w, h);
     g.restore();
+
+    // The sharp pass goes over the top, aligned to the region it covers. Until
+    // it lands, the coarse layer showing through is what makes a slider drag
+    // feel immediate.
+    const sharp = fineBuf.current;
+    if (sharp) {
+      if (region) {
+        g.drawImage(sharp, x + region.x * zoom, y + region.y * zoom, region.width * zoom, region.height * zoom);
+      } else {
+        g.drawImage(sharp, x, y, w, h);
+      }
+    }
 
     const orig = originalBuf.current;
     if (compare && orig) {
@@ -115,25 +159,50 @@ export function PreviewCanvas({ original, result, busy, ms, degraded = false }: 
       g.drawImage(orig, x, y, w, h);
       g.restore();
     }
-  }, [zoom, pan, compare, split]);
+
+    // Tell the hook which source pixels are actually on screen, so the next
+    // full-resolution pass can skip everything that is not.
+    if (onViewport) {
+      const vx = Math.max(0, -x / zoom);
+      const vy = Math.max(0, -y / zoom);
+      const vw = Math.min(size.width - vx, cw / zoom);
+      const vh = Math.min(size.height - vy, ch / zoom);
+      const next: Rect | null =
+        vw <= 0 || vh <= 0 ? null : { x: vx, y: vy, width: vw, height: vh };
+      // Quantise before comparing: sub-pixel drift during a drag would
+      // otherwise fire a new render on every frame.
+      const key = next
+        ? [next.x, next.y, next.width, next.height].map((v) => Math.round(v / 24)).join(",")
+        : "";
+      if (key !== reportedRef.current) {
+        reportedRef.current = key;
+        onViewport(next);
+      }
+    }
+  }, [zoom, pan, compare, split, region, sourceSize, onViewport]);
 
   const fit = useCallback(() => {
     const stage = stageRef.current;
-    const buf = resultBuf.current;
-    if (!stage || !buf) return;
+    const size = sourceSize();
+    if (!stage || !size) return;
     const pad = 48;
     const cw = stage.clientWidth;
     const ch = stage.clientHeight;
     if (cw === 0 || ch === 0) return;
-    const scale = Math.min((cw - pad) / buf.width, (ch - pad) / buf.height, 1);
+    const scale = Math.min((cw - pad) / size.width, (ch - pad) / size.height, 1);
     setZoom(Math.max(MIN_ZOOM, scale));
     setPan({ x: 0, y: 0 });
-  }, []);
+  }, [sourceSize]);
 
   useEffect(() => {
-    toBuffer(result, resultBuf);
+    toBuffer(coarse, coarseBuf);
     draw();
-  }, [result, draw]);
+  }, [coarse, draw]);
+
+  useEffect(() => {
+    toBuffer(fine, fineBuf);
+    draw();
+  }, [fine, draw]);
 
   useEffect(() => {
     toBuffer(original, originalBuf);
@@ -141,21 +210,22 @@ export function PreviewCanvas({ original, result, busy, ms, degraded = false }: 
   }, [original, draw]);
 
   // Re-fit when a different image is loaded (dimensions change), but not on
-  // every dither pass — that would fight the user's zoom while they tweak.
+  // every dither pass - that would fight the user's zoom while they tweak.
   const dimsRef = useRef("");
   useEffect(() => {
-    if (!result) {
+    const size = sourceSize();
+    if (!size) {
       dimsRef.current = "";
       touchedRef.current = false;
       return;
     }
-    const key = `${result.width}x${result.height}`;
+    const key = `${Math.round(size.width)}x${Math.round(size.height)}`;
     if (key !== dimsRef.current) {
       dimsRef.current = key;
       touchedRef.current = false;
       fit();
     }
-  }, [result, fit]);
+  }, [coarse, sourceSize, fit]);
 
   // The stage has no size on the first paint, so an early fit computes a
   // nonsense zoom. Watching it means the fit lands once layout is real, and
@@ -171,8 +241,10 @@ export function PreviewCanvas({ original, result, busy, ms, degraded = false }: 
     return () => ro.disconnect();
   }, [draw, fit]);
 
+  const hasImage = Boolean(coarse);
+
   const onWheel = (e: React.WheelEvent) => {
-    if (!result) return;
+    if (!hasImage) return;
     e.preventDefault();
     touchedRef.current = true;
     const factor = Math.exp(-e.deltaY * 0.0015);
@@ -180,7 +252,7 @@ export function PreviewCanvas({ original, result, busy, ms, degraded = false }: 
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
-    if (!result) return;
+    if (!hasImage) return;
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
     if (splitDragRef.current) return;
     touchedRef.current = true;
@@ -208,11 +280,11 @@ export function PreviewCanvas({ original, result, busy, ms, degraded = false }: 
     setZoom((z) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z * f)));
   };
 
-  const hasImage = Boolean(result);
+  const size = sourceSize();
   // The first pass on a large image can take seconds. Until it lands there is
   // no result to draw and the HUD is hidden, so without this the stage is
   // indistinguishable from a broken load.
-  const firstPass = busy && !result;
+  const firstPass = busy && !coarse;
 
   return (
     <div className="preview">
@@ -278,18 +350,24 @@ export function PreviewCanvas({ original, result, busy, ms, degraded = false }: 
             </IconButton>
           </div>
           <div className="preview__stats">
-            {result && (
+            {size && (
               <span>
-                {result.width}×{result.height}
+                {Math.round(size.width)}×{Math.round(size.height)}
               </span>
             )}
-            <span className={busy ? "is-busy" : ""}>
-              {busy ? "rendering…" : `${ms.toFixed(0)} ms`}
+            <span className={`preview__timing ${refining ? "is-busy" : ""}`}>
+              <IconTimer />
+              {refining ? "refining…" : `${ms.toFixed(0)} ms`}
             </span>
+            {region && !refining && (
+              <span className="is-cropped" title="Sharpened over the visible area only">
+                viewport
+              </span>
+            )}
             {degraded && (
               <span
                 className="is-degraded"
-                title="Web worker unavailable — dithering on the main thread"
+                title="Web worker unavailable - dithering on the main thread"
               >
                 main thread
               </span>

@@ -4,7 +4,7 @@ import { IconClose, IconMaximize, IconMinimize } from "./Icons";
 
 /**
  * Replaces the system title bar, which is switched off in tauri.conf.json.
- * Rendered only under Tauri — in a plain browser there is no window to control.
+ * Rendered only under Tauri - in a plain browser there is no window to control.
  */
 export function WindowControls() {
   const [maximized, setMaximized] = useState(false);

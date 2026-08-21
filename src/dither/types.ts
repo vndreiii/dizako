@@ -88,10 +88,10 @@ export interface PaletteLayer {
 
 /**
  * How a source pixel is matched to a palette layer.
- * - `rgb`    — plain euclidean distance in sRGB.
- * - `luma`   — distance weighted toward perceived brightness.
- * - `oklab`  — perceptually uniform; the best default for photographic work.
- * - `tonal`  — ignores hue entirely and picks purely by the layer's `level`,
+ * - `rgb`    - plain euclidean distance in sRGB.
+ * - `luma`   - distance weighted toward perceived brightness.
+ * - `oklab`  - perceptually uniform; the best default for photographic work.
+ * - `tonal`  - ignores hue entirely and picks purely by the layer's `level`,
  *              so the stack order decides which colour covers which tones.
  */
 export type MatchMode = "rgb" | "luma" | "oklab" | "tonal";
@@ -102,6 +102,13 @@ export interface Settings {
   algorithm: AlgorithmId;
   layers: PaletteLayer[];
   matchMode: MatchMode;
+  /**
+   * How much a layer's place in the stack overrides plain nearest-colour
+   * matching, 0..1. At 0 the arrangement is decorative and the same two colours
+   * land on the same pixels however they are stacked; turning it up makes a
+   * colour parked in the shadows actually claim the dark end of the image.
+   */
+  tonalBias: number;
 
   // --- error diffusion ---
   /** Scales how much error propagates, 0..2. Above 1 exaggerates. */
@@ -194,6 +201,7 @@ export const DEFAULT_SETTINGS: Settings = {
   algorithm: "floyd-steinberg",
   layers: layersFromColors(["#000000", "#FFFFFF"]),
   matchMode: "oklab",
+  tonalBias: 0.5,
 
   strength: 1,
   serpentine: true,

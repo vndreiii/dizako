@@ -8,11 +8,14 @@ import "./theme/components.css";
 import "./theme/app.css";
 import App from "./App";
 import { SnackbarProvider } from "./components/primitives";
+import { I18nProvider } from "./i18n";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <SnackbarProvider>
-      <App />
-    </SnackbarProvider>
+    <I18nProvider>
+      <SnackbarProvider>
+        <App />
+      </SnackbarProvider>
+    </I18nProvider>
   </StrictMode>,
 );

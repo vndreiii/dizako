@@ -1,5 +1,5 @@
 /* ==================================================================
-   Dizako — application shell
+   Dizako - application shell
    ================================================================== */
 
 .app {
@@ -128,6 +128,12 @@
   width: 22px;
   height: 22px;
 }
+.rail__spacer {
+  flex: 1;
+}
+.rail__item--foot {
+  margin-top: auto;
+}
 .rail__label {
   font: var(--m3-label-md);
 }
@@ -139,11 +145,18 @@
 
 .sidebar {
   width: 340px;
+  transition: width var(--m3-dur-med2) var(--m3-ease-standard);
   flex: none;
   display: flex;
   background: var(--md-sys-color-surface-container-low);
   border-right: 1px solid var(--md-sys-color-outline-variant);
   min-height: 0;
+}
+
+/* The layer stack carries a swatch, a hex, a weight slider and four operations
+   on one row; at the default width the slider is squeezed to almost nothing. */
+.sidebar--wide {
+  width: 420px;
 }
 
 .panel {
@@ -493,6 +506,17 @@
   border-left: 1px solid var(--md-sys-color-outline-variant);
   padding-left: var(--m3-sp-2);
 }
+.preview__hud-group .m3-icon-button {
+  width: 40px;
+  height: 40px;
+  color: var(--md-sys-color-on-surface);
+}
+/* Zoom in/out ship at a smaller optical size than Fit and Compare, so left as
+   drawn they read as a weaker, secondary pair of controls than they are. */
+.preview__hud-group .m3-icon-button svg {
+  width: 22px;
+  height: 22px;
+}
 .preview__zoom {
   min-width: 56px;
   border: none;
@@ -518,6 +542,17 @@
 }
 .preview__stats .is-busy {
   color: var(--md-sys-color-primary);
+}
+.preview__timing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.preview__timing svg {
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
+  opacity: 0.8;
 }
 
 /* ---------------- Empty state ---------------- */
@@ -637,7 +672,7 @@
   color: var(--md-sys-color-error);
 }
 
-/* Shown while the first dither pass runs — before that there is no result to
+/* Shown while the first dither pass runs - before that there is no result to
    draw and the HUD is hidden, so the stage would otherwise look empty. */
 .preview__loading {
   position: absolute;
@@ -955,6 +990,49 @@
   outline-offset: -2px;
 }
 
+/* Same footprint as a preset card, but dashed and empty: it reads as a slot
+   waiting to be filled rather than as a palette with no colours in it. */
+.lib-card__blank {
+  display: flex;
+  align-items: center;
+  gap: var(--m3-sp-3);
+  width: 100%;
+  padding: var(--m3-sp-3) var(--m3-sp-4);
+  border: 1px dashed var(--md-sys-color-outline);
+  border-radius: var(--m3-shape-lg);
+  background: none;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background var(--m3-dur-short4) var(--m3-ease-standard),
+    border-color var(--m3-dur-short4) var(--m3-ease-standard),
+    color var(--m3-dur-short4) var(--m3-ease-standard);
+}
+.lib-card__blank:hover {
+  background: var(--md-sys-color-surface-container);
+  border-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-surface);
+}
+.lib-card__blank:focus-visible {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 2px;
+}
+.lib-card__blank-plus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--m3-shape-sm);
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 400;
+}
+
 .lib-card__strip {
   grid-column: 1 / -1;
   display: flex;
@@ -1031,15 +1109,25 @@
   flex: 1;
 }
 
-.layerdock__scale {
+/* One marker above the list and one below it. Side by side they only said
+   "this list has two ends"; at the ends they say which end is which. */
+.layerdock__edge {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
   font: var(--m3-label-md);
   font-size: 10px;
   letter-spacing: 0.6px;
   text-transform: uppercase;
   color: var(--md-sys-color-on-surface-variant);
-  opacity: 0.7;
+}
+.layerdock__edge svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+.layerdock__edge--low {
+  color: color-mix(in srgb, var(--md-sys-color-on-surface-variant) 80%, var(--md-sys-color-scrim));
 }
 
 .layerdock__list {
@@ -1050,25 +1138,25 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  /* A tonal rail behind the stack, so the shadows-to-highlights axis reads
-     as an axis rather than as an ordinary list. */
-  background: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--md-sys-color-primary) 12%, transparent),
-    transparent 45%,
-    color-mix(in srgb, var(--md-sys-color-scrim) 14%, transparent)
-  );
+  /* Deliberately flat. The old version washed a light-to-dark gradient behind
+     the rows, which lit the top row from above and made it look embossed and
+     unlike every row under it. The Highlights/Shadows markers carry the axis
+     now, and the rows are just rows. */
   border-radius: var(--m3-shape-md);
-  padding: 4px;
+  padding: 2px 0;
 }
 
 .layer {
   display: flex;
   align-items: center;
   gap: var(--m3-sp-2);
-  padding: 4px 6px;
+  padding: 6px 8px;
   border-radius: var(--m3-shape-md);
   background: var(--md-sys-color-surface-container);
+  border: 1px solid transparent;
+}
+.layer:hover {
+  border-color: var(--md-sys-color-outline-variant);
 }
 .layer.is-off {
   opacity: 0.42;
@@ -1093,7 +1181,15 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
+}
+/* Hex and weight share a line so the slider gets the full row width below
+   them, instead of a stub squeezed between the swatch and the buttons. */
+.layer__line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--m3-sp-2);
 }
 .layer__hex {
   font: var(--m3-label-md);
@@ -1105,33 +1201,57 @@
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--md-sys-color-surface-container-highest);
+  /* A 4px track with a 12px thumb was a hairline to aim at. The track is the
+     hit area on every platform, so it has to be worth hitting. */
+  height: 16px;
+  background: transparent;
   cursor: pointer;
+  margin: 0;
+}
+.layer__width::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--md-sys-color-surface-container-highest);
+}
+.layer__width::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--md-sys-color-surface-container-highest);
 }
 .layer__width::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
+  margin-top: -5px;
   border-radius: 50%;
   background: var(--md-sys-color-primary);
+  border: 2px solid var(--md-sys-color-surface-container);
+  transition: transform var(--m3-dur-short4) var(--m3-spring-default);
 }
 .layer__width::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  border: none;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: var(--md-sys-color-primary);
+  border: 2px solid var(--md-sys-color-surface-container);
+}
+.layer__width:hover::-webkit-slider-thumb,
+.layer__width:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+.layer__width:focus-visible {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 3px;
+  border-radius: var(--m3-shape-sm);
 }
 
 .layer__weight {
   font: var(--m3-label-md);
-  font-size: 10px;
-  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--m3-font-mono);
+  font-size: 11px;
+  color: var(--md-sys-color-primary);
   font-variant-numeric: tabular-nums;
-  min-width: 34px;
-  text-align: right;
+  flex: none;
 }
 
 .layer__ops {
@@ -1176,7 +1296,7 @@
 }
 
 /* The ring is a conic gradient with its centre masked out, which stays
-   crisp at any display scale — a canvas would have to be redrawn per DPR. */
+   crisp at any display scale - a canvas would have to be redrawn per DPR. */
 .picker__ring {
   position: absolute;
   inset: 0;

@@ -87,7 +87,7 @@ export const SEED_PRESETS: Array<{ name: string; seed: string }> = [
 ];
 
 /** Accent source: a fixed preset, or one extracted from the loaded image. */
-export type ThemeSource = "preset" | "dynamic";
+export type ThemeSource = "preset" | "dynamic" | "matugen";
 
 export const DEFAULT_SEED = SEED_PRESETS[0].seed;
 
@@ -97,7 +97,7 @@ export const DEFAULT_SEED = SEED_PRESETS[0].seed;
  * This is the same pipeline the spec uses for dynamic colour: quantise to a
  * small set of representative colours, then score them for suitability as a
  * theme source (Score rejects colours too grey or too close to each other).
- * Pixels are sampled on a stride — a full 16 MP scan costs far more than it
+ * Pixels are sampled on a stride - a full 16 MP scan costs far more than it
  * improves the result, and quantisation is stable under sampling.
  */
 export function seedFromImageData(image: ImageData): string | null {
@@ -118,4 +118,16 @@ export function seedFromImageData(image: ImageData): string | null {
 
   const ranked = Score.score(QuantizerCelebi.quantize(pixels, 96));
   return ranked.length > 0 ? hexFromArgb(ranked[0]) : null;
+}
+
+export function applyMatugenTheme(colors: Record<string, string>, mode: Mode): void {
+  const root = document.documentElement;
+
+  for (const [key, value] of Object.entries(colors)) {
+    const varName = ROLE_KEYS.includes(key as any) ? kebab(key) : key;
+    root.style.setProperty(`--md-sys-color-${varName}`, value);
+  }
+
+  root.style.colorScheme = mode;
+  root.dataset.theme = mode;
 }

@@ -1,0 +1,44 @@
+# Maintainer: Meh <meh@example.com>
+pkgname=dizako-git
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Material 3 Expressive dithering studio"
+arch=('x86_64')
+url="https://code.milfs.party/alex/dizako"
+license=('MIT')
+depends=('webkit2gtk-4.1' 'gtk3' 'cairo' 'pango' 'glib2')
+makedepends=('git' 'npm' 'pnpm' 'rust' 'cargo')
+provides=('dizako')
+conflicts=('dizako')
+source=("git+file://${PWD}#branch=master")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$pkgname" 2>/dev/null || cd dizako
+  git describe --long --tags 2>/dev/null | sed 's/\([^-]*-g\)/r\1/;s/-/./g' || echo 1.0.0
+}
+
+build() {
+  cd "$pkgname" 2>/dev/null || cd dizako
+  pnpm install
+  pnpm tauri build --bundles deb,rpm,appimage
+}
+
+package() {
+  cd "$pkgname" 2>/dev/null || cd dizako
+  # Tauri outputs bundles in src-tauri/target/release/bundle/
+  install -Dm755 "src-tauri/target/release/dizako" "$pkgdir/usr/bin/dizako"
+  install -Dm644 "src-tauri/icons/128x128.png" "$pkgdir/usr/share/pixmaps/dizako.png"
+  
+  # Install desktop file
+  install -dm755 "$pkgdir/usr/share/applications"
+  cat << 'DESKTOP' > "$pkgdir/usr/share/applications/dizako.desktop"
+[Desktop Entry]
+Name=Dizako
+Exec=dizako
+Icon=dizako
+Terminal=false
+Type=Application
+Categories=Graphics;
+DESKTOP
+}

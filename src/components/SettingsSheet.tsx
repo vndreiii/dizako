@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { IconAuto, IconClose, IconDark, IconLight, IconPalette } from "./Icons";
+import { useI18n } from "../i18n";
 import { SEED_PRESETS, type Mode, type ThemeSource } from "../theme/theme";
 
 interface Props {
@@ -29,6 +30,7 @@ export function SettingsSheet({
   hasImage,
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const { t, locale, setLocale } = useI18n();
 
   useEffect(() => {
     if (!open) return;
@@ -88,6 +90,16 @@ export function SettingsSheet({
                   <IconDark />
                 </span>
                 Dark
+              </button>
+              <button
+                className={`m3-segmented__item ${source === "matugen" ? "is-selected" : ""}`}
+                aria-pressed={source === "matugen"}
+                onClick={() => onSource("matugen")}
+              >
+                <span className="m3-segmented__icon">
+                  <IconAuto />
+                </span>
+                Matugen
               </button>
             </div>
           </div>
@@ -150,11 +162,41 @@ export function SettingsSheet({
               />
               <span className="setting__hint">
                 {dynamicSeed
-                  ? `Sourced from your image — ${dynamicSeed.toUpperCase()}`
+                  ? `Sourced from your image - ${dynamicSeed.toUpperCase()}`
                   : "No image loaded yet."}
               </span>
             </div>
           )}
+          
+          <div className="setting">
+            <div className="setting__text">
+              <span className="setting__label">{t("settings.language")}</span>
+              <span className="setting__hint">{t("settings.languageHint")}</span>
+            </div>
+            <div className="m3-segmented" role="group" aria-label="Language">
+              <button
+                className={`m3-segmented__item ${locale === "en" ? "is-selected" : ""}`}
+                aria-pressed={locale === "en"}
+                onClick={() => setLocale("en")}
+              >
+                EN
+              </button>
+              <button
+                className={`m3-segmented__item ${locale === "es" ? "is-selected" : ""}`}
+                aria-pressed={locale === "es"}
+                onClick={() => setLocale("es")}
+              >
+                ES
+              </button>
+              <button
+                className={`m3-segmented__item ${locale === "fr" ? "is-selected" : ""}`}
+                aria-pressed={locale === "fr"}
+                onClick={() => setLocale("fr")}
+              >
+                FR
+              </button>
+            </div>
+          </div>
         </section>
       </div>
     </div>

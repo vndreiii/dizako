@@ -9,7 +9,7 @@ import {
 } from "react";
 
 /* ------------------------------------------------------------------ */
-/* Ripple — the M3 state layer + touch ripple                          */
+/* Ripple - the M3 state layer + touch ripple                          */
 /* ------------------------------------------------------------------ */
 
 interface RippleState {

@@ -8,16 +8,9 @@ interface Props {
   sourceSize: { width: number; height: number } | null;
 }
 
-const TONE_KEYS = [
-  "exposure",
-  "brightness",
-  "contrast",
-  "gamma",
-  "saturation",
-  "hueShift",
-  "temperature",
-  "tint",
-] as const;
+const TONE_KEYS = ["exposure", "brightness", "contrast", "gamma"] as const;
+
+const COLOUR_KEYS = ["saturation", "hueShift", "temperature", "tint"] as const;
 
 const FILTER_KEYS = ["blur", "sharpen", "grayscale", "invert"] as const;
 
@@ -45,6 +38,7 @@ export function AdjustPanel({ settings, patch, sourceSize }: Props) {
           onClick={() =>
             patch({
               ...resetOf(TONE_KEYS),
+              ...resetOf(COLOUR_KEYS),
               ...resetOf(FILTER_KEYS),
               pixelScale: DEFAULT_SETTINGS.pixelScale,
             })
@@ -74,7 +68,7 @@ export function AdjustPanel({ settings, patch, sourceSize }: Props) {
           {scaled && (
             <p className="panel__note">
               Dithering at {scaled.width}×{scaled.height}
-              {settings.pixelScale > 1 && " — coarser dots, stronger retro feel."}
+              {settings.pixelScale > 1 && " - coarser dots, stronger retro feel."}
             </p>
           )}
         </section>
@@ -123,7 +117,12 @@ export function AdjustPanel({ settings, patch, sourceSize }: Props) {
         </section>
 
         <section className="panel__section">
-          <h3 className="panel__section-title">Colour</h3>
+          <div className="panel__section-head">
+            <h3 className="panel__section-title">Colour</h3>
+            <Button variant="text" onClick={() => patch(resetOf(COLOUR_KEYS))}>
+              Reset
+            </Button>
+          </div>
           <Slider
             label="Saturation"
             value={settings.saturation}

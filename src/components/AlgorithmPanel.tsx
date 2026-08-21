@@ -299,7 +299,7 @@ export function AlgorithmPanel({ settings, patch }: Props) {
                 onChange={(v) => patch({ ominoColorCount: v })}
               />
               <p className="panel__note">
-                Stripe width comes from each layer's weight in the Palette tab — widen one and it
+                Stripe width comes from each layer's weight in the Palette tab - widen one and it
                 claims longer runs. Eyedropping a few colours straight out of the image is the
                 classic way to use this.
               </p>

@@ -7,7 +7,7 @@ dist/
 src-tauri/target/
 src-tauri/gen/schemas/
 
-# Qt (legacy/) — the original implementation stays on disk, out of the repo
+# Qt (legacy/) - the original implementation stays on disk, out of the repo
 legacy/
 /build
 *.user

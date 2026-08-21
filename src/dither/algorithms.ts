@@ -44,6 +44,13 @@ interface Palette {
   pull: Float32Array;
   /** Tonal band each layer owns, in 0..1, in `order` sequence. */
   bandEdge: Float32Array;
+  /** Centre of that band, per layer index, in 0..1. */
+  tone: Float32Array;
+  /**
+   * How strongly a layer's place in the stack pulls it toward pixels of the
+   * matching brightness. 0 leaves the matchers as pure nearest-colour lookups.
+   */
+  bias: number;
   /** Layer indices sorted by tonal level. */
   order: Int32Array;
   hex: string[];
@@ -54,7 +61,7 @@ const FALLBACK: PaletteLayer[] = [
   { id: "w", hex: "#ffffff", level: 1, width: 2, enabled: true },
 ];
 
-export function compilePalette(layers: PaletteLayer[], limit = Infinity): Palette {
+export function compilePalette(layers: PaletteLayer[], limit = Infinity, bias = 0): Palette {
   let live = layers.filter((l) => l.enabled);
   if (live.length === 0) live = FALLBACK;
   if (live.length > limit) live = live.slice(0, Math.max(1, Math.floor(limit)));
@@ -70,7 +77,9 @@ export function compilePalette(layers: PaletteLayer[], limit = Infinity): Palett
     width: new Float32Array(n),
     pull: new Float32Array(n),
     bandEdge: new Float32Array(n),
+    tone: new Float32Array(n),
     order: new Int32Array(n),
+    bias,
     hex: live.map((l) => l.hex),
   };
 
@@ -103,8 +112,10 @@ export function compilePalette(layers: PaletteLayer[], limit = Infinity): Palett
   for (let k = 0; k < n; k++) {
     const i = idx[k];
     p.order[k] = i;
+    const lo = acc;
     acc += p.width[i] / total;
     p.bandEdge[k] = acc;
+    p.tone[i] = (lo + acc) / 2;
   }
   p.bandEdge[n - 1] = 1;
   return p;
@@ -114,14 +125,30 @@ export function compilePalette(layers: PaletteLayer[], limit = Infinity): Palett
 /* Matching                                                            */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Penalty for using a layer on a pixel whose brightness sits far from the band
+ * the layer occupies in the stack.
+ *
+ * Without this, nearest-colour matching ignores the stack order entirely: the
+ * same two colours land on the same pixels however they are arranged, and the
+ * reorder arrows appear broken. `scale` puts the penalty in the same units as
+ * whichever distance it is being added to.
+ */
+function tonalPenalty(p: Palette, i: number, yn: number, scale: number): number {
+  const dt = yn - p.tone[i];
+  return p.bias * dt * dt * scale;
+}
+
 function matchRgb(p: Palette, r: number, g: number, b: number): number {
+  const yn = p.bias === 0 ? 0 : luma(r, g, b) / 255;
   let best = 0;
   let bestD = Infinity;
   for (let i = 0; i < p.n; i++) {
     const dr = r - p.r[i];
     const dg = g - p.g[i];
     const db = b - p.b[i];
-    const d = (0.299 * dr * dr + 0.587 * dg * dg + 0.114 * db * db) * p.pull[i];
+    let d = (0.299 * dr * dr + 0.587 * dg * dg + 0.114 * db * db) * p.pull[i];
+    if (p.bias !== 0) d += tonalPenalty(p, i, yn, 65025);
     if (d < bestD) {
       bestD = d;
       best = i;
@@ -135,7 +162,8 @@ function matchLuma(p: Palette, r: number, g: number, b: number): number {
   let best = 0;
   let bestD = Infinity;
   for (let i = 0; i < p.n; i++) {
-    const d = Math.abs(y - p.y[i]) * p.pull[i];
+    let d = Math.abs(y - p.y[i]) * p.pull[i];
+    if (p.bias !== 0) d += tonalPenalty(p, i, y / 255, 255);
     if (d < bestD) {
       bestD = d;
       best = i;
@@ -146,13 +174,15 @@ function matchLuma(p: Palette, r: number, g: number, b: number): number {
 
 function matchOklab(p: Palette, r: number, g: number, b: number): number {
   const [L, A, B] = rgbToOklab(r, g, b);
+  const yn = p.bias === 0 ? 0 : luma(r, g, b) / 255;
   let best = 0;
   let bestD = Infinity;
   for (let i = 0; i < p.n; i++) {
     const dL = L - p.lab[i * 3];
     const dA = A - p.lab[i * 3 + 1];
     const dB = B - p.lab[i * 3 + 2];
-    const d = (dL * dL + dA * dA + dB * dB) * p.pull[i];
+    let d = (dL * dL + dA * dA + dB * dB) * p.pull[i];
+    if (p.bias !== 0) d += tonalPenalty(p, i, yn, 1);
     if (d < bestD) {
       bestD = d;
       best = i;
@@ -530,7 +560,7 @@ function divisorOf(k: Kernel): number {
 /* Random                                                              */
 /* ------------------------------------------------------------------ */
 
-/** Small deterministic PRNG — a fixed seed keeps previews stable per setting. */
+/** Small deterministic PRNG - a fixed seed keeps previews stable per setting. */
 function makeRandom(seed = 0x2545f491) {
   let s = seed >>> 0;
   return () => {
@@ -796,7 +826,7 @@ function riemersmaPass(c: Ctx) {
  * Knuth's dot diffusion.
  *
  * A class matrix assigns every pixel a rank; pixels are then quantised in rank
- * order and each one's error is shared only with neighbours of a higher rank —
+ * order and each one's error is shared only with neighbours of a higher rank -
  * that is, ones not yet decided. The result keeps the ordered structure of a
  * halftone while still carrying tone the way diffusion does.
  */
@@ -920,12 +950,21 @@ function ominoPass(c: Ctx) {
   let asideOut = new Float32Array(steps * 3);
 
   for (let l = 0; l < lines; l++) {
-    // Seed the line from the phase angle. Zero phase means every line starts
-    // clean and the bands run dead straight.
-    const seed = Math.sin(l * phase) * 96;
-    let cr = seed;
-    let cg = seed;
-    let cb = seed;
+    // Each line is offset around the phase wheel, which slides its bands
+    // along the march relative to its neighbours and bends what would
+    // otherwise be dead-straight stripes into waves.
+    //
+    // This has to be a standing bias applied at every step, not just a seed
+    // for the first pixel: the running error is fully replaced each step, so
+    // anything injected only at the start of the line is gone one pixel later
+    // and the control does nothing at all.
+    //
+    // The half-line offset keeps 0° neutral. 180° flips alternating lines
+    // against each other, and 360° puts every line back in step.
+    const bias = phase === 0 ? 0 : Math.sin((l + 0.5) * phase) * 110;
+    let cr = 0;
+    let cg = 0;
+    let cb = 0;
     asideOut.fill(0);
 
     for (let t = 0; t < steps; t++) {
@@ -936,9 +975,9 @@ function ominoPass(c: Ctx) {
       const j = i * 3;
       const aj = t * 3;
 
-      const r = src[j] + cr + asideIn[aj];
-      const g = src[j + 1] + cg + asideIn[aj + 1];
-      const b = src[j + 2] + cb + asideIn[aj + 2];
+      const r = src[j] + cr + asideIn[aj] + bias;
+      const g = src[j + 1] + cg + asideIn[aj + 1] + bias;
+      const b = src[j + 2] + cb + asideIn[aj + 2] + bias;
 
       const idx = matchRgb(p, r, g, b);
       put(c, i, idx);
@@ -974,7 +1013,7 @@ export function dither(image: ImageData, s: Settings): ImageData {
 
   const src = prepare(image, s);
   const limit = s.algorithm === "omino" ? s.ominoColorCount : Infinity;
-  const p = compilePalette(s.layers, limit);
+  const p = compilePalette(s.layers, limit, s.matchMode === "tonal" ? 0 : s.tonalBias);
   const ctx: Ctx = { src, out, alpha, w, h, p, match: matcherFor(s.matchMode), s };
 
   const cell = Math.max(1, s.cellSize);

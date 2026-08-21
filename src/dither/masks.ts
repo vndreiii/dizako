@@ -199,7 +199,7 @@ export function blueNoise(size = 64): Float32Array {
   return m;
 }
 
-/** Interleaved gradient noise — Jorge Jimenez's cheap, very even hash. */
+/** Interleaved gradient noise - Jorge Jimenez's cheap, very even hash. */
 export function ign(x: number, y: number): number {
   return (52.9829189 * ((0.06711056 * x + 0.00583715 * y) % 1)) % 1;
 }

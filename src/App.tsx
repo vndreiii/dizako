@@ -3,7 +3,7 @@ import { AdjustPanel } from "./components/AdjustPanel";
 import { AlgorithmPanel } from "./components/AlgorithmPanel";
 import { PalettePanel } from "./components/PalettePanel";
 import { PreviewCanvas } from "./components/PreviewCanvas";
-import { Button, IconButton, useSnackbar } from "./components/primitives";
+import { Button, useSnackbar } from "./components/primitives";
 import {
   IconDownload,
   IconGrid,
@@ -16,10 +16,13 @@ import {
 import { SettingsSheet } from "./components/SettingsSheet";
 import { WindowControls } from "./components/WindowControls";
 import { useDither } from "./hooks/useDither";
+import { dither } from "./dither/algorithms";
+import type { Rect } from "./dither/region";
 import { savePng } from "./hooks/saveImage";
 import { DEFAULT_SETTINGS, type Settings } from "./dither/types";
 import {
   applyTheme,
+  applyMatugenTheme,
   DEFAULT_SEED,
   seedFromImageData,
   type Mode,
@@ -37,7 +40,7 @@ const TABS: Array<{ id: Tab; label: string; icon: React.ReactNode }> = [
 /**
  * Upper bound on the decoded working image.
  *
- * This is a memory and responsiveness guard, not a canvas limit — WebKit
+ * This is a memory and responsiveness guard, not a canvas limit - WebKit
  * decodes and reads back far larger canvases without complaint. The cost is in
  * the dither pass: error diffusion carries a Float32 error plane of
  * `width * height * 3`, i.e. 12 bytes per pixel on top of the RGBA buffers. A
@@ -48,6 +51,10 @@ const TABS: Array<{ id: Tab; label: string; icon: React.ReactNode }> = [
  */
 const MAX_PIXELS = 16_000_000;
 const MAX_DIMENSION = 8192;
+
+/** A pause this long ends an edit, so a slider drag becomes one undo step. */
+const COALESCE_MS = 450;
+const HISTORY_LIMIT = 80;
 
 function fitWithinLimits(w: number, h: number): number {
   let scale = 1;
@@ -141,9 +148,80 @@ export default function App() {
   // In dynamic mode the accent follows the image; falls back to the chosen
   // preset until one is loaded.
   const activeSeed = themeSource === "dynamic" ? (dynamicSeed ?? seed) : seed;
-  useEffect(() => applyTheme({ seed: activeSeed, mode }), [activeSeed, mode]);
+  useEffect(() => {
+    if (themeSource === "matugen") {
+      Promise.all([
+        import("@tauri-apps/plugin-fs"),
+        import("@tauri-apps/api/path")
+      ]).then(([{ readTextFile }, { BaseDirectory }]) => {
+        readTextFile("colors.json", { baseDir: BaseDirectory.AppConfig })
+          .then((text) => {
+            try {
+              const colors = JSON.parse(text);
+              applyMatugenTheme(colors, mode);
+            } catch (e) {
+              console.error("Invalid matugen colors.json", e);
+              applyTheme({ seed: activeSeed, mode });
+            }
+          })
+          .catch((err) => {
+            console.error("Could not read matugen colors.json", err);
+            applyTheme({ seed: activeSeed, mode });
+          });
+      }).catch((err) => {
+        console.error("Tauri APIs not available", err);
+        applyTheme({ seed: activeSeed, mode });
+      });
+    } else {
+      applyTheme({ seed: activeSeed, mode });
+    }
+  }, [themeSource, activeSeed, mode]);
 
-  const patch = useCallback((p: Partial<Settings>) => setSettings((s) => ({ ...s, ...p })), []);
+  /**
+   * Undo history for the settings object.
+   *
+   * Entries are coalesced by time rather than by key: dragging a slider fires a
+   * patch per pixel of travel, and an undo stack that recorded each one would
+   * take fifty presses to walk back a single gesture. A pause longer than
+   * COALESCE_MS is what marks the end of an edit.
+   */
+  const past = useRef<Settings[]>([]);
+  const future = useRef<Settings[]>([]);
+  const lastPush = useRef(0);
+
+  const patch = useCallback((p: Partial<Settings>) => {
+    setSettings((s) => {
+      const now = Date.now();
+      if (now - lastPush.current > COALESCE_MS) {
+        past.current = [...past.current.slice(-HISTORY_LIMIT), s];
+        future.current = [];
+      }
+      lastPush.current = now;
+      return { ...s, ...p };
+    });
+  }, []);
+
+  const undo = useCallback(() => {
+    setSettings((s) => {
+      const prev = past.current.pop();
+      if (!prev) return s;
+      future.current.push(s);
+      // Force the next patch to open a fresh entry, so an edit made right after
+      // an undo does not overwrite the state we just stepped back to.
+      lastPush.current = 0;
+      return prev;
+    });
+  }, []);
+
+  const redo = useCallback(() => {
+    setSettings((s) => {
+      const next = future.current.pop();
+      if (!next) return s;
+      past.current.push(s);
+      lastPush.current = 0;
+      return next;
+    });
+  }, []);
 
   // The scaled source is what actually feeds the dither pass.
   const source = useMemo(
@@ -151,7 +229,13 @@ export default function App() {
     [native, settings.pixelScale],
   );
 
-  const { image, busy, ms, degraded } = useDither(source, settings);
+  const [viewport, setViewport] = useState<Rect | null>(null);
+  const { coarse, coarseScale, fine, region, busy, refining, ms, degraded } = useDither(
+    source,
+    settings,
+    viewport,
+  );
+  const hasResult = Boolean(coarse);
 
   const load = useCallback(
     async (file: File) => {
@@ -163,7 +247,7 @@ export default function App() {
         setDynamicSeed(seedFromImageData(data));
         if (clampedFrom) {
           snack(
-            `Loaded ${file.name} — reduced from ${clampedFrom.width}×${clampedFrom.height} to ${data.width}×${data.height}`,
+            `Loaded ${file.name} - reduced from ${clampedFrom.width}×${clampedFrom.height} to ${data.width}×${data.height}`,
           );
         } else {
           snack(`Loaded ${file.name} (${data.width}×${data.height})`);
@@ -178,11 +262,14 @@ export default function App() {
   );
 
   const exportPng = useCallback(() => {
-    if (!image) return;
+    if (!source) return;
+    // The preview is allowed to be coarse or cropped to the viewport; an export
+    // never is. This runs its own full-resolution pass over the whole image.
+    const full = dither(source, settings);
     const canvas = document.createElement("canvas");
-    canvas.width = image.width;
-    canvas.height = image.height;
-    canvas.getContext("2d")!.putImageData(image, 0, 0);
+    canvas.width = full.width;
+    canvas.height = full.height;
+    canvas.getContext("2d")!.putImageData(full, 0, 0);
     canvas.toBlob(async (blob) => {
       if (!blob) {
         snack("Export failed", "error");
@@ -196,7 +283,58 @@ export default function App() {
         snack("Could not write the file", "error");
       }
     }, "image/png");
-  }, [image, fileName, settings.algorithm, snack]);
+  }, [source, settings, fileName, snack]);
+
+  /**
+   * App-level keyboard and pointer behaviour.
+   *
+   * Dizako runs in a web view but is not a web page: the browser defaults that
+   * leak through are all wrong here. Ctrl+Z should step the edit history rather
+   * than do nothing, Ctrl+A should not paint the entire chrome in selection
+   * blue, and a right click on the stage should not offer to reload or save an
+   * image that is not a real element.
+   */
+  useEffect(() => {
+    const editable = (t: EventTarget | null) => {
+      const el = t as HTMLElement | null;
+      if (!el || !el.tagName) return false;
+      const tag = el.tagName.toLowerCase();
+      return tag === "input" || tag === "textarea" || el.isContentEditable;
+    };
+
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      const k = e.key.toLowerCase();
+      if (k === "z") {
+        if (editable(e.target)) return;
+        e.preventDefault();
+        if (e.shiftKey) redo();
+        else undo();
+      } else if (k === "y") {
+        if (editable(e.target)) return;
+        e.preventDefault();
+        redo();
+      } else if (k === "a") {
+        // Inside a field, select-all is exactly right; anywhere else it selects
+        // every label in the UI, which is only ever an accident.
+        if (!editable(e.target)) e.preventDefault();
+      }
+    };
+
+    // Kept as one handler so re-enabling a real context menu later is a matter
+    // of routing the event rather than finding where it was suppressed.
+    const onContextMenu = (e: MouseEvent) => {
+      if (editable(e.target)) return;
+      e.preventDefault();
+    };
+
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("contextmenu", onContextMenu);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("contextmenu", onContextMenu);
+    };
+  }, [undo, redo]);
 
   // Global drag & drop.
   useEffect(() => {
@@ -241,13 +379,10 @@ export default function App() {
         </div>
 
         <div className="topbar__actions">
-          <IconButton label="Settings" onClick={() => setSettingsOpen(true)}>
-            <IconSettings />
-          </IconButton>
           <Button variant="outlined" icon={<IconUpload />} onClick={() => inputRef.current?.click()}>
             Open
           </Button>
-          <Button variant="filled" icon={<IconDownload />} disabled={!image} onClick={exportPng}>
+          <Button variant="filled" icon={<IconDownload />} disabled={!hasResult} onClick={exportPng}>
             Export
           </Button>
           <WindowControls />
@@ -267,9 +402,23 @@ export default function App() {
               <span className="rail__label">{t.label}</span>
             </button>
           ))}
+
+          {/* Pinned to the foot of the rail so it shares the tabs' X position -
+              it is app-level, not another view of the image. */}
+          <span className="rail__spacer" />
+          <button
+            className="rail__item rail__item--foot"
+            onClick={() => setSettingsOpen(true)}
+            aria-haspopup="dialog"
+          >
+            <span className="rail__pill">
+              <IconSettings />
+            </span>
+            <span className="rail__label">Settings</span>
+          </button>
         </nav>
 
-        <aside className="sidebar">
+        <aside className={`sidebar ${tab === "palette" ? "sidebar--wide" : ""}`}>
           {tab === "algorithm" && <AlgorithmPanel settings={settings} patch={patch} />}
           {tab === "palette" && (
             <PalettePanel settings={settings} patch={patch} source={source} />
@@ -285,7 +434,18 @@ export default function App() {
 
         <main className="stage">
           {native ? (
-            <PreviewCanvas original={source} result={image} busy={busy} ms={ms} degraded={degraded} />
+            <PreviewCanvas
+              original={source}
+              coarse={coarse}
+              coarseScale={coarseScale}
+              fine={fine}
+              region={region}
+              busy={busy}
+              refining={refining}
+              ms={ms}
+              degraded={degraded}
+              onViewport={setViewport}
+            />
           ) : decoding ? (
             <div className="empty">
               <span className="preview__spinner" aria-hidden="true" />
@@ -299,7 +459,7 @@ export default function App() {
               </div>
               <h2 className="empty__title">Drop an image to begin</h2>
               <p className="empty__body">
-                PNG, JPEG, WebP, GIF or AVIF. Everything is processed locally — nothing leaves your
+                PNG, JPEG, WebP, GIF or AVIF. Everything is processed locally - nothing leaves your
                 machine.
               </p>
               <Button variant="filled" icon={<IconUpload />} onClick={() => inputRef.current?.click()}>

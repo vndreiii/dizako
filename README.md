@@ -7,7 +7,7 @@
 **A dithering studio.** 29 algorithms, 130 palettes, and a tonal layer stack that
 lets you decide which colour lands in the shadows and which lands in the highlights.
 
-Built with Tauri, React and Material 3 Expressive. Everything runs locally —
+Built with Tauri, React and Material 3 Expressive. Everything runs locally -
 no uploads, no network calls, no telemetry.
 
 </div>
@@ -38,14 +38,14 @@ Twenty-nine, grouped by family.
 | **Threshold** | Hard threshold, Random threshold |
 | **Experimental** | Riemersma (Hilbert curve), Dot diffusion (Knuth), Tone-adaptive diffusion, Omino-like |
 
-Each one exposes only the parameters that actually apply to it — diffusion
+Each one exposes only the parameters that actually apply to it - diffusion
 strength, serpentine scanning, kernel jitter and error clamping for the
 diffusion family; matrix size, cell size, screen angle and noise scale for the
 ordered family; queue length and decay for Riemersma; and so on.
 
 Notes on the less common ones:
 
-- **Blue noise** uses a void-and-cluster mask generated at startup and cached —
+- **Blue noise** uses a void-and-cluster mask generated at startup and cached -
   grain with no visible structure at any scale.
 - **Riemersma** diffuses along a Hilbert curve with a short decaying error
   queue, so it has none of the diagonal worming that row-wise diffusion gets.
@@ -60,7 +60,7 @@ Notes on the less common ones:
 An error diffusion applied for the worse.
 
 Instead of spreading error over a two-dimensional kernel, it marches in a single
-direction — up, down, left or right — carrying one running error forward along
+direction - up, down, left or right - carrying one running error forward along
 the line and shedding a share of it sideways into the next one. Nothing about
 that is balanced, and that is the point: the error never settles, so it piles up
 into long marching bands.
@@ -76,7 +76,7 @@ Fully controllable:
 | **Initial phase** | Angle offsetting each line's starting error, bending straight bands into waves. |
 | **Colour count** | How many layers of the stack the march is allowed to use. |
 
-Stripe width comes from each layer's **weight** in the Palette tab — a wide
+Stripe width comes from each layer's **weight** in the Palette tab - a wide
 layer wins more pixels and holds them for longer runs, which is where the fat
 stripes come from. Eyedropping a handful of colours straight out of the source
 image is the classic way to use it.
@@ -92,7 +92,7 @@ Palette tab so it stays in reach while you scroll the library above it.
 Each layer carries:
 
 - a **colour**, editable in the built-in picker;
-- a **tonal position**, set by where it sits in the stack — top is highlights,
+- a **tonal position**, set by where it sits in the stack - top is highlights,
   bottom is shadows. Move a layer up and it starts colouring brighter parts of
   the image;
 - a **weight**, which sizes the tonal band it owns (and doubles as stripe width
@@ -114,7 +114,7 @@ Four matching modes decide how a pixel finds its layer:
 ### Colour picker
 
 A hue ring with a saturation/value square inside it, live harmony markers on the
-rim, and nine Adobe-style colour rules — analogous, monochromatic, triad,
+rim, and nine Adobe-style colour rules - analogous, monochromatic, triad,
 complementary, split, double split, square, compound and shades. HEX, RGB and
 HSB inputs all stay in sync, and the eyedropper samples straight from the loaded
 image. The five-swatch harmony set can be dropped into the layer stack in one
@@ -128,10 +128,10 @@ Print & Riso, Neon & Synth, Pastel, Nature, Earth & Clay, Metals and Web Safe.
 
 ### Image controls
 
-- **Resolution** — pixel scale from 1:1 down to ⅛ for coarser, chunkier dots.
-- **Tone** — exposure, brightness, contrast, gamma.
-- **Colour** — saturation, hue shift, temperature, tint.
-- **Filters** — gaussian blur, unsharp mask, grayscale, invert.
+- **Resolution** - pixel scale from 1:1 down to ⅛ for coarser, chunkier dots.
+- **Tone** - exposure, brightness, contrast, gamma.
+- **Colour** - saturation, hue shift, temperature, tint.
+- **Filters** - gaussian blur, unsharp mask, grayscale, invert.
 
 Everything is applied *before* the dither runs, so pushing contrast genuinely
 changes which colours the algorithm has to reach for.
@@ -140,7 +140,7 @@ changes which colours the algorithm has to reach for.
 
 Material 3 Expressive throughout, with a dynamic colour mode that extracts the
 accent from whatever image you have loaded (via `material-color-utilities`
-quantisation and scoring). Light and dark, and a custom title bar — no GTK
+quantisation and scoring). Light and dark, and a custom title bar - no GTK
 decorations.
 
 ---
@@ -171,7 +171,7 @@ pnpm build                # type-check and bundle into dist/
 src/
   dither/
     types.ts        Settings, layers, algorithm metadata
-    algorithms.ts   The engine — every pass lives here
+    algorithms.ts   The engine - every pass lives here
     masks.ts        Ordered-dither threshold masks (Bayer, blue noise, screens)
     color.ts        Colour space conversions shared by engine and picker
     palettes.ts     The preset library
@@ -187,7 +187,7 @@ legacy/             The original Qt/QML implementation (not tracked)
 The dither pass runs in a web worker with the pixel buffer transferred rather
 than copied. Requests coalesce: while one run is in flight the latest settings
 replace any queued run, so dragging a slider never builds a backlog. If the
-worker cannot be constructed — which happens under some WebKitGTK builds — the
+worker cannot be constructed - which happens under some WebKitGTK builds - the
 hook detects it and falls back to the main thread rather than leaving the
 preview blank.
 
@@ -201,3 +201,16 @@ silently fails to paint.
 ## Licence
 
 MIT.
+
+### Matugen Theming
+
+You can drive Dizako's UI colours using [Matugen](https://github.com/InioX/matugen).
+
+1. Copy the `matugen-template.json` from the repository root to your matugen templates directory.
+2. Configure Matugen to output to `~/.config/dizako/colors.json`:
+   ```toml
+   [templates.dizako]
+   input_path = "~/.config/matugen/templates/matugen-template.json"
+   output_path = "~/.config/dizako/colors.json"
+   ```
+3. Run Matugen, then select **Matugen** under Settings > Accent in Dizako.

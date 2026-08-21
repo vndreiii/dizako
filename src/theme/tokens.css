@@ -1,5 +1,5 @@
 /* ==================================================================
-   Material 3 Expressive — token layer
+   Material 3 Expressive - token layer
    Colour roles are injected at runtime by theme.ts (dynamic colour from
    a seed), so this file defines only the *structural* tokens: shape,
    motion, typography, elevation, state layers and spacing.
@@ -17,7 +17,7 @@
   --m3-shape-full: 999px;
 
   /* ---- Motion: M3 Expressive spatial springs ----
-     Expressive motion overshoots slightly instead of easing flat — that
+     Expressive motion overshoots slightly instead of easing flat - that
      tiny bounce is what separates it from baseline M3. */
   --m3-ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --m3-ease-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);

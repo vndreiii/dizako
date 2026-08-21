@@ -7,15 +7,19 @@ import {
   type PaletteLayer,
   type Settings,
 } from "../dither/types";
+import { hsvToRgb, rgbToHex } from "../dither/color";
 import { ColorPicker } from "./ColorPicker";
-import { IconButton, Segmented } from "./primitives";
+import { IconButton, Segmented, Slider } from "./primitives";
 import {
   IconAdd,
   IconArrowDown,
   IconArrowUp,
+  IconCasino,
   IconDelete,
   IconHidden,
-  IconShuffle,
+  IconHighlights,
+  IconShadows,
+  IconSwapVert,
   IconVisible,
 } from "./Icons";
 
@@ -37,13 +41,35 @@ const MATCH_MODES: Array<{ value: MatchMode; label: string }> = [
  * Re-spaces tonal levels across the stack.
  *
  * Layers are stored shadows-first. After any reorder the levels are spread
- * evenly again so position in the list *is* the tonal band the layer owns —
+ * evenly again so position in the list *is* the tonal band the layer owns -
  * which is what makes dragging a colour upward actually move it into the
  * highlights.
  */
 function respread(layers: PaletteLayer[]): PaletteLayer[] {
   const n = layers.length;
   return layers.map((l, i) => ({ ...l, level: n <= 1 ? 0.5 : i / (n - 1) }));
+}
+
+/**
+ * Fresh colours for the existing stack.
+ *
+ * Not uniform noise: the hues stay inside one wandering range and the value
+ * climbs with the layer's position, so the result is a usable ramp from shadows
+ * to highlights rather than a bag of unrelated colours that dithers to mud.
+ */
+function randomStack(n: number): string[] {
+  const base = Math.random() * 360;
+  const spread = 30 + Math.random() * 140;
+  const sat = 0.25 + Math.random() * 0.6;
+  return Array.from({ length: n }, (_, i) => {
+    const t = n <= 1 ? 0.5 : i / (n - 1);
+    const h = (base + spread * (t - 0.5) + 360) % 360;
+    const v = 0.08 + t * 0.88;
+    // Saturation eases off at both ends so the darkest and lightest steps read
+    // as shadow and highlight instead of two more saturated hues.
+    const s = sat * (1 - Math.abs(t - 0.5) * 1.2);
+    return rgbToHex(hsvToRgb(h, Math.max(0, s), v));
+  });
 }
 
 export function PalettePanel({ settings, patch, source }: Props) {
@@ -95,11 +121,54 @@ export function PalettePanel({ settings, patch, source }: Props) {
           />
           <p className="panel__note">
             {settings.matchMode === "rgb" && "Nearest colour by weighted RGB distance."}
-            {settings.matchMode === "luma" && "Matches on brightness alone — colour is ignored."}
+            {settings.matchMode === "luma" && "Matches on brightness alone - colour is ignored."}
             {settings.matchMode === "oklab" && "Perceptual distance. Best for photographic palettes."}
             {settings.matchMode === "tonal" &&
               "Each layer owns a slice of the tonal range, sized by its weight. Position in the stack decides everything."}
           </p>
+          {settings.matchMode !== "tonal" && (
+            <>
+              <Slider
+                label="Stack influence"
+                value={Math.round(settings.tonalBias * 100)}
+                min={0}
+                max={100}
+                display={
+                  settings.tonalBias === 0
+                    ? "off - nearest colour"
+                    : `${Math.round(settings.tonalBias * 100)}%`
+                }
+                onChange={(v) => patch({ tonalBias: v / 100 })}
+              />
+              <p className="panel__note">
+                How much a layer&apos;s place in the stack outweighs plain nearest-colour matching.
+                At zero the arrangement is decorative - the same two colours land on the same pixels
+                however you stack them. Turn it up and a colour parked at the bottom actually claims
+                the shadows.
+              </p>
+            </>
+          )}
+        </section>
+
+        <section className="panel__section">
+          <h3 className="panel__section-title">Your own</h3>
+          <div className="lib-grid">
+            <button
+              className="lib-card__blank"
+              onClick={() => {
+                // Start from a clean two-colour stack rather than whatever was
+                // loaded, so "make your own" is not "edit the last preset".
+                patch({ layers: layersFromColors(["#000000", "#FFFFFF"]) });
+                setEditing("new");
+              }}
+              title="Start a palette from scratch"
+            >
+              <span className="lib-card__blank-plus" aria-hidden="true">
+                +
+              </span>
+              <span className="lib-card__name">Make your own</span>
+            </button>
+          </div>
         </section>
 
         {PALETTE_GROUPS.map((group) => (
@@ -143,19 +212,33 @@ export function PalettePanel({ settings, patch, source }: Props) {
           <span className="layerdock__count">{layers.length}</span>
           <span className="layerdock__spacer" />
           <IconButton
-            label="Reverse the stack"
+            label="Flip the stack - shadows become highlights"
             onClick={() => setLayers([...layers].reverse())}
           >
-            <IconShuffle />
+            <IconSwapVert />
+          </IconButton>
+          <IconButton
+            label="Randomise the stack colours"
+            onClick={() => {
+              // One draw for the whole stack - calling it per layer would pick a
+              // new base hue each time and hand back an incoherent set.
+              const hexes = randomStack(layers.length);
+              patch({ layers: layers.map((l, i) => ({ ...l, hex: hexes[i] })) });
+            }}
+          >
+            <IconCasino />
           </IconButton>
           <IconButton label="Add a colour" onClick={() => setEditing("new")}>
             <IconAdd />
           </IconButton>
         </div>
 
-        <div className="layerdock__scale" aria-hidden="true">
+        {/* Top of the list is the highlight end, bottom is the shadow end. The
+            markers sit at those ends rather than side by side, so which way the
+            arrows move a layer needs no explaining. */}
+        <div className="layerdock__edge">
+          <IconHighlights />
           <span>Highlights</span>
-          <span>Shadows</span>
         </div>
 
         <ul className="layerdock__list">
@@ -168,7 +251,10 @@ export function PalettePanel({ settings, patch, source }: Props) {
                 title={`Edit ${l.hex}`}
               />
               <div className="layer__body">
-                <span className="layer__hex">{l.hex.toUpperCase()}</span>
+                <div className="layer__line">
+                  <span className="layer__hex">{l.hex.toUpperCase()}</span>
+                  <span className="layer__weight">{l.width.toFixed(2)}×</span>
+                </div>
                 <input
                   className="layer__width"
                   type="range"
@@ -180,7 +266,6 @@ export function PalettePanel({ settings, patch, source }: Props) {
                   onChange={(e) => update(l.id, { width: Number(e.target.value) })}
                 />
               </div>
-              <span className="layer__weight">{l.width.toFixed(2)}×</span>
               <div className="layer__ops">
                 <IconButton
                   label="Move toward highlights"
@@ -213,6 +298,11 @@ export function PalettePanel({ settings, patch, source }: Props) {
             </li>
           ))}
         </ul>
+
+        <div className="layerdock__edge layerdock__edge--low">
+          <IconShadows />
+          <span>Shadows</span>
+        </div>
       </div>
 
       <ColorPicker

@@ -10,6 +10,11 @@
     "dialog:default",
     "fs:default",
     "fs:allow-write-file",
+    "fs:allow-appconfig-read",
+    {
+      "identifier": "fs:allow-read-file",
+      "allow": [{ "path": "$APPCONFIG/colors.json" }]
+    },
     "core:window:allow-minimize",
     "core:window:allow-toggle-maximize",
     "core:window:allow-close",
