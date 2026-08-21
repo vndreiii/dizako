@@ -20,17 +20,15 @@ pkgver() {
 
 build() {
   cd "$pkgname" 2>/dev/null || cd dizako
-  pnpm install
-  pnpm tauri build --bundles deb,rpm,appimage
+  pnpm install --ignore-scripts
+  pnpm run tauri build --bundles deb,rpm,appimage
 }
 
 package() {
   cd "$pkgname" 2>/dev/null || cd dizako
-  # Tauri outputs bundles in src-tauri/target/release/bundle/
   install -Dm755 "src-tauri/target/release/dizako" "$pkgdir/usr/bin/dizako"
   install -Dm644 "src-tauri/icons/128x128.png" "$pkgdir/usr/share/pixmaps/dizako.png"
   
-  # Install desktop file
   install -dm755 "$pkgdir/usr/share/applications"
   cat << 'DESKTOP' > "$pkgdir/usr/share/applications/dizako.desktop"
 [Desktop Entry]
