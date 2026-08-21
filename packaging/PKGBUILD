@@ -21,7 +21,7 @@ pkgver() {
 build() {
   cd "$pkgname" 2>/dev/null || cd dizako
   pnpm install --ignore-scripts
-  pnpm run tauri build --bundles deb,rpm,appimage
+  pnpm run tauri build --bundles deb,rpm
 }
 
 package() {
