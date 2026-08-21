@@ -122,7 +122,7 @@ export function PalettePanel({ settings, patch, source }: Props) {
           <p className="panel__note">
             {settings.matchMode === "rgb" && "Nearest colour by weighted RGB distance."}
             {settings.matchMode === "luma" && "Matches on brightness alone - colour is ignored."}
-            {settings.matchMode === "oklab" && "{t("palette.matchingHint")}"}
+            {settings.matchMode === "oklab" && t("palette.matchingHint")}
             {settings.matchMode === "tonal" &&
               "Each layer owns a slice of the tonal range, sized by its weight. Position in the stack decides everything."}
           </p>
