@@ -99,7 +99,7 @@ export function SettingsSheet({
                 <span className="m3-segmented__icon">
                   <IconAuto />
                 </span>
-                Matugen
+                {t("settings.matugen") || "Matugen"}
               </button>
             </div>
           </div>

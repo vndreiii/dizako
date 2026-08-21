@@ -76,7 +76,7 @@ export function PalettePanel({ settings, patch, source }: Props) {
   const layers = settings.layers;
   const [editing, setEditing] = useState<string | "new" | null>(null);
 
-  // The dock lists highlights at the top, matching how a tone curve reads.
+  // {t("palette.layersHint")}
   const display = useMemo(() => [...layers].reverse(), [layers]);
 
   const setLayers = (next: PaletteLayer[]) => patch({ layers: respread(next) });
@@ -112,7 +112,7 @@ export function PalettePanel({ settings, patch, source }: Props) {
 
       <div className="panel__scroll">
         <section className="panel__section">
-          <h3 className="panel__section-title">Matching</h3>
+          <h3 className="panel__section-title">{t("palette.matching")}</h3>
           <Segmented
             ariaLabel="Colour matching mode"
             value={settings.matchMode}
@@ -122,7 +122,7 @@ export function PalettePanel({ settings, patch, source }: Props) {
           <p className="panel__note">
             {settings.matchMode === "rgb" && "Nearest colour by weighted RGB distance."}
             {settings.matchMode === "luma" && "Matches on brightness alone - colour is ignored."}
-            {settings.matchMode === "oklab" && "Perceptual distance. Best for photographic palettes."}
+            {settings.matchMode === "oklab" && "{t("palette.matchingHint")}"}
             {settings.matchMode === "tonal" &&
               "Each layer owns a slice of the tonal range, sized by its weight. Position in the stack decides everything."}
           </p>
@@ -151,7 +151,7 @@ export function PalettePanel({ settings, patch, source }: Props) {
         </section>
 
         <section className="panel__section">
-          <h3 className="panel__section-title">Your own</h3>
+          <h3 className="panel__section-title">{t("palette.yourOwn")}</h3>
           <div className="lib-grid">
             <button
               className="lib-card__blank"
@@ -208,7 +208,7 @@ export function PalettePanel({ settings, patch, source }: Props) {
       {/* Pinned: the stack stays reachable no matter how far the library scrolls. */}
       <div className="layerdock">
         <div className="layerdock__head">
-          <h3 className="layerdock__title">Layers</h3>
+          <h3 className="layerdock__title">{t("palette.layers")}</h3>
           <span className="layerdock__count">{layers.length}</span>
           <span className="layerdock__spacer" />
           <IconButton
@@ -238,7 +238,7 @@ export function PalettePanel({ settings, patch, source }: Props) {
             arrows move a layer needs no explaining. */}
         <div className="layerdock__edge">
           <IconHighlights />
-          <span>Highlights</span>
+          <span>{t("palette.highlights")}</span>
         </div>
 
         <ul className="layerdock__list">
@@ -301,7 +301,7 @@ export function PalettePanel({ settings, patch, source }: Props) {
 
         <div className="layerdock__edge layerdock__edge--low">
           <IconShadows />
-          <span>Shadows</span>
+          <span>{t("palette.shadows")}</span>
         </div>
       </div>
 

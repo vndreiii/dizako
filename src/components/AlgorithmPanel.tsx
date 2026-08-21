@@ -74,7 +74,7 @@ export function AlgorithmPanel({ settings, patch }: Props) {
     <div className="panel">
       <header className="panel__header">
         <h2 className="panel__title">Algorithm</h2>
-        <p className="panel__subtitle">{ALGORITHMS.length} to choose from</p>
+        <p className="panel__subtitle">{ALGORITHMS.length} {t("algorithm.available")}</p>
       </header>
 
       <div className="panel__scroll">
