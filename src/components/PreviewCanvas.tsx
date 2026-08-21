@@ -21,6 +21,8 @@ interface Props {
   degraded?: boolean;
   /** Which rung rendered the current frame ("worker", "main", …). */
   backendLabel?: string;
+  /** No engine could be initialised anywhere; the preview cannot render. */
+  error?: string | null;
   /** Reports the visible part of the image, in source pixels. */
   onViewport?: (r: Rect | null) => void;
 }
@@ -76,6 +78,7 @@ export function PreviewCanvas({
   ms,
   degraded = false,
   backendLabel = "worker",
+  error = null,
   onViewport,
 }: Props) {
   const { t } = useI18n();
@@ -344,6 +347,12 @@ export function PreviewCanvas({
         onDragStart={(e) => e.preventDefault()}
       >
         <canvas ref={viewRef} className="preview__view" draggable={false} />
+
+        {!coarse && error && (
+          <div className="preview__loading" role="alert">
+            <span>Preview unavailable: {error}</span>
+          </div>
+        )}
 
         {firstPass && (
           <div className="preview__loading" role="status" aria-live="polite">

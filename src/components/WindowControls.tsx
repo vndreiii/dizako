@@ -10,6 +10,7 @@ export function WindowControls() {
   const [maximized, setMaximized] = useState(false);
   const underTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
+
   useEffect(() => {
     if (!underTauri) return;
     const w = getCurrentWindow();

@@ -203,3 +203,25 @@ commit ae911de plus a follow-up commit.
   maximise toggle (§1.6), locale chunk lazy-loading (§1.4) remain open.
 - Rust/Tauri-command IO boundary (decode fallback codecs + JPEG/WebP export
   encode, §11.5 hybrid) scheduled as fast-follow.
+
+## 2026-08-22 (later) — Stage C: TS engine deleted from runtime
+
+### What was done
+- Moved the TypeScript engine to `legacy/dither/` as a self-contained frozen
+  copy (algorithms/color/masks/sharedmath/tables/types); removed
+  `src/dither/algorithms.ts` and `src/dither/masks.ts`.
+- Worker renders only through the wasm engine and posts an explicit error
+  response if it is unavailable; main-thread fallback uses initSync; ladder is
+  now worker-wasm → worker-js(no-op) → main-wasm, with a visible error state
+  when no engine can initialise at all.
+- Golden harness repointed at the frozen legacy engine; both harnesses
+  (legacy TS + shipped wasm binary) still assert all 732 goldens byte-exact.
+- Main JS bundle shrank ~35 KB gzip-neutral (427 → 392 KB raw) now that the
+  interpreter engine is gone.
+- Extras: double-click on the topbar drag region toggles maximise (§1.6);
+  README documents what legacy/ contains.
+
+### Open items / next steps
+- M6 measured tuning (COARSE_PIXELS/watchdog retune), flatpak exercise,
+  AUR PKGBUILD test against new makedeps, Rust IO-boundary commands
+  (decode fallback codecs, JPEG/WebP export).

@@ -1,19 +1,22 @@
 /**
  * Golden-image parity harness.
  *
- * Runs the TS engine over the declarative sweep and compares SHA-256 hashes
- * of every output RGBA buffer against a committed manifest.
+ * Runs the FROZEN TS engine (legacy/dither — deleted from the runtime in
+ * Stage C) over the declarative sweep and compares SHA-256 hashes of every
+ * output RGBA buffer against a committed manifest. Together with
+ * wasm-parity.test.ts this pins both historical and shipped engines to the
+ * same bytes; a change that flips one golden byte fails CI.
  *
  * - `GOLDEN_CAPTURE=1` (re)generates `testdata/golden/ts.json` instead of
- *   asserting. This is the M0 step and, later, the reviewed golden
- *   regeneration checkpoint of WASM_PLAN §4.5.
- * - Default mode asserts byte equality; any drift in either engine fails.
+ *   asserting — only meaningful when the reference engine itself is being
+ *   deliberately changed, which should never happen now it is frozen.
+ * - Default mode asserts byte equality.
  */
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { dither } from "../src/dither/algorithms";
+import { dither } from "../legacy/dither/algorithms";
 import { DEFAULT_SETTINGS, type Settings } from "../src/dither/types";
 
 const ROOT = join(__dirname, "..");

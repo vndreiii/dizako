@@ -1,6 +1,4 @@
-import { dither } from "./algorithms";
 import { loadWasmEngine, type WasmBackend } from "./engine";
-import { cropImage } from "./region";
 import type { Rect } from "./region";
 import type { Settings } from "./types";
 
@@ -16,10 +14,10 @@ import type { Settings } from "./types";
  * thread never calls `putImageData` again; hosts without OffscreenCanvas fall
  * back to a transferred RGBA buffer handled by the legacy path in the hook.
  *
- * The backend ladder starts here: if the wasm module instantiates, renders go
- * through the Rust engine; otherwise this worker reports `js` and runs the TS
- * engine. Either way the pixels are identical — parity is enforced by the
- * golden sweep in CI.
+ * The TS engine has been deleted from the runtime (Stage C): the Rust/wasm
+ * engine is the single visual truth. If the module fails to instantiate this
+ * worker reports an error response and the hook demotes; the frozen TS copy
+ * under legacy/ exists only as the parity reference.
  */
 export interface SourceInit {
   type: "setSource";
@@ -56,6 +54,13 @@ export interface ReadyResponse {
   type: "ready";
   /** Which engine actually rendered: wasm or js. */
   backend: "wasm" | "js";
+}
+
+/** Raised when no engine could be initialised on this rung at all. */
+export interface ErrorResponse {
+  type: "error";
+  id?: number;
+  message: string;
 }
 
 export interface ResultResponse {
@@ -97,7 +102,8 @@ export type WorkerResponse =
   | ResultResponse
   | ProgressResponse
   | ExportedResponse
-  | ExportPixelsResponse;
+  | ExportPixelsResponse
+  | ErrorResponse;
 
 let source: ImageData | null = null;
 let coarse: ImageData | null = null;
@@ -124,25 +130,15 @@ async function handleRender(req: RenderRequest) {
   const dims = dimsFor(req.stage, req.region);
   if (!dims) return;
 
-  let out: ImageData | null = null;
-  if (wasm) {
-    // The Rust engine owns its own copies of the planes (shipped once per
-    // change below) and crops regions internally.
-    const len = wasm.engine.render(req.stage, req.region, req.settings);
-    const bytes = wasm.view(len);
-    out = new ImageData(new Uint8ClampedArray(bytes), dims.w, dims.h);
-  } else {
-    let input: ImageData | null;
-    if (req.stage === "coarse") {
-      input = coarse ?? source;
-    } else if (req.region) {
-      input = source ? cropImage(source, req.region) : null;
-    } else {
-      input = source;
-    }
-    if (!input) return;
-    out = dither(input, req.settings);
+  // The Rust engine owns copies of the planes (shipped once per change
+  // below) and crops regions internally. There is no other engine.
+  if (!wasm) {
+    post({ type: "error", id: req.id, message: "wasm engine unavailable in worker" });
+    return;
   }
+  const len = wasm.engine.render(req.stage, req.region, req.settings);
+  const bytes = wasm.view(len);
+  const out = new ImageData(new Uint8ClampedArray(bytes), dims.w, dims.h);
 
   const payload = await makePayload(out);
   post({ type: "result", id: req.id, stage: req.stage, ms: performance.now() - t0, ...payload });
@@ -152,14 +148,13 @@ async function handleExport(req: ExportRequest) {
   if (!source) return;
   const t0 = performance.now();
   post({ type: "progress", id: req.id, phase: "render" });
-  let out: ImageData;
-  if (wasm) {
-    const len = wasm.engine.render("fine", null, req.settings);
-    const bytes = wasm.view(len);
-    out = new ImageData(new Uint8ClampedArray(bytes), source.width, source.height);
-  } else {
-    out = dither(source, req.settings);
+  if (!wasm) {
+    post({ type: "error", id: req.id, message: "wasm engine unavailable in worker" });
+    return;
   }
+  const len = wasm.engine.render("fine", null, req.settings);
+  const bytes = wasm.view(len);
+  const out = new ImageData(new Uint8ClampedArray(bytes), source.width, source.height);
 
   post({ type: "progress", id: req.id, phase: "encode" });
   if (typeof OffscreenCanvas !== "undefined") {

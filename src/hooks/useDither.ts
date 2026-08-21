@@ -3,7 +3,6 @@ import type {
   WorkerRequest,
   WorkerResponse,
 } from "../dither/worker";
-import { dither } from "../dither/algorithms";
 import { loadWasmEngine } from "../dither/engine";
 import { cropImage, regionFor, sameRect, type Rect } from "../dither/region";
 import type { Settings } from "../dither/types";
@@ -31,6 +30,8 @@ export interface DitherResult {
   backendLabel: string;
   /** True while a full-resolution export job is in flight. */
   exporting: boolean;
+  /** No engine could be initialised anywhere — the preview cannot render. */
+  error: string | null;
 }
 
 export interface ExportHandle {
@@ -163,6 +164,7 @@ export function useDither(
   const [degraded, setDegraded] = useState(false);
   const [backendLabel, setBackendLabel] = useState("worker");
   const [exporting, setExporting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const dispatchRef = useRef<(job: Job) => void>(() => {});
   // The latest-ref pattern: callbacks below must read current props without
@@ -328,15 +330,14 @@ export function useDither(
     }, 0);
   }
 
-  /** Main-thread render, preferring the wasm engine when it initialised.
+  /** Main-thread render via initSync — the last rung under the worker.
    *  `inflight.input` is already the exact plane (cropped if needed), so the
    *  stateless fallback uploads it whole and renders without a region. */
   async function renderMainAsync(inflight: InFlight) {
     const t0 = performance.now();
-    let out: ImageData | null = null;
     try {
       const w = await loadWasmEngine();
-      if (!w) throw new Error("no wasm");
+      if (!w) throw new Error("wasm unavailable on main thread");
       const img = inflight.input;
       w.engine.set_source(
         new Uint8ClampedArray(img.data),
@@ -345,14 +346,21 @@ export function useDither(
       );
       const len = w.engine.render(inflight.job.stage, null, inflight.job.settings);
       const bytes = w.view(len);
-      out = new ImageData(new Uint8ClampedArray(bytes), img.width, img.height);
-      setBackendLabel("main · wasm");
-    } catch {
-      out = dither(inflight.input, inflight.job.settings);
-      setBackendLabel("main · js");
+      const out = new ImageData(new Uint8ClampedArray(bytes), img.width, img.height);
+      if (inflightRef.current?.job.id !== inflight.job.id) return;
+      setError(null);
+      settle(inflight.job, out, performance.now() - t0);
+      return;
+    } catch (err) {
+      // No engine anywhere. Surface it; there is no third engine to fall
+      // back to by design (one visual truth).
+      console.error("[dizako] no dither engine could be initialised:", err);
+      inflightRef.current = null;
+      clearWatchdog();
+      setBusy(false);
+      setRefining(false);
+      setError(String((err as Error)?.message ?? err));
     }
-    if (inflightRef.current?.job.id !== inflight.job.id) return;
-    settle(inflight.job, out!, performance.now() - t0);
   }
 
   function demote(reason: string) {
@@ -403,6 +411,12 @@ export function useDither(
         readyRef.current = true;
         window.clearTimeout(initTimer);
         setBackendLabel(`worker · ${msg.backend}`);
+        return;
+      }
+      if (msg.type === "error") {
+        window.clearTimeout(initTimer);
+        // The worker has no engine at all; demote to the main-thread rung.
+        demote(msg.message || "no engine in worker");
         return;
       }
       if (msg.type === "result") {
@@ -545,19 +559,25 @@ export function useDither(
           finishExport(id, "cancelled");
           return;
         }
-        window.setTimeout(() => {
+        window.setTimeout(async () => {
           if (!activeExport.current || activeExport.current.id !== id) return;
           try {
-            const out = dither(src, cfg);
+            const w = await loadWasmEngine();
+            if (!w) throw new Error("wasm unavailable on main thread");
+            w.engine.set_source(new Uint8ClampedArray(src.data), src.width, src.height);
+            const len = w.engine.render("fine", null, cfg);
+            const bytes = w.view(len);
+            const outImg = new ImageData(new Uint8ClampedArray(bytes), src.width, src.height);
             const canvas = document.createElement("canvas");
-            canvas.width = out.width;
-            canvas.height = out.height;
-            canvas.getContext("2d")!.putImageData(out, 0, 0);
+            canvas.width = outImg.width;
+            canvas.height = outImg.height;
+            canvas.getContext("2d")!.putImageData(outImg, 0, 0);
             canvas.toBlob((blob) => {
               if (!blob) finishExport(id, "cancelled");
               else finishExport(id, { blob });
             }, "image/png");
-          } catch {
+          } catch (err) {
+            console.error("[dizako] export failed:", err);
             finishExport(id, "cancelled");
           }
         }, 0);
@@ -612,6 +632,7 @@ export function useDither(
     degraded,
     backendLabel,
     exporting,
+    error,
     requestExport,
   };
 }

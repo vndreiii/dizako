@@ -244,6 +244,7 @@ export default function App() {
     degraded,
     backendLabel,
     exporting,
+    error,
     requestExport,
   } = useDither(source, settings, viewport);
   const hasResult = Boolean(coarse);
@@ -360,6 +361,15 @@ export default function App() {
     };
   }, [undo, redo]);
 
+  // Custom chrome owns the titlebar (decorations: false), so the system
+  // double-click-to-maximise gesture has to be re-created on the drag region.
+  const onTopbarDoubleClick = useCallback(() => {
+    if (!("__TAURI_INTERNALS__" in window)) return;
+    void import("@tauri-apps/api/window").then(({ getCurrentWindow }) =>
+      getCurrentWindow().toggleMaximize(),
+    );
+  }, []);
+
   // Global drag & drop.
   useEffect(() => {
     // Only a drag carrying files is an import; dragging the preview around
@@ -393,7 +403,7 @@ export default function App() {
 
   return (
     <div className={`app ${dragOver ? "is-dragging" : ""}`}>
-      <header className="topbar" data-tauri-drag-region>
+      <header className="topbar" data-tauri-drag-region onDoubleClick={onTopbarDoubleClick}>
         <div className="topbar__brand">
           <img src="/icon.png" alt="Dizako logo" className="topbar__mark" draggable={false} />
           <div>
@@ -474,6 +484,7 @@ export default function App() {
               ms={ms}
               degraded={degraded}
               backendLabel={backendLabel}
+              error={error}
               onViewport={setViewport}
             />
           ) : decoding ? (
