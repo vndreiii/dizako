@@ -95,7 +95,11 @@
   width: 100%;
   border: none;
   background: transparent;
-  cursor: pointer;
+  cursor: text;
+  text-align: center;
+  width: 56px;
+  box-sizing: border-box;
+  outline: none;
   color: var(--md-sys-color-on-surface-variant);
   padding: 0;
 }
@@ -245,7 +249,11 @@
   border: 1px solid var(--md-sys-color-outline-variant);
   background: var(--md-sys-color-surface-container);
   color: var(--md-sys-color-on-surface);
-  cursor: pointer;
+  cursor: text;
+  text-align: center;
+  width: 56px;
+  box-sizing: border-box;
+  outline: none;
   border-radius: var(--m3-shape-md);
   transition:
     background-color var(--m3-dur-med1) var(--m3-ease-standard),
@@ -301,7 +309,11 @@
   padding: 0;
   border: none;
   background: none;
-  cursor: pointer;
+  cursor: text;
+  text-align: center;
+  width: 56px;
+  box-sizing: border-box;
+  outline: none;
 }
 .swatch__input::-webkit-color-swatch-wrapper {
   padding: 0;
@@ -327,7 +339,11 @@
   background: transparent;
   color: var(--md-sys-color-on-surface-variant);
   border-radius: var(--m3-shape-full);
-  cursor: pointer;
+  cursor: text;
+  text-align: center;
+  width: 56px;
+  box-sizing: border-box;
+  outline: none;
   transition: background-color var(--m3-dur-short3) var(--m3-ease-standard);
 }
 .swatch__remove:hover:not(:disabled) {
@@ -362,7 +378,11 @@
   padding: var(--m3-sp-2) var(--m3-sp-3);
   border: none;
   background: transparent;
-  cursor: pointer;
+  cursor: text;
+  text-align: center;
+  width: 56px;
+  box-sizing: border-box;
+  outline: none;
   border-radius: var(--m3-shape-md);
   color: var(--md-sys-color-on-surface);
   transition:
@@ -529,11 +549,16 @@
   color: var(--md-sys-color-on-surface);
   font-family: var(--m3-font-mono);
   font-size: 12px;
-  cursor: pointer;
+  cursor: text;
+  text-align: center;
+  width: 56px;
+  box-sizing: border-box;
+  outline: none;
   padding: var(--m3-sp-2);
   border-radius: var(--m3-shape-sm);
 }
-.preview__zoom:hover {
+.preview__zoom:hover,
+.preview__zoom:focus {
   background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
 }
 .preview__stats {
@@ -746,7 +771,11 @@
   background: transparent;
   color: var(--md-sys-color-on-surface-variant);
   border-radius: var(--m3-shape-full);
-  cursor: pointer;
+  cursor: text;
+  text-align: center;
+  width: 56px;
+  box-sizing: border-box;
+  outline: none;
   transition:
     background-color var(--m3-dur-short4) var(--m3-ease-standard),
     color var(--m3-dur-short4) var(--m3-ease-standard);
@@ -815,7 +844,11 @@
   background: transparent;
   color: var(--md-sys-color-on-surface-variant);
   border-radius: var(--m3-shape-full);
-  cursor: pointer;
+  cursor: text;
+  text-align: center;
+  width: 56px;
+  box-sizing: border-box;
+  outline: none;
 }
 .sheet__close:hover {
   background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
@@ -876,7 +909,11 @@
   border: none;
   padding: 0;
   border-radius: var(--m3-shape-full);
-  cursor: pointer;
+  cursor: text;
+  text-align: center;
+  width: 56px;
+  box-sizing: border-box;
+  outline: none;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
   transition:
     transform var(--m3-dur-short4) var(--m3-spring-fast),
@@ -986,7 +1023,11 @@
   border: none;
   background: none;
   color: inherit;
-  cursor: pointer;
+  cursor: text;
+  text-align: center;
+  width: 56px;
+  box-sizing: border-box;
+  outline: none;
   text-align: left;
   border-radius: var(--m3-shape-lg);
 }
@@ -1007,7 +1048,11 @@
   border-radius: var(--m3-shape-lg);
   background: none;
   color: var(--md-sys-color-on-surface-variant);
-  cursor: pointer;
+  cursor: text;
+  text-align: center;
+  width: 56px;
+  box-sizing: border-box;
+  outline: none;
   text-align: left;
   transition:
     background var(--m3-dur-short4) var(--m3-ease-standard),
@@ -1173,7 +1218,11 @@
   height: 30px;
   border-radius: var(--m3-shape-sm);
   border: 1px solid color-mix(in srgb, var(--md-sys-color-outline) 60%, transparent);
-  cursor: pointer;
+  cursor: text;
+  text-align: center;
+  width: 56px;
+  box-sizing: border-box;
+  outline: none;
   padding: 0;
 }
 .layer__swatch:focus-visible {
@@ -1210,7 +1259,11 @@
      hit area on every platform, so it has to be worth hitting. */
   height: 16px;
   background: transparent;
-  cursor: pointer;
+  cursor: text;
+  text-align: center;
+  width: 56px;
+  box-sizing: border-box;
+  outline: none;
   margin: 0;
 }
 .layer__width::-webkit-slider-runnable-track {
@@ -1434,7 +1487,11 @@
   border-radius: 999px;
   padding: 6px 14px;
   font: var(--m3-label-lg);
-  cursor: pointer;
+  cursor: text;
+  text-align: center;
+  width: 56px;
+  box-sizing: border-box;
+  outline: none;
 }
 .picker__eyebtn.is-active {
   background: var(--md-sys-color-primary);
@@ -1465,7 +1522,11 @@
   border-radius: 999px;
   padding: 5px 12px;
   font: var(--m3-label-md);
-  cursor: pointer;
+  cursor: text;
+  text-align: center;
+  width: 56px;
+  box-sizing: border-box;
+  outline: none;
   transition: all var(--m3-dur-short4) var(--m3-ease-standard);
 }
 .picker__rule.is-selected {
@@ -1485,7 +1546,11 @@
   flex: 1;
   height: 76px;
   border: none;
-  cursor: pointer;
+  cursor: text;
+  text-align: center;
+  width: 56px;
+  box-sizing: border-box;
+  outline: none;
   display: flex;
   align-items: flex-end;
   justify-content: center;

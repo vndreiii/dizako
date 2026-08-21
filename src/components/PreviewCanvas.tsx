@@ -74,6 +74,8 @@ export function PreviewCanvas({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [compare, setCompare] = useState(false);
   const [split, setSplit] = useState(0.5);
+  const [zoomInput, setZoomInput] = useState("");
+  const [isZoomFocused, setIsZoomFocused] = useState(false);
   const dragRef = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
   const splitDragRef = useRef(false);
   /** Until the user zooms or pans, the view keeps re-fitting as the stage resizes. */
@@ -327,17 +329,35 @@ export function PreviewCanvas({
       {hasImage && (
         <div className="preview__hud">
           <div className="preview__hud-group">
+            <IconButton label="Fit to window" onClick={fit}>
+              <IconFit />
+            </IconButton>
             <IconButton label="Zoom out" onClick={() => zoomBy(1 / 1.4)}>
               <IconZoomOut />
             </IconButton>
-            <button className="preview__zoom" onClick={fit} title="Fit to window">
-              {Math.round(zoom * 100)}%
-            </button>
+            <input
+              type="text"
+              className="preview__zoom"
+              title="Zoom percentage"
+              value={isZoomFocused ? zoomInput : Math.round(zoom * 100) + "%"}
+              onFocus={() => {
+                setZoomInput(Math.round(zoom * 100).toString());
+                setIsZoomFocused(true);
+              }}
+              onBlur={() => {
+                setIsZoomFocused(false);
+                const parsed = parseInt(zoomInput.replace(/[^0-9]/g, ''), 10);
+                if (!isNaN(parsed)) {
+                  setZoom(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, parsed / 100)));
+                }
+              }}
+              onChange={(e) => setZoomInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+              }}
+            />
             <IconButton label="Zoom in" onClick={() => zoomBy(1.4)}>
               <IconZoomIn />
-            </IconButton>
-            <IconButton label="Fit to window" onClick={fit}>
-              <IconFit />
             </IconButton>
           </div>
           <div className="preview__hud-group">
