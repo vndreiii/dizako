@@ -27,14 +27,15 @@ build() {
 package() {
   cd "$pkgname" 2>/dev/null || cd dizako
   install -Dm755 "src-tauri/target/release/dizako" "$pkgdir/usr/bin/dizako"
-  install -Dm644 "src-tauri/icons/128x128.png" "$pkgdir/usr/share/pixmaps/dizako.png"
+  install -Dm644 "src-tauri/icons/128x128.png" "$pkgdir/usr/share/pixmaps/com.alex.dizako.png"
   
   install -dm755 "$pkgdir/usr/share/applications"
-  cat << 'DESKTOP' > "$pkgdir/usr/share/applications/dizako.desktop"
+  cat << 'DESKTOP' > "$pkgdir/usr/share/applications/com.alex.dizako.desktop"
 [Desktop Entry]
 Name=Dizako
 Exec=dizako
-Icon=dizako
+Icon=com.alex.dizako
+StartupWMClass=com.alex.dizako
 Terminal=false
 Type=Application
 Categories=Graphics;
