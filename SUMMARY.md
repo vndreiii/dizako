@@ -107,3 +107,99 @@ the half-finished `dither-wasm/` Rust scaffold, and the build configs.
   golden-image hashes from the current TS engine before any refactoring).
 - Fold Workstream C's build fixes (CSP, vite target, pnpm-workspace.yaml)
   into the general backlog items above where they overlap.
+
+---
+
+## 2026-08-22 — Implementation: improvements + WASM engine (v2.0.0)
+
+Executed the WASM_PLAN and IMPROVEMENTS backlogs. All committed in git
+commit ae911de plus a follow-up commit.
+
+### What was done
+
+- **Golden parity harness** (WASM_PLAN M0): procedural RGBA fixture corpus
+  (`testdata/images/`), declarative 732-case settings sweep
+  (`testdata/suites/main.json` via `tools/gen-suite.mjs`), SHA-256 manifest
+  capture/assert runner under vitest (`test/golden.test.ts`,
+  `GOLDEN_CAPTURE=1` regenerates). Found and fixed a degenerate-fixture bug
+  along the way.
+- **Byte-exact TS optimizations** (IMPROVEMENTS §2): compilePalette
+  memoisation, prepare() memoisation on tone/filter keys, coarse-downscale
+  memoisation (WeakMap), dot-diffusion rank-index rewrite
+  O(w·h·ranks)→O(w·h) (y-major order preserved, byte-exact), Hilbert curve
+  cache for Riemersma.
+- **Shared deterministic primitives** (WASM_PLAN M1/§4):
+  `src/dither/sharedmath.ts` (cbrtShared Newton, sincosDeg/sinRad Taylor,
+  powShared via exp2/log2 series, srgbToLinearShared fused constants) plus
+  generated constants/blue-noise tile in `src/dither/tables.ts` and
+  `dither-wasm/src/tables.rs` via `tools/gen-tables.mjs`; wired into color/
+  toneCurve/hueMatrix/halftone trig hoisting/riemersma weights/omino bias.
+  Golden regeneration checkpoint captured: pre-refactor manifest kept as
+  `testdata/golden/ts-v1.json`; drift confined to screen-angle trig families
+  (halftone-line, diagonal-line, omino phase).
+- **Worker pipeline v2** (§6 B1–B3): resident source planes in the worker
+  (settings-only render messages, per-dispatch frame copy eliminated),
+  ImageBitmap results with legacy ArrayBuffer fallback, async full-res
+  export through the worker with progress phases and supersede-cancellation,
+  init handshake with backend field ("wasm"/"js"), demotion ladder now
+  worker-wasm → worker-js → main-wasm → main-js, HUD shows which rung
+  rendered (backendLabel).
+- **Full Rust port (M2–M3)** in `dither-wasm/`: shared.rs/color.rs/palette.rs/
+  prepare.rs/kernels.rs/engine.rs/settings.rs/masks.rs/region.rs/wasm_api.rs
+  mirroring f32-storage/f64-arithmetic semantics; wasm-bindgen Engine API
+  with resident planes and internal region cropping; native cargo-test parity
+  suite (`tests/parity.rs` with embedded sha256) — ALL 732 CASES BYTE-EXACT
+  vs TS goldens (Gate 2).
+- **Wasm artifact gate**: `test/wasm-parity.test.ts` instantiates the shipped
+  wasm32 binary via pkg glue initSync in Node and verifies all 732 hashes
+  byte-exact (Gates 2+3). Built with RUSTFLAGS simd128, opt-level 3, lto
+  fat, wasm-opt.
+- **App improvements**: versioned localStorage session persistence (settings
+  + appearance/mode/themeSource/seed, `src/session.ts`), keyboard shortcuts
+  Ctrl+O/E/S(+Z/Y/A), i18n per-key en fallback chain + dev warnings +
+  HUD/snackbar strings translated via new en keys, React.memo on the three
+  sidebar panels, rAF-coalesced pointer/wheel gestures, canvas shadow skipped
+  mid-drag, Export button shows in-flight state.
+- **Hygiene/build**: versions unified at 2.0.0 across package.json /
+  tauri.conf.json / src-tauri Cargo.toml / dither-wasm Cargo.toml;
+  pnpm-workspace.yaml placeholder key removed; vite build.target es2022 +
+  worker.format es + optimizeDeps.exclude dither-wasm; CSP gained
+  'wasm-unsafe-eval'; ESLint flat config (typescript-eslint + react-hooks,
+  0 errors); pnpm build chains build:wasm (wasm-pack --target web).
+- **Packaging/CI**: `.github/workflows/ci.yml` (lint/typecheck/golden-parity
+  frontend job, native cargo parity job, Linux/Windows/macOS bundle jobs with
+  artifacts); PKGBUILD rewritten (no deb/rpm inside makepkg, proper desktop
+  entry with GenericName/Keywords/MimeType, hicolor icon, static pkgver
+  placeholder + dynamic pkgver()); flatpak manifest rewritten honestly
+  (GNOME runtime 48 since WebKitGTK lives there, sdk-extensions
+  node22/rust-stable, finish-args wayland/x11/dri/home fs, marked as
+  not-yet-exercised); desktop file extracted to
+  `packaging/com.alex.dizako.desktop`.
+
+### What it accomplished/enabled
+
+- Visual output is now provably frozen: any change to either engine that
+  flips one golden byte fails vitest or cargo test.
+- ONE visual truth available on every rung of the execution ladder
+  (byte-exact engines), with observability in the HUD.
+- Slider ticks no longer copy frames into the worker nor putImageData on the
+  main thread; export no longer freezes the UI and shares the preview's
+  exact engine path.
+- Distribution story moved from aspirational to scripted (CI bundles for all
+  three OSes).
+
+### Open items / next steps
+
+- Burn-in release with HUD ladder visible, then delete the TS engine
+  (Stage C, M7) and shrink the harness to ordinary regression tests.
+- Optional M6 optimisations gated by goldens: simd128 matcher lanes,
+  quantised match cache, prepare/palette caches inside wasm Engine, raising
+  COARSE_PIXELS/watchdog retune after measurement.
+- Runtime self-check toggle (dev builds running both engines per coarse job)
+  not yet implemented.
+- Flatpak manifest needs an actual flatpak-builder exercise; AUR PKGBUILD
+  untested against the new wasm-pack makedep.
+- Recent-files/session-restore (IMPROVEMENTS §1.2), window double-click
+  maximise toggle (§1.6), locale chunk lazy-loading (§1.4) remain open.
+- Rust/Tauri-command IO boundary (decode fallback codecs + JPEG/WebP export
+  encode, §11.5 hybrid) scheduled as fast-follow.

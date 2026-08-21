@@ -420,14 +420,18 @@ export function PreviewCanvas({
               <IconTimer />
               {refining ? t("hud.refining") : `${ms.toFixed(0)} ms`}
             </span>
-            {degraded && (
-              <span
-                className="is-degraded"
-                title="Preferred render pipeline unavailable - dithering on a slower rung"
-              >
-                {backendLabel === "worker" ? "main thread" : backendLabel}
-              </span>
-            )}
+            {/* Burn-in observability (WASM_PLAN §6 B1): which rung of the
+                ladder produced what you are looking at. */}
+            <span
+              className={degraded ? "is-degraded" : undefined}
+              title={
+                degraded
+                  ? "Preferred render pipeline unavailable - running on a slower rung"
+                  : "Render engine"
+              }
+            >
+              {backendLabel}
+            </span>
           </div>
         </div>
       )}

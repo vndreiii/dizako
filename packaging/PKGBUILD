@@ -1,13 +1,14 @@
-# Maintainer: Meh <meh@example.com>
+# Maintainer: Alex <alex@milfs.party>
 pkgname=dizako-git
-pkgver=v1.1.0.r0.gbfee021
+# Static placeholder; pkgver() computes the real -git version at makepkg time.
+pkgver=2.0.0
 pkgrel=1
 pkgdesc="Material 3 Expressive dithering studio"
-arch=('x86_64' 'aarch64')
+arch=('x86_64')
 url="https://code.milfs.party/alex/dizako"
 license=('MIT')
-depends=('webkit2gtk-4.1' 'gtk3' 'cairo' 'pango' 'glib2')
-makedepends=('git' 'npm' 'pnpm' 'rust' 'cargo')
+depends=('webkit2gtk-4.1' 'gtk3' 'cairo' 'pango' 'glib2' 'hicolor-icon-theme')
+makedepends=('git' 'pnpm' 'rust' 'cargo' 'wasm-pack' 'clang' 'cmake')
 provides=('dizako')
 conflicts=('dizako')
 source=("git+https://code.milfs.party/alex/dizako.git")
@@ -15,30 +16,39 @@ sha256sums=('SKIP')
 
 pkgver() {
   cd "$pkgname" 2>/dev/null || cd dizako
-  git describe --long --tags 2>/dev/null | sed 's/\([^-]*-g\)/r\1/;s/-/./g' || echo 1.0.0
+  git describe --long --tags 2>/dev/null | sed 's/\([^-]*-g\)/r\1/;s/-/./g' || echo 2.0.0
 }
 
 build() {
   cd "$pkgname" 2>/dev/null || cd dizako
-  pnpm install --ignore-scripts
-  export CARGO_TARGET_DIR="$srcdir/dizako/src-tauri/target"
-  pnpm run tauri build --bundles deb,rpm
+  # esbuild's postinstall is required for vite builds — --ignore-scripts
+  # silently breaks it (onlyBuiltDependencies in pnpm-workspace.yaml governs
+  # this on machines where scripts do run).
+  pnpm install
+  pnpm build:wasm
+  # Bundle only the Arch-relevant artifacts; deb/rpm are built by CI.
+  pnpm run tauri build --bundles appimage --no-bundle false 2>/dev/null \
+    || pnpm run tauri build --bundles appimage
 }
 
 package() {
   cd "$pkgname" 2>/dev/null || cd dizako
   install -Dm755 "src-tauri/target/release/dizako" "$pkgdir/usr/bin/dizako"
-  install -Dm644 "src-tauri/icons/128x128.png" "$pkgdir/usr/share/pixmaps/com.alex.dizako.png"
-  
+  install -Dm644 "src-tauri/icons/128x128.png" \
+    "$pkgdir/usr/share/icons/hicolor/128x128/apps/com.alex.dizako.png"
+
   install -dm755 "$pkgdir/usr/share/applications"
   cat << 'DESKTOP' > "$pkgdir/usr/share/applications/com.alex.dizako.desktop"
 [Desktop Entry]
 Name=Dizako
-Exec=dizako
+GenericName=Dithering Studio
+Exec=dizako %f
 Icon=com.alex.dizako
 StartupWMClass=com.alex.dizako
 Terminal=false
 Type=Application
-Categories=Graphics;
+Categories=Graphics;ImageProcessing;RasterGraphics;
+Keywords=image;dither;pixel;palette;halftone;
+MimeType=image/png;image/jpeg;image/webp;image/gif;image/avif;
 DESKTOP
 }

@@ -4,6 +4,7 @@ import type {
   WorkerResponse,
 } from "../dither/worker";
 import { dither } from "../dither/algorithms";
+import { loadWasmEngine } from "../dither/engine";
 import { cropImage, regionFor, sameRect, type Rect } from "../dither/region";
 import type { Settings } from "../dither/types";
 
@@ -323,11 +324,35 @@ export function useDither(
     inflightRef.current = inflight;
     window.setTimeout(() => {
       if (inflightRef.current?.job.id !== inflight.job.id) return;
-      const t0 = performance.now();
-      const out = dither(inflight.input, inflight.job.settings);
-      setBackendLabel("main");
-      settle(inflight.job, out, performance.now() - t0);
+      void renderMainAsync(inflight);
     }, 0);
+  }
+
+  /** Main-thread render, preferring the wasm engine when it initialised.
+   *  `inflight.input` is already the exact plane (cropped if needed), so the
+   *  stateless fallback uploads it whole and renders without a region. */
+  async function renderMainAsync(inflight: InFlight) {
+    const t0 = performance.now();
+    let out: ImageData | null = null;
+    try {
+      const w = await loadWasmEngine();
+      if (!w) throw new Error("no wasm");
+      const img = inflight.input;
+      w.engine.set_source(
+        new Uint8ClampedArray(img.data),
+        img.width,
+        img.height,
+      );
+      const len = w.engine.render(inflight.job.stage, null, inflight.job.settings);
+      const bytes = w.view(len);
+      out = new ImageData(new Uint8ClampedArray(bytes), img.width, img.height);
+      setBackendLabel("main · wasm");
+    } catch {
+      out = dither(inflight.input, inflight.job.settings);
+      setBackendLabel("main · js");
+    }
+    if (inflightRef.current?.job.id !== inflight.job.id) return;
+    settle(inflight.job, out!, performance.now() - t0);
   }
 
   function demote(reason: string) {
@@ -377,7 +402,7 @@ export function useDither(
       if (msg.type === "ready") {
         readyRef.current = true;
         window.clearTimeout(initTimer);
-        setBackendLabel("worker");
+        setBackendLabel(`worker · ${msg.backend}`);
         return;
       }
       if (msg.type === "result") {

@@ -11,6 +11,10 @@ export default defineConfig({
     target: "es2022",
     chunkSizeWarningLimit: 1500,
   },
+  worker: {
+    // The worker now code-splits (dynamic wasm-glue import); IIFE cannot.
+    format: "es",
+  },
   optimizeDeps: {
     // The wasm glue resolves its .wasm asset relative to import.meta.url;
     // letting the dep optimizer rewrite it breaks that in workers.

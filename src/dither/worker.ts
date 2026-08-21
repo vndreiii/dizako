@@ -1,4 +1,5 @@
 import { dither } from "./algorithms";
+import { loadWasmEngine, type WasmBackend } from "./engine";
 import { cropImage } from "./region";
 import type { Rect } from "./region";
 import type { Settings } from "./types";
@@ -14,6 +15,11 @@ import type { Settings } from "./types";
  * Results come back as `ImageBitmap`s built inside the worker, so the main
  * thread never calls `putImageData` again; hosts without OffscreenCanvas fall
  * back to a transferred RGBA buffer handled by the legacy path in the hook.
+ *
+ * The backend ladder starts here: if the wasm module instantiates, renders go
+ * through the Rust engine; otherwise this worker reports `js` and runs the TS
+ * engine. Either way the pixels are identical — parity is enforced by the
+ * golden sweep in CI.
  */
 export interface SourceInit {
   type: "setSource";
@@ -48,6 +54,8 @@ export type WorkerRequest = SourceInit | CoarseInit | RenderRequest | ExportRequ
 
 export interface ReadyResponse {
   type: "ready";
+  /** Which engine actually rendered: wasm or js. */
+  backend: "wasm" | "js";
 }
 
 export interface ResultResponse {
@@ -93,6 +101,7 @@ export type WorkerResponse =
 
 let source: ImageData | null = null;
 let coarse: ImageData | null = null;
+let wasm: WasmBackend | null = null;
 
 function adopt(buffer: ArrayBuffer, width: number, height: number): ImageData {
   const bytes =
@@ -100,43 +109,41 @@ function adopt(buffer: ArrayBuffer, width: number, height: number): ImageData {
   return new ImageData(bytes, width, height);
 }
 
-/** Rasterises finished pixels into whatever this host can transfer cheapest. */
-function makePayload(
-  out: ImageData,
-): Promise<Pick<ResultResponse, "bitmap" | "buffer" | "width" | "height">> {
-  if (
-    typeof OffscreenCanvas !== "undefined" &&
-    typeof createImageBitmap === "function"
-  ) {
-    const canvas = new OffscreenCanvas(out.width, out.height);
-    const g = canvas.getContext("2d");
-    if (g) {
-      g.putImageData(out, 0, 0);
-      return createImageBitmap(canvas).then((bitmap) => ({ bitmap }));
-    }
+/** Dims a render of `stage`/`region` produces, given resident planes. */
+function dimsFor(stage: "coarse" | "fine", region: Rect | null): { w: number; h: number } | null {
+  if (stage === "coarse") {
+    const plane = coarse ?? source;
+    return plane ? { w: plane.width, h: plane.height } : null;
   }
-  // Legacy path: transfer the raw plane; the main thread uploads it. The plane
-  // is freshly allocated by the engine, so its buffer can move outright.
-  return Promise.resolve({
-    buffer: out.data.buffer as ArrayBuffer,
-    width: out.width,
-    height: out.height,
-  });
+  if (region) return { w: region.width, h: region.height };
+  return source ? { w: source.width, h: source.height } : null;
 }
 
 async function handleRender(req: RenderRequest) {
   const t0 = performance.now();
-  let input: ImageData | null = null;
-  if (req.stage === "coarse") {
-    input = coarse ?? source;
-  } else if (req.region) {
-    input = source ? cropImage(source, req.region) : null;
-  } else {
-    input = source;
-  }
-  if (!input) return;
+  const dims = dimsFor(req.stage, req.region);
+  if (!dims) return;
 
-  const out = dither(input, req.settings);
+  let out: ImageData | null = null;
+  if (wasm) {
+    // The Rust engine owns its own copies of the planes (shipped once per
+    // change below) and crops regions internally.
+    const len = wasm.engine.render(req.stage, req.region, req.settings);
+    const bytes = wasm.view(len);
+    out = new ImageData(new Uint8ClampedArray(bytes), dims.w, dims.h);
+  } else {
+    let input: ImageData | null;
+    if (req.stage === "coarse") {
+      input = coarse ?? source;
+    } else if (req.region) {
+      input = source ? cropImage(source, req.region) : null;
+    } else {
+      input = source;
+    }
+    if (!input) return;
+    out = dither(input, req.settings);
+  }
+
   const payload = await makePayload(out);
   post({ type: "result", id: req.id, stage: req.stage, ms: performance.now() - t0, ...payload });
 }
@@ -145,7 +152,14 @@ async function handleExport(req: ExportRequest) {
   if (!source) return;
   const t0 = performance.now();
   post({ type: "progress", id: req.id, phase: "render" });
-  const out = dither(source, req.settings);
+  let out: ImageData;
+  if (wasm) {
+    const len = wasm.engine.render("fine", null, req.settings);
+    const bytes = wasm.view(len);
+    out = new ImageData(new Uint8ClampedArray(bytes), source.width, source.height);
+  } else {
+    out = dither(source, req.settings);
+  }
 
   post({ type: "progress", id: req.id, phase: "encode" });
   if (typeof OffscreenCanvas !== "undefined") {
@@ -165,28 +179,60 @@ async function handleExport(req: ExportRequest) {
   });
 }
 
+/** Rasterises finished pixels into whatever this host can transfer cheapest. */
+function makePayload(
+  out: ImageData,
+): Promise<Pick<ResultResponse, "bitmap" | "buffer" | "width" | "height">> {
+  if (
+    typeof OffscreenCanvas !== "undefined" &&
+    typeof createImageBitmap === "function"
+  ) {
+    const canvas = new OffscreenCanvas(out.width, out.height);
+    const g = canvas.getContext("2d");
+    if (g) {
+      g.putImageData(out, 0, 0);
+      return createImageBitmap(canvas).then((bitmap) => ({ bitmap }));
+    }
+  }
+  // Legacy path: transfer the raw plane; the main thread uploads it. The plane
+  // is freshly allocated above, so its buffer can move outright.
+  return Promise.resolve({
+    buffer: out.data.buffer as ArrayBuffer,
+    width: out.width,
+    height: out.height,
+  });
+}
+
 function post(msg: WorkerResponse, transfer: Transferable[] = []) {
   (self as unknown as Worker).postMessage(msg, transfer);
 }
 
-self.onmessage = (e: MessageEvent<WorkerRequest>) => {
+self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
   const req = e.data;
   switch (req.type) {
-    case "setSource":
+    case "setSource": {
       source = adopt(req.buffer, req.width, req.height);
+      wasm?.engine.set_source(new Uint8ClampedArray(source.data), source.width, source.height);
       break;
-    case "setCoarseSource":
+    }
+    case "setCoarseSource": {
       coarse = adopt(req.buffer, req.width, req.height);
+      wasm?.engine.set_coarse(new Uint8ClampedArray(coarse.data), coarse.width, coarse.height);
       break;
+    }
     case "render":
-      void handleRender(req);
+      await handleRender(req);
       break;
     case "export":
-      void handleExport(req);
+      await handleExport(req);
       break;
   }
 };
 
-// Module evaluation finishing IS readiness for message processing; the
-// handshake lets the hook time out hosts where construction silently wedges.
-post({ type: "ready" });
+void (async () => {
+  // Module evaluation finishing IS readiness for message processing; the
+  // handshake tells the hook which rung of the ladder we landed on, and its
+  // init timeout covers hosts where even this never arrives.
+  wasm = await loadWasmEngine();
+  post({ type: "ready", backend: wasm ? "wasm" : "js" });
+})();
