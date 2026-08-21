@@ -473,7 +473,10 @@
 .preview__split-handle {
   position: absolute;
   top: 50%;
-  left: 50%;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: max-content;
   width: 40px;
   height: 40px;
   transform: translate(-50%, -50%);
@@ -484,9 +487,11 @@
 
 .preview__hud {
   position: absolute;
-  left: 50%;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: max-content;
   bottom: var(--m3-sp-5);
-  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: var(--m3-sp-2);
@@ -1332,7 +1337,10 @@
 
 .picker__square {
   position: absolute;
-  left: 50%;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: max-content;
   top: 50%;
   width: 62%;
   aspect-ratio: 1;

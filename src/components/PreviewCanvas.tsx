@@ -359,11 +359,6 @@ export function PreviewCanvas({
               <IconTimer />
               {refining ? "refining…" : `${ms.toFixed(0)} ms`}
             </span>
-            {region && !refining && (
-              <span className="is-cropped" title="Sharpened over the visible area only">
-                viewport
-              </span>
-            )}
             {degraded && (
               <span
                 className="is-degraded"
