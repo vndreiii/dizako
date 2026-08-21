@@ -206,11 +206,11 @@ MIT.
 
 You can drive Dizako's UI colours using [Matugen](https://github.com/InioX/matugen).
 
-1. Copy the `matugen-template.json` from the repository root to your matugen templates directory.
+1. Copy the `templates/matugen-template.json` file to your matugen templates directory.
 2. Configure Matugen to output to `~/.config/dizako/colors.json`:
    ```toml
    [templates.dizako]
-   input_path = "~/.config/matugen/templates/matugen-template.json"
+   input_path = "~/.config/matugen/templates/dizako-matugen.json"
    output_path = "~/.config/dizako/colors.json"
    ```
 3. Run Matugen, then select **Matugen** under Settings > Accent in Dizako.

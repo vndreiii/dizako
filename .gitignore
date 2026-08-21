@@ -1,36 +1,27 @@
 # Node
 node_modules/
 dist/
-*.log
+dist-ssr/
+*.local
 
-# Tauri / Rust
+# Tauri
 src-tauri/target/
-src-tauri/gen/schemas/
 
-# Qt (legacy/) - the original implementation stays on disk, out of the repo
+# Packaging
+pkg/
+dizako/
+*.pkg.tar.zst
+*.tar.gz
+
+# Qt (legacy/) stays untracked
 legacy/
-/build
-*.user
-*.qmlc
 
-# Tooling caches
-/.cache
-/.pytest_cache
-/.serena
-
-# Editors / OS
-/.vscode
-/.idea
-.DS_Store
-*.swp
-*.old
-
-# User specified ignores
-what-this-is.txt
-TODO.md
-SUMMARY.md
-dizako_mascot_full_body.jpg
-dizako_icon.png
-dizako_icon.jpg
+# Docs and Assets (User requested ignores)
+docs/what-this-is.txt
+docs/TODO.md
+docs/SUMMARY.md
+assets/dizako_mascot_full_body.jpg
+assets/dizako_icon.png
+assets/dizako_icon.jpg
 patch_*.js
 TRANSLATIONS_TODO_FILL.json

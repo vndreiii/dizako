@@ -1,6 +1,6 @@
 # Maintainer: Meh <meh@example.com>
 pkgname=dizako-git
-pkgver=1.0.0
+pkgver=v1.0.0.r2.ge177b7d
 pkgrel=1
 pkgdesc="Material 3 Expressive dithering studio"
 arch=('x86_64')
