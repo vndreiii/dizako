@@ -130,6 +130,7 @@ function downscale(src: ImageData, factor: number): ImageData {
 }
 
 export default function App() {
+  const { t } = useI18n();
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [tab, setTab] = useState<Tab>("algorithm");
   const [native, setNative] = useState<ImageData | null>(null);
@@ -392,15 +393,15 @@ export default function App() {
 
       <div className="app__body">
         <nav className="rail" aria-label="Controls">
-          {TABS.map((t) => (
+          {TABS.map((tabItem) => (
             <button
-              key={t.id}
-              className={`rail__item ${t.id === tab ? "is-selected" : ""}`}
-              aria-current={t.id === tab ? "page" : undefined}
-              onClick={() => setTab(t.id)}
+              key={tabItem.id}
+              className={`rail__item ${tabItem.id === tab ? "is-selected" : ""}`}
+              aria-current={tabItem.id === tab ? "page" : undefined}
+              onClick={() => setTab(tabItem.id)}
             >
-              <span className="rail__pill">{t.icon}</span>
-              <span className="rail__label">{t.label}</span>
+              <span className="rail__pill">{tabItem.icon}</span>
+              <span className="rail__label">{t(`tabs.${tabItem.id}`)}</span>
             </button>
           ))}
 
