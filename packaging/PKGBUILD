@@ -10,7 +10,7 @@ depends=('webkit2gtk-4.1' 'gtk3' 'cairo' 'pango' 'glib2')
 makedepends=('git' 'npm' 'pnpm' 'rust' 'cargo')
 provides=('dizako')
 conflicts=('dizako')
-source=("git+file://${PWD}#branch=master")
+source=("git+file://${PWD}/..#branch=master")
 sha256sums=('SKIP')
 
 pkgver() {
