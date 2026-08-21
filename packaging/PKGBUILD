@@ -1,6 +1,6 @@
 # Maintainer: Meh <meh@example.com>
 pkgname=dizako-git
-pkgver=v1.0.0.r11.g61957d1
+pkgver=v1.1.0.r0.gbfee021
 pkgrel=1
 pkgdesc="Material 3 Expressive dithering studio"
 arch=('x86_64' 'aarch64')
@@ -21,6 +21,7 @@ pkgver() {
 build() {
   cd "$pkgname" 2>/dev/null || cd dizako
   pnpm install --ignore-scripts
+  export CARGO_TARGET_DIR="$srcdir/dizako/src-tauri/target"
   pnpm run tauri build --bundles deb,rpm
 }
 
