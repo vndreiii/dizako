@@ -1,0 +1,13 @@
+app-id: org.dizako.Dizako
+runtime: org.freedesktop.Platform
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+command: dizako
+modules:
+  - name: dizako
+    buildsystem: simple
+    build-commands:
+      - install -D dizako /app/bin/dizako
+    sources:
+      - type: file
+        path: src-tauri/target/release/dizako
