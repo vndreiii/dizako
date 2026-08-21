@@ -15,6 +15,7 @@ import {
   IconUpload,
 } from "./components/Icons";
 import { SettingsSheet } from "./components/SettingsSheet";
+import { WheelStepContext } from "./components/primitives";
 import { WindowControls } from "./components/WindowControls";
 import { useDither } from "./hooks/useDither";
 import type { Rect } from "./dither/region";
@@ -141,6 +142,7 @@ export default function App() {
   const [mode, setMode] = useState<Mode>(() => restoredSession.appearance?.mode ?? (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"));
   const [seed, setSeed] = useState(restoredSession.appearance?.seed ?? DEFAULT_SEED);
   const [themeSource, setThemeSource] = useState<ThemeSource>(restoredSession.appearance?.themeSource ?? "preset");
+  const [wheelStep, setWheelStep] = useState(restoredSession.appearance?.wheelStep ?? 2);
   const [dynamicSeed, setDynamicSeed] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -298,8 +300,8 @@ export default function App() {
 
   // Persist everything that used to reset on launch.
   useEffect(() => {
-    saveSession(settings, { mode, themeSource, seed });
-  }, [settings, mode, themeSource, seed]);
+    saveSession(settings, { mode, themeSource, seed, wheelStep });
+  }, [settings, mode, themeSource, seed, wheelStep]);
 
   /**
    * App-level keyboard and pointer behaviour.
@@ -402,6 +404,7 @@ export default function App() {
   }, [load, snack]);
 
   return (
+    <WheelStepContext.Provider value={wheelStep}>
     <div className={`app ${dragOver ? "is-dragging" : ""}`}>
       <header className="topbar" data-tauri-drag-region onDoubleClick={onTopbarDoubleClick}>
         <div className="topbar__brand">
@@ -529,6 +532,8 @@ export default function App() {
         onSource={setThemeSource}
         seed={seed}
         onSeed={setSeed}
+        wheelStep={wheelStep}
+        onWheelStep={setWheelStep}
         dynamicSeed={dynamicSeed}
         hasImage={Boolean(native)}
       />
@@ -542,5 +547,6 @@ export default function App() {
         </div>
       )}
     </div>
+    </WheelStepContext.Provider>
   );
 }

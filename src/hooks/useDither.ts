@@ -150,6 +150,13 @@ export function useDither(
   const localSource = useRef<ImageData | null>(null);
   const localCoarse = useRef<ImageData | null>(null);
 
+  // Identity of the plane the preview layers were rendered from. When it
+  // changes, every on-screen layer is stale by definition - drawing an old
+  // frame at the new image's aspect is exactly the "stretched old picture"
+  // bug - so they are dropped up front and the stage shows its loading state
+  // until fresh pixels arrive.
+  const layerSourceRef = useRef<ImageData | null>(null);
+
   // Retired bitmaps awaiting collection; kept a few generations before close
   // so React never repaints a closed surface.
   const retired = useRef<ImageBitmap[]>([]);
@@ -492,7 +499,15 @@ export function useDither(
       sentCoarse.current = null;
       localSource.current = null;
       localCoarse.current = null;
+      layerSourceRef.current = null;
       return;
+    }
+    if (layerSourceRef.current !== source) {
+      layerSourceRef.current = source;
+      setCoarse(null);
+      setFine(null);
+      setRegion(null);
+      setCoarseScale(1);
     }
     syncPlanes(source);
     const { job } = coarseJobFor(source, settings);

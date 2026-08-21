@@ -16,6 +16,8 @@ export interface Appearance {
   mode: Mode;
   themeSource: ThemeSource;
   seed: string;
+  /** How many steps one wheel notch applies to any slider (1..10). */
+  wheelStep?: number;
 }
 
 interface StoredSession {

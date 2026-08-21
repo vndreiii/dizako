@@ -10,7 +10,7 @@ import {
 } from "../dither/types";
 import { hsvToRgb, rgbToHex } from "../dither/color";
 import { ColorPicker } from "./ColorPicker";
-import { IconButton, Segmented, Slider } from "./primitives";
+import { BareSlider, IconButton, Segmented, Slider } from "./primitives";
 import {
   IconAdd,
   IconArrowDown,
@@ -52,25 +52,20 @@ function respread(layers: PaletteLayer[]): PaletteLayer[] {
 }
 
 /**
- * Fresh colours for the existing stack.
+ * Fresh colour per layer, drawn independently.
  *
- * Not uniform noise: the hues stay inside one wandering range and the value
- * climbs with the layer's position, so the result is a usable ramp from shadows
- * to highlights rather than a bag of unrelated colours that dithers to mud.
+ * Each layer rolls its own hue/saturation/value with no coordination between
+ * them - that is what "randomise" means here: every colour in the stack
+ * changes on its own.
  */
+function randomColor(): string {
+  return rgbToHex(
+    hsvToRgb(Math.random() * 360, Math.random(), 0.05 + Math.random() * 0.95),
+  );
+}
+
 function randomStack(n: number): string[] {
-  const base = Math.random() * 360;
-  const spread = 30 + Math.random() * 140;
-  const sat = 0.25 + Math.random() * 0.6;
-  return Array.from({ length: n }, (_, i) => {
-    const t = n <= 1 ? 0.5 : i / (n - 1);
-    const h = (base + spread * (t - 0.5) + 360) % 360;
-    const v = 0.08 + t * 0.88;
-    // Saturation eases off at both ends so the darkest and lightest steps read
-    // as shadow and highlight instead of two more saturated hues.
-    const s = sat * (1 - Math.abs(t - 0.5) * 1.2);
-    return rgbToHex(hsvToRgb(h, Math.max(0, s), v));
-  });
+  return Array.from({ length: n }, () => randomColor());
 }
 
 function PalettePanelImpl({ settings, patch, source }: Props) { const { t } = useI18n();
@@ -105,9 +100,12 @@ function PalettePanelImpl({ settings, patch, source }: Props) { const { t } = us
   return (
     <div className="panel panel--dock">
       <header className="panel__header">
-        <h2 className="panel__title">Palette</h2>
+        <h2 className="panel__title">{t("palette.title")}</h2>
         <p className="panel__subtitle">
-          {PALETTE_GROUPS.reduce((n, g) => n + g.palettes.length, 0)} presets
+          {t("palette.presetsCount").replace(
+            "{n}",
+            String(PALETTE_GROUPS.reduce((n, g) => n + g.palettes.length, 0)),
+          )}
         </p>
       </header>
 
@@ -121,31 +119,27 @@ function PalettePanelImpl({ settings, patch, source }: Props) { const { t } = us
             options={MATCH_MODES}
           />
           <p className="panel__note">
-            {settings.matchMode === "rgb" && "Nearest colour by weighted RGB distance."}
-            {settings.matchMode === "luma" && "Matches on brightness alone - colour is ignored."}
+            {settings.matchMode === "rgb" && t("palette.matchRgb")}
+            {settings.matchMode === "luma" && t("palette.matchLuma")}
             {settings.matchMode === "oklab" && t("palette.matchingHint")}
-            {settings.matchMode === "tonal" &&
-              "Each layer owns a slice of the tonal range, sized by its weight. Position in the stack decides everything."}
+            {settings.matchMode === "tonal" && t("palette.matchTonal")}
           </p>
           {settings.matchMode !== "tonal" && (
             <>
               <Slider
-                label="Stack influence"
+                label={t("palette.stackInfluence")}
                 value={Math.round(settings.tonalBias * 100)}
                 min={0}
                 max={100}
                 display={
                   settings.tonalBias === 0
-                    ? "off - nearest colour"
+                    ? t("palette.influenceOff")
                     : `${Math.round(settings.tonalBias * 100)}%`
                 }
                 onChange={(v) => patch({ tonalBias: v / 100 })}
               />
               <p className="panel__note">
-                How much a layer&apos;s place in the stack outweighs plain nearest-colour matching.
-                At zero the arrangement is decorative - the same two colours land on the same pixels
-                however you stack them. Turn it up and a colour parked at the bottom actually claims
-                the shadows.
+                {t("palette.stackInfluenceNote")}
               </p>
             </>
           )}
@@ -162,12 +156,12 @@ function PalettePanelImpl({ settings, patch, source }: Props) { const { t } = us
                 patch({ layers: layersFromColors(["#000000", "#FFFFFF"]) });
                 setEditing("new");
               }}
-              title="Start a palette from scratch"
+              title={t("palette.startScratch")}
             >
               <span className="lib-card__blank-plus" aria-hidden="true">
                 +
               </span>
-              <span className="lib-card__name">Make your own</span>
+              <span className="lib-card__name">{t("palette.makeYourOwn")}</span>
             </button>
           </div>
         </section>
@@ -181,7 +175,7 @@ function PalettePanelImpl({ settings, patch, source }: Props) { const { t } = us
                   <button
                     className="lib-card__main"
                     onClick={() => patch({ layers: layersFromColors(p.colors) })}
-                    title={`Send ${p.name} to the layer stack`}
+                    title={t("palette.sendToStack").replace("{name}", p.name)}
                   >
                     <span className="lib-card__strip">
                       {p.colors.slice(0, 16).map((c, i) => (
@@ -192,7 +186,7 @@ function PalettePanelImpl({ settings, patch, source }: Props) { const { t } = us
                     <span className="lib-card__count">{p.colors.length}</span>
                   </button>
                   <IconButton
-                    label={`Append ${p.name} to the stack`}
+                    label={t("palette.append").replace("{name}", p.name)}
                     onClick={() =>
                       setLayers([...layers, ...p.colors.map((c) => makeLayer(c, 0.5))])
                     }
@@ -213,13 +207,13 @@ function PalettePanelImpl({ settings, patch, source }: Props) { const { t } = us
           <span className="layerdock__count">{layers.length}</span>
           <span className="layerdock__spacer" />
           <IconButton
-            label="Flip the stack - shadows become highlights"
+            label={t("palette.flipStack")}
             onClick={() => setLayers([...layers].reverse())}
           >
             <IconSwapVert />
           </IconButton>
           <IconButton
-            label="Randomise the stack colours"
+            label={t("palette.randomise")}
             onClick={() => {
               // One draw for the whole stack - calling it per layer would pick a
               // new base hue each time and hand back an incoherent set.
@@ -229,7 +223,7 @@ function PalettePanelImpl({ settings, patch, source }: Props) { const { t } = us
           >
             <IconCasino />
           </IconButton>
-          <IconButton label="Add a colour" onClick={() => setEditing("new")}>
+          <IconButton label={t("palette.addColour")} onClick={() => setEditing("new")}>
             <IconAdd />
           </IconButton>
         </div>
@@ -249,47 +243,46 @@ function PalettePanelImpl({ settings, patch, source }: Props) { const { t } = us
                 className="layer__swatch"
                 style={{ background: l.hex }}
                 onClick={() => setEditing(l.id)}
-                title={`Edit ${l.hex}`}
+                title={t("palette.editHex").replace("{hex}", l.hex)}
               />
               <div className="layer__body">
                 <div className="layer__line">
                   <span className="layer__hex">{l.hex.toUpperCase()}</span>
                   <span className="layer__weight">{l.width.toFixed(2)}×</span>
                 </div>
-                <input
+                <BareSlider
                   className="layer__width"
-                  type="range"
+                  value={l.width}
                   min={0.25}
                   max={8}
                   step={0.25}
-                  value={l.width}
-                  aria-label={`Weight for ${l.hex}`}
-                  onChange={(e) => update(l.id, { width: Number(e.target.value) })}
+                  ariaLabel={t("palette.weightFor").replace("{hex}", l.hex)}
+                  onChange={(v) => update(l.id, { width: v })}
                 />
               </div>
               <div className="layer__ops">
                 <IconButton
-                  label="Move toward highlights"
+                  label={t("palette.moveHighlights")}
                   disabled={i === 0}
                   onClick={() => move(l.id, -1)}
                 >
                   <IconArrowUp />
                 </IconButton>
                 <IconButton
-                  label="Move toward shadows"
+                  label={t("palette.moveShadows")}
                   disabled={i === display.length - 1}
                   onClick={() => move(l.id, 1)}
                 >
                   <IconArrowDown />
                 </IconButton>
                 <IconButton
-                  label={l.enabled ? "Disable layer" : "Enable layer"}
+                  label={l.enabled ? t("palette.disableLayer") : t("palette.enableLayer")}
                   onClick={() => update(l.id, { enabled: !l.enabled })}
                 >
                   {l.enabled ? <IconVisible /> : <IconHidden />}
                 </IconButton>
                 <IconButton
-                  label="Remove layer"
+                  label={t("palette.removeLayer")}
                   disabled={layers.length <= 2}
                   onClick={() => remove(l.id)}
                 >
@@ -308,7 +301,7 @@ function PalettePanelImpl({ settings, patch, source }: Props) { const { t } = us
 
       <ColorPicker
         open={editing !== null}
-        title={editing === "new" ? "Add a colour" : "Edit layer"}
+        title={editing === "new" ? t("palette.addColour") : t("palette.editLayer")}
         value={editingLayer?.hex ?? "#7C4DFF"}
         source={source}
         onClose={() => setEditing(null)}

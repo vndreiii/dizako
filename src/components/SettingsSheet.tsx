@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { IconAuto, IconClose, IconDark, IconLight, IconPalette } from "./Icons";
 import { useI18n, type Locale } from "../i18n";
 import { SEED_PRESETS, type Mode, type ThemeSource } from "../theme/theme";
+import { Slider } from "./primitives";
 
 interface Props {
   open: boolean;
@@ -12,6 +13,9 @@ interface Props {
   onSource: (s: ThemeSource) => void;
   seed: string;
   onSeed: (hex: string) => void;
+  /** Wheel increment applied to every slider. */
+  wheelStep: number;
+  onWheelStep: (n: number) => void;
   /** Seed extracted from the current image, when there is one. */
   dynamicSeed: string | null;
   hasImage: boolean;
@@ -26,6 +30,8 @@ export function SettingsSheet({
   onSource,
   seed,
   onSeed,
+  wheelStep,
+  onWheelStep,
   dynamicSeed,
   hasImage,
 }: Props) {
@@ -176,6 +182,21 @@ export function SettingsSheet({
             </div>
           )}
           
+          <div className="setting" style={{ flexDirection: "column", alignItems: "stretch" }}>
+            <div className="setting__text">
+              <span className="setting__label">{t("settings.wheelStep")}</span>
+              <span className="setting__hint">{t("settings.wheelStepHint")}</span>
+            </div>
+            <Slider
+              label={t("settings.wheelStep")}
+              value={wheelStep}
+              min={1}
+              max={10}
+              display={`${wheelStep}×`}
+              onChange={onWheelStep}
+            />
+          </div>
+
           <div className="setting">
             <div className="setting__text">
               <span className="setting__label">{t("settings.language")}</span>

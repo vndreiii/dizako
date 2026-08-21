@@ -538,6 +538,34 @@
 .preview__zoom:focus {
   background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
 }
+/* Small render-engine popup pinned to the stage's bottom-right corner. */
+.preview__engine {
+  position: absolute;
+  right: var(--m3-sp-2);
+  bottom: var(--m3-sp-2);
+  z-index: 3;
+  font-family: var(--m3-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--md-sys-color-on-surface) 55%, transparent);
+  background: color-mix(in srgb, var(--md-sys-color-surface-container) 78%, transparent);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--m3-shape-full);
+  padding: 2px 10px;
+  pointer-events: auto;
+  opacity: 0.65;
+  transition: opacity var(--m3-dur-short3) ease;
+}
+.preview:hover .preview__engine {
+  opacity: 1;
+}
+.preview__engine.is-degraded {
+  color: var(--md-sys-color-on-primary-container);
+  background: var(--md-sys-color-primary-container);
+  border-color: transparent;
+  opacity: 1;
+}
+
 .preview__stats {
   display: flex;
   gap: var(--m3-sp-3);

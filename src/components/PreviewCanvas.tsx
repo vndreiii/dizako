@@ -61,7 +61,9 @@ function toBuffer(
   c.getContext("2d")!.putImageData(data, 0, 0);
 }
 
-/** Full image size in source pixels, taken from whichever layer we have. */
+/** Full image size in source pixels, taken from whichever layer we have.
+ *  A layer whose dimensions disagree with the original is stale output from
+ *  a previous image; it must never be stretched over the new one. */
 function layerSize(layer: ImageData | ImageBitmap | null, coarseScale: number) {
   if (!layer) return null;
   return { width: layer.width * coarseScale, height: layer.height * coarseScale };
@@ -141,6 +143,20 @@ export function PreviewCanvas({
     return layerSize(coarse, coarseScale);
   }, [original, coarse, coarseScale]);
 
+  /** True when a preview layer belongs to a different image than `original`. */
+  const layerIsStale = useCallback(
+    (layer: Layer | null) => {
+      if (!layer || !original) return false;
+      const full = layerSize(layer, coarseScale);
+      if (!full) return false;
+      return (
+        Math.round(full.width) !== original.width ||
+        Math.round(full.height) !== original.height
+      );
+    },
+    [original, coarseScale],
+  );
+
   /**
    * Paints the visible region only. The canvas is always exactly the size of
    * the stage, so zoom and pan are just draw parameters - no oversized element
@@ -171,7 +187,11 @@ export function PreviewCanvas({
     g.clearRect(0, 0, cw, ch);
 
     const size = sourceSize();
-    if (!size || !coarse) return;
+    // A base layer from the previous image would render stretched into this
+    // one's aspect ratio; drop stale layers instead of drawing them.
+    const baseStale = layerIsStale(coarse);
+    const sharpStale = layerIsStale(fine);
+    if (!size || !coarse || baseStale) return;
 
     const w = size.width * zoom;
     const h = size.height * zoom;
@@ -197,7 +217,7 @@ export function PreviewCanvas({
     // The sharp pass goes over the top, aligned to the region it covers. Until
     // it lands, the coarse layer showing through is what makes a slider drag
     // feel immediate.
-    if (fine) {
+    if (fine && !sharpStale) {
       const sharp = asDrawable(fine, fineBuf);
       if (region) {
         g.drawImage(sharp, x + region.x * zoom, y + region.y * zoom, region.width * zoom, region.height * zoom);
@@ -235,7 +255,7 @@ export function PreviewCanvas({
         onViewport(next);
       }
     }
-  }, [zoom, pan, compare, split, region, sourceSize, coarse, fine, onViewport]);
+  }, [zoom, pan, compare, split, region, sourceSize, layerIsStale, coarse, fine, onViewport]);
 
   const fit = useCallback(() => {
     const stage = stageRef.current;
@@ -377,6 +397,19 @@ export function PreviewCanvas({
       </div>
 
       {hasImage && (
+        <div
+          className={`preview__engine ${degraded ? "is-degraded" : ""}`}
+          title={
+            degraded
+              ? "Preferred render pipeline unavailable - running on a slower rung"
+              : "Render engine"
+          }
+        >
+          {backendLabel}
+        </div>
+      )}
+
+      {hasImage && (
         <div className="preview__hud">
           <div className="preview__hud-group">
             <IconButton label={t("hud.fit")} onClick={fit}>
@@ -428,18 +461,6 @@ export function PreviewCanvas({
             <span className={`preview__timing ${refining ? "is-busy" : ""}`}>
               <IconTimer />
               {refining ? t("hud.refining") : `${ms.toFixed(0)} ms`}
-            </span>
-            {/* Burn-in observability (WASM_PLAN §6 B1): which rung of the
-                ladder produced what you are looking at. */}
-            <span
-              className={degraded ? "is-degraded" : undefined}
-              title={
-                degraded
-                  ? "Preferred render pipeline unavailable - running on a slower rung"
-                  : "Render engine"
-              }
-            >
-              {backendLabel}
             </span>
           </div>
         </div>

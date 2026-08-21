@@ -1,12 +1,60 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useId,
   useRef,
   useState,
   type ButtonHTMLAttributes,
   type ReactNode,
 } from "react";
+
+/* ------------------------------------------------------------------ */
+/* Slider wheel increment                                              */
+/*                                                                     */
+/* Scrolling over any slider moves it by `step × increment`; the       */
+/* increment itself is a setting (Settings → Appearance).              */
+/* ------------------------------------------------------------------ */
+
+export const WheelStepContext = createContext<number>(1);
+
+/** Attaches a non-passive wheel listener that nudges a range input. */
+function useWheelAdjust(
+  ref: React.RefObject<HTMLInputElement | null>,
+  value: number,
+  min: number,
+  max: number,
+  step: number,
+  onChange: (v: number) => void,
+  disabled: boolean,
+) {
+  const wheelStep = useContext(WheelStepContext);
+  // Latest-ref pattern: the native listener reads current props without
+  // re-subscribing on every render.
+  // eslint-disable-next-line react-hooks/refs -- intentional render-time binding
+  const latest = useRef({ value, min, max, step, onChange, disabled, wheelStep });
+  // eslint-disable-next-line react-hooks/refs -- see above
+  latest.current = { value, min, max, step, onChange, disabled, wheelStep };
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      const { value: v, min: lo, max: hi, step: st, onChange: cb, disabled: off, wheelStep: inc } =
+        latest.current;
+      if (off || e.deltaY === 0) return;
+      e.preventDefault();
+      const dir = -Math.sign(e.deltaY);
+      const raw = v + dir * st * Math.max(1, inc);
+      const snapped = Math.round((raw - lo) / st) * st + lo;
+      const next = Math.min(hi, Math.max(lo, snapped));
+      const fixed = Number(next.toFixed(6));
+      if (fixed !== v) cb(fixed);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [ref]);
+}
 
 /* ------------------------------------------------------------------ */
 /* Ripple - the M3 state layer + touch ripple                          */
@@ -153,6 +201,8 @@ export function Slider({
   disabled = false,
 }: SliderProps) {
   const id = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+  useWheelAdjust(inputRef, value, min, max, step, onChange, disabled);
   const pct = ((value - min) / (max - min)) * 100;
   return (
     <div className={`m3-slider ${disabled ? "is-disabled" : ""}`}>
@@ -164,6 +214,7 @@ export function Slider({
       </div>
       <input
         id={id}
+        ref={inputRef}
         type="range"
         className="m3-slider__input"
         min={min}
@@ -175,6 +226,47 @@ export function Slider({
         style={{ ["--m3-slider-pct" as string]: `${pct}%` }}
       />
     </div>
+  );
+}
+
+/**
+ * Bare range input styled identically to Slider's track — used where the
+ * label/value chrome is provided by surrounding layout (layer weights).
+ * Shares the wheel behaviour and the M3 expressive styling.
+ */
+export function BareSlider({
+  value,
+  min,
+  max,
+  step = 1,
+  ariaLabel,
+  className = "",
+  onChange,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  ariaLabel: string;
+  className?: string;
+  onChange: (v: number) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  useWheelAdjust(inputRef, value, min, max, step, onChange, false);
+  const pct = ((value - min) / (max - min)) * 100;
+  return (
+    <input
+      ref={inputRef}
+      type="range"
+      aria-label={ariaLabel}
+      min={min}
+      max={max}
+      step={step}
+      value={value}
+      onChange={(e) => onChange(Number(e.target.value))}
+      className={`m3-slider__input ${className}`}
+      style={{ ["--m3-slider-pct" as string]: `${pct}%` }}
+    />
   );
 }
 
