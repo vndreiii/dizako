@@ -1,3 +1,4 @@
+import { useI18n } from "../i18n";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { hexToRgb, hsvToRgb, rgbToHex, rgbToHsv } from "../dither/color";
 import { Button, IconButton } from "./primitives";
@@ -5,15 +6,15 @@ import { IconCheck, IconClose } from "./Icons";
 
 /** Adobe-style colour rules, expressed as hue offsets from the base. */
 const RULES = {
-  analogous: { label: t("picker.analogous"), offsets: [-60, -30, 0, 30, 60] },
-  monochromatic: { label: t("picker.monochromatic"), offsets: [0, 0, 0, 0, 0] },
-  triad: { label: t("picker.triad"), offsets: [-120, -120, 0, 120, 120] },
-  complementary: { label: t("picker.complementary"), offsets: [0, 0, 0, 180, 180] },
-  "split-complementary": { label: t("picker.split"), offsets: [0, 0, 0, 150, 210] },
-  "double-split": { label: t("picker.doubleSplit"), offsets: [-30, 30, 0, 150, 210] },
-  square: { label: t("picker.square"), offsets: [0, 90, 0, 180, 270] },
-  compound: { label: t("picker.compound"), offsets: [0, 30, 0, 180, 210] },
-  shades: { label: t("picker.shades"), offsets: [0, 0, 0, 0, 0] },
+  analogous: { label: "Analogous", offsets: [-60, -30, 0, 30, 60] },
+  monochromatic: { label: "Monochromatic", offsets: [0, 0, 0, 0, 0] },
+  triad: { label: "Triad", offsets: [-120, -120, 0, 120, 120] },
+  complementary: { label: "Complementary", offsets: [0, 0, 0, 180, 180] },
+  "split-complementary": { label: "Split", offsets: [0, 0, 0, 150, 210] },
+  "double-split": { label: "Double split", offsets: [-30, 30, 0, 150, 210] },
+  square: { label: "Square", offsets: [0, 90, 0, 180, 270] },
+  compound: { label: "Compound", offsets: [0, 30, 0, 180, 210] },
+  shades: { label: "Shades", offsets: [0, 0, 0, 0, 0] },
 } as const;
 
 type RuleId = keyof typeof RULES;
@@ -78,7 +79,7 @@ export function ColorPicker({
   onPick,
   onPickSet,
   source,
-  title = t("picker.addColour") || "Add a colour",
+  title = "Colour",
 }: Props) {
   const { t } = useI18n();
   const [color, setColor] = useState<Swatch>(() => {
@@ -362,7 +363,7 @@ export function ColorPicker({
               className={`picker__rule ${id === rule ? "is-selected" : ""}`}
               onClick={() => setRule(id)}
             >
-              {RULES[id].label}
+              {t("picker." + (id === "split-complementary" ? "split" : id === "double-split" ? "doubleSplit" : id)) || RULES[id].label}
             </button>
           ))}
         </div>
