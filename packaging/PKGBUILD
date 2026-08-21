@@ -1,6 +1,6 @@
 # Maintainer: Meh <meh@example.com>
 pkgname=dizako-git
-pkgver=v1.0.0.r2.ge177b7d
+pkgver=v1.0.0.r11.g61957d1
 pkgrel=1
 pkgdesc="Material 3 Expressive dithering studio"
 arch=('x86_64')
@@ -10,7 +10,7 @@ depends=('webkit2gtk-4.1' 'gtk3' 'cairo' 'pango' 'glib2')
 makedepends=('git' 'npm' 'pnpm' 'rust' 'cargo')
 provides=('dizako')
 conflicts=('dizako')
-source=("git+ssh://code.milfs.party:2222/alex/dizako.git#branch=master")
+source=("git+https://code.milfs.party/alex/dizako.git")
 sha256sums=('SKIP')
 
 pkgver() {
