@@ -378,14 +378,20 @@ export function PreviewCanvas({
 
         {!coarse && error && (
           <div className="preview__loading" role="alert">
-            <span>Preview unavailable: {error}</span>
+            <span>{t("preview.unavailable").replace("{error}", error)}</span>
           </div>
         )}
 
         {firstPass && (
           <div className="preview__loading" role="status" aria-live="polite">
             <span className="preview__spinner" aria-hidden="true" />
-            <span>Dithering{original ? ` ${original.width}×${original.height}` : ""}…</span>
+            <span>
+              {original
+                ? t("hud.ditheringWithSize")
+                    .replace("{w}", String(original.width))
+                    .replace("{h}", String(original.height))
+                : t("hud.dithering")}
+            </span>
           </div>
         )}
 

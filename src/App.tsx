@@ -417,7 +417,7 @@ export default function App() {
 
         <div className="topbar__actions">
           <Button variant="outlined" icon={<IconUpload />} onClick={() => inputRef.current?.click()}>
-            Open
+            {t("topbar.open")}
           </Button>
           <Button
             variant="filled"
@@ -425,7 +425,7 @@ export default function App() {
             disabled={!hasResult || exporting}
             onClick={() => void exportPng()}
           >
-            {exporting ? "Exporting…" : "Export"}
+            {exporting ? t("topbar.exporting") : t("topbar.export")}
           </Button>
           <WindowControls />
         </div>

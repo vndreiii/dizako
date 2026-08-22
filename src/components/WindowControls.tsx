@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useI18n } from "../i18n";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { IconClose, IconMaximize, IconMinimize } from "./Icons";
 
@@ -8,6 +9,7 @@ import { IconClose, IconMaximize, IconMinimize } from "./Icons";
  */
 export function WindowControls() {
   const [maximized, setMaximized] = useState(false);
+  const { t } = useI18n();
   const underTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
 
@@ -24,19 +26,19 @@ export function WindowControls() {
 
   return (
     <div className="wincontrols">
-      <button className="wincontrol" aria-label="Minimise" onClick={() => void w.minimize()}>
+      <button className="wincontrol" aria-label={t("win.minimise")} onClick={() => void w.minimize()}>
         <IconMinimize />
       </button>
       <button
         className="wincontrol"
-        aria-label={maximized ? "Restore" : "Maximise"}
+        aria-label={maximized ? t("win.restore") : t("win.maximise")}
         onClick={() => void w.toggleMaximize()}
       >
         <IconMaximize />
       </button>
       <button
         className="wincontrol wincontrol--close"
-        aria-label="Close"
+        aria-label={t("win.close")}
         onClick={() => void w.close()}
       >
         <IconClose />

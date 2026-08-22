@@ -19,18 +19,11 @@ interface Props {
 
 const GROUPS: AlgorithmFamily[] = ["error-diffusion", "ordered", "threshold", "experimental"];
 
-const FAMILY_LABEL: Record<AlgorithmFamily, string> = {
-  "error-diffusion": "Error diffusion",
-  ordered: "Ordered",
-  threshold: "Threshold",
-  experimental: "Experimental",
-};
-
-const DIRECTIONS: Array<{ value: OminoDirection; label: string }> = [
-  { value: "right", label: "Right" },
-  { value: "left", label: "Left" },
-  { value: "down", label: "Down" },
-  { value: "up", label: "Up" },
+const DIRECTIONS: Array<{ value: OminoDirection; key: string }> = [
+  { value: "right", key: "dir.right" },
+  { value: "left", key: "dir.left" },
+  { value: "down", key: "dir.down" },
+  { value: "up", key: "dir.up" },
 ];
 
 /** Setting keys each param group owns, so "reset" only touches what is shown. */
@@ -58,7 +51,8 @@ const RESET_KEYS: Record<ParamKey, Array<keyof Settings>> = {
   ],
 };
 
-function AlgorithmPanelImpl({ settings, patch }: Props) { const { t } = useI18n();
+function AlgorithmPanelImpl({ settings, patch }: Props) {
+  const { t } = useI18n();
   const meta = ALGORITHMS.find((a) => a.id === settings.algorithm) ?? ALGORITHMS[0];
   const has = (p: ParamKey) => meta.params.includes(p);
 
@@ -75,14 +69,16 @@ function AlgorithmPanelImpl({ settings, patch }: Props) { const { t } = useI18n(
   return (
     <div className="panel">
       <header className="panel__header">
-        <h2 className="panel__title">Algorithm</h2>
-        <p className="panel__subtitle">{ALGORITHMS.length} {t("algorithm.available")}</p>
+        <h2 className="panel__title">{t("algorithm.title")}</h2>
+        <p className="panel__subtitle">
+          {t("algorithm.count").replace("{n}", String(ALGORITHMS.length))}
+        </p>
       </header>
 
       <div className="panel__scroll">
         {GROUPS.map((g) => (
           <section key={g} className="panel__section">
-            <h3 className="panel__section-title">{FAMILY_LABEL[g]}</h3>
+            <h3 className="panel__section-title">{t(`family.${g}`)}</h3>
             <div className="algo-grid">
               {ALGORITHMS.filter((a) => a.family === g).map((a) => (
                 <button
@@ -92,7 +88,7 @@ function AlgorithmPanelImpl({ settings, patch }: Props) { const { t } = useI18n(
                   onClick={() => patch({ algorithm: a.id as AlgorithmId })}
                 >
                   <span className="algo-card__name">{a.name}</span>
-                  <span className="algo-card__blurb">{a.blurb}</span>
+                  <span className="algo-card__blurb">{t(`algo.${a.id}.blurb`)}</span>
                 </button>
               ))}
             </div>
@@ -101,15 +97,17 @@ function AlgorithmPanelImpl({ settings, patch }: Props) { const { t } = useI18n(
 
         <section className="panel__section">
           <div className="panel__section-head">
-            <h3 className="panel__section-title">{meta.name} controls</h3>
+            <h3 className="panel__section-title">
+              {t("algorithm.controls").replace("{name}", meta.name)}
+            </h3>
             <Button variant="text" icon={<IconReset />} onClick={resetParams}>
-              Reset
+              {t("common.reset")}
             </Button>
           </div>
 
           {has("strength") && (
             <Slider
-              label="Diffusion strength"
+              label={t("param.strength")}
               value={Math.round(settings.strength * 100)}
               min={0}
               max={200}
@@ -120,18 +118,20 @@ function AlgorithmPanelImpl({ settings, patch }: Props) { const { t } = useI18n(
 
           {has("errorClamp") && (
             <Slider
-              label="Error clamp"
+              label={t("param.errorClamp")}
               value={settings.errorClamp}
               min={0}
               max={255}
-              display={settings.errorClamp === 0 ? "off" : String(settings.errorClamp)}
+              display={
+                settings.errorClamp === 0 ? t("common.off") : String(settings.errorClamp)
+              }
               onChange={(v) => patch({ errorClamp: v })}
             />
           )}
 
           {has("jitter") && (
             <Slider
-              label="Kernel jitter"
+              label={t("param.jitter")}
               value={Math.round(settings.jitter * 100)}
               min={0}
               max={100}
@@ -142,9 +142,9 @@ function AlgorithmPanelImpl({ settings, patch }: Props) { const { t } = useI18n(
 
           {has("bayerSize") && (
             <div className="panel__field">
-              <span className="panel__field-label">Matrix size</span>
+              <span className="panel__field-label">{t("param.matrixSize")}</span>
               <Segmented
-                ariaLabel="Bayer matrix size"
+                ariaLabel={t("param.bayerSizeAria")}
                 value={String(settings.bayerSize)}
                 onChange={(v) => patch({ bayerSize: Number(v) })}
                 options={[
@@ -159,7 +159,7 @@ function AlgorithmPanelImpl({ settings, patch }: Props) { const { t } = useI18n(
 
           {has("cellSize") && (
             <Slider
-              label="Cell size"
+              label={t("param.cellSize")}
               value={settings.cellSize}
               min={2}
               max={32}
@@ -170,7 +170,7 @@ function AlgorithmPanelImpl({ settings, patch }: Props) { const { t } = useI18n(
 
           {has("screenAngle") && (
             <Slider
-              label="Screen angle"
+              label={t("param.screenAngle")}
               value={settings.screenAngle}
               min={0}
               max={90}
@@ -181,7 +181,7 @@ function AlgorithmPanelImpl({ settings, patch }: Props) { const { t } = useI18n(
 
           {has("noiseScale") && (
             <Slider
-              label="Noise scale"
+              label={t("param.noiseScale")}
               value={Math.round(settings.noiseScale * 10)}
               min={5}
               max={80}
@@ -192,7 +192,7 @@ function AlgorithmPanelImpl({ settings, patch }: Props) { const { t } = useI18n(
 
           {has("threshold") && (
             <Slider
-              label="Threshold"
+              label={t("param.threshold")}
               value={settings.threshold}
               min={0}
               max={255}
@@ -202,7 +202,7 @@ function AlgorithmPanelImpl({ settings, patch }: Props) { const { t } = useI18n(
 
           {has("noiseAmount") && (
             <Slider
-              label="Noise amount"
+              label={t("param.noiseAmount")}
               value={Math.round(settings.noiseAmount * 100)}
               min={0}
               max={200}
@@ -213,7 +213,7 @@ function AlgorithmPanelImpl({ settings, patch }: Props) { const { t } = useI18n(
 
           {has("riemersmaQueue") && (
             <Slider
-              label="Error queue"
+              label={t("param.queueLength")}
               value={settings.riemersmaQueue}
               min={2}
               max={64}
@@ -224,7 +224,7 @@ function AlgorithmPanelImpl({ settings, patch }: Props) { const { t } = useI18n(
 
           {has("riemersmaDecay") && (
             <Slider
-              label="Queue decay"
+              label={t("param.queueDecay")}
               value={Math.round(settings.riemersmaDecay * 100)}
               min={5}
               max={99}
@@ -235,9 +235,9 @@ function AlgorithmPanelImpl({ settings, patch }: Props) { const { t } = useI18n(
 
           {has("dotClassSize") && (
             <div className="panel__field">
-              <span className="panel__field-label">Class matrix</span>
+              <span className="panel__field-label">{t("param.classMatrix")}</span>
               <Segmented
-                ariaLabel="Dot diffusion class matrix size"
+                ariaLabel={t("param.classMatrixAria")}
                 value={String(settings.dotClassSize)}
                 onChange={(v) => patch({ dotClassSize: Number(v) })}
                 options={[
@@ -252,16 +252,16 @@ function AlgorithmPanelImpl({ settings, patch }: Props) { const { t } = useI18n(
           {has("omino") && (
             <>
               <div className="panel__field">
-                <span className="panel__field-label">March direction</span>
+                <span className="panel__field-label">{t("param.marchDirection")}</span>
                 <Segmented
-                  ariaLabel="March direction"
+                  ariaLabel={t("param.marchDirection")}
                   value={settings.ominoDirection}
                   onChange={(v) => patch({ ominoDirection: v as OminoDirection })}
-                  options={DIRECTIONS}
+                  options={DIRECTIONS.map((d) => ({ value: d.value, label: t(d.key) }))}
                 />
               </div>
               <Slider
-                label="Error strength"
+                label={t("param.errorStrength")}
                 value={Math.round(settings.ominoErrorStrength * 100)}
                 min={0}
                 max={400}
@@ -269,7 +269,7 @@ function AlgorithmPanelImpl({ settings, patch }: Props) { const { t } = useI18n(
                 onChange={(v) => patch({ ominoErrorStrength: v / 100 })}
               />
               <Slider
-                label="Error across"
+                label={t("param.errorAcross")}
                 value={Math.round(settings.ominoAcross * 100)}
                 min={0}
                 max={150}
@@ -277,7 +277,7 @@ function AlgorithmPanelImpl({ settings, patch }: Props) { const { t } = useI18n(
                 onChange={(v) => patch({ ominoAcross: v / 100 })}
               />
               <Slider
-                label="Error aside"
+                label={t("param.errorAside")}
                 value={Math.round(settings.ominoAside * 100)}
                 min={0}
                 max={150}
@@ -285,7 +285,7 @@ function AlgorithmPanelImpl({ settings, patch }: Props) { const { t } = useI18n(
                 onChange={(v) => patch({ ominoAside: v / 100 })}
               />
               <Slider
-                label="Initial phase"
+                label={t("param.initialPhase")}
                 value={settings.ominoPhase}
                 min={0}
                 max={360}
@@ -293,30 +293,28 @@ function AlgorithmPanelImpl({ settings, patch }: Props) { const { t } = useI18n(
                 onChange={(v) => patch({ ominoPhase: v })}
               />
               <Slider
-                label="Colour count"
+                label={t("param.colourCount")}
                 value={settings.ominoColorCount}
                 min={1}
                 max={16}
-                display={`${settings.ominoColorCount} of ${settings.layers.length}`}
+                display={t("param.colourCountOf")
+                  .replace("{n}", String(settings.ominoColorCount))
+                  .replace("{total}", String(settings.layers.length))}
                 onChange={(v) => patch({ ominoColorCount: v })}
               />
-              <p className="panel__note">
-                Stripe width comes from each layer's weight in the Palette tab - widen one and it
-                claims longer runs. Eyedropping a few colours straight out of the image is the
-                classic way to use this.
-              </p>
+              <p className="panel__note">{t("omino.note")}</p>
             </>
           )}
 
           {has("serpentine") && (
             <Switch
-              label="Serpentine scan"
+              label={t("param.serpentine")}
               checked={settings.serpentine}
               onChange={(v) => patch({ serpentine: v })}
             />
           )}
 
-          <p className="panel__note">{meta.blurb}</p>
+          <p className="panel__note">{t(`algo.${meta.id}.blurb`)}</p>
         </section>
       </div>
     </div>
