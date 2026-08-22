@@ -21,14 +21,18 @@ pkgver() {
 
 build() {
   cd "$pkgname" 2>/dev/null || cd dizako
-  # esbuild's postinstall is required for vite builds — --ignore-scripts
-  # silently breaks it (onlyBuiltDependencies in pnpm-workspace.yaml governs
-  # this on machines where scripts do run).
-  pnpm install
-  pnpm build:wasm
-  # Bundle only the Arch-relevant artifacts; deb/rpm are built by CI.
-  pnpm run tauri build --bundles appimage --no-bundle false 2>/dev/null \
-    || pnpm run tauri build --bundles appimage
+  # The wasm engine must be built first: package.json depends on
+  # dither-wasm/pkg via a file: reference, so pnpm install fails without it.
+  # Invoked directly because even `pnpm <script>` runs its dep-status check,
+  # which trips over the not-yet-built file: dependency.
+  wasm-pack build dither-wasm --release --target web --out-dir pkg
+  # esbuild's postinstall is required for vite builds; --ignore-scripts
+  # silently breaks it.
+  # strict-dep-builds would abort on esbuild's postinstall even though it
+  # is whitelisted in onlyBuiltDependencies.
+  pnpm install --config.strict-dep-builds=false
+  pnpm exec tsc --noEmit && pnpm exec vite build
+  cargo build --release --manifest-path src-tauri/Cargo.toml
 }
 
 package() {

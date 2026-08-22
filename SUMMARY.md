@@ -225,3 +225,35 @@ commit ae911de plus a follow-up commit.
 - M6 measured tuning (COARSE_PIXELS/watchdog retune), flatpak exercise,
   AUR PKGBUILD test against new makedeps, Rust IO-boundary commands
   (decode fallback codecs, JPEG/WebP export).
+
+## 2026-08-22 (final) — UX pass, packaging fixes, PKGBUILD install
+
+### What was done
+- Stale-canvas bug fixed: loading a second image no longer shows the old
+  picture stretched into the new aspect. Preview layers drop when the source
+  plane changes and draw() rejects layers whose size disagrees with the
+  current image.
+- Every slider in the app now uses the M3 expressive style (gap around the
+  bar handle, end dots) including layer-weight sliders; scroll wheel moves
+  any slider with a persisted per-notch increment setting (Settings →
+  Appearance, 1–10×).
+- Randomise in the palette stack rolls each colour independently.
+- PalettePanel strings translated (title, preset count, match-mode notes,
+  tooltips, layer ops); HUD engine badge moved out of the stats row into a
+  subtle bottom-right popup.
+- Matugen toggle moved from the Light/Dark mode row to the Accent source
+  group in Settings; README rewritten short and plain.
+- build-all.sh: linux full build with best-effort bundles; windows/macos
+  scaffolding for running on those platforms.
+- PKGBUILD fixes discovered by actually running it: wasm-pack must run
+  before pnpm install (file: dependency on dither-wasm/pkg), direct
+  wasm-pack call (pnpm's dep-status check trips first), and
+  --config.strict-dep-builds=false for esbuild's postinstall.
+- Installed system-wide via makepkg + pacman -U (dizako-git); v2.0.0 tag
+  created so pkgver() reports correctly going forward.
+
+### Open items / next steps
+- AppImage bundling still fails at linuxdeploy on this machine (deb/rpm/
+  raw binary fine; CI covers appimage).
+- Push commits/tags so the published PKGBUILD source URL builds the same
+  code as local installs.
