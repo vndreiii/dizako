@@ -109,7 +109,11 @@ let source: ImageData | null = null;
 let coarse: ImageData | null = null;
 let wasm: WasmBackend | null = null;
 
-function adopt(buffer: ArrayBuffer, width: number, height: number): ImageData {
+function adopt(buffer: ArrayBuffer, width: number, height: number): ImageData | null {
+  // Empty buffer ⇒ "clear this plane" (e.g. switching to an image that fits
+  // the single-pass budget, which has no coarse downscale at all). Without
+  // this the engine would keep dithering the previous image's plane.
+  if (buffer.byteLength === 0) return null;
   const bytes =
     buffer instanceof Uint8ClampedArray ? buffer : new Uint8ClampedArray(buffer);
   return new ImageData(bytes, width, height);
@@ -207,12 +211,15 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
   switch (req.type) {
     case "setSource": {
       source = adopt(req.buffer, req.width, req.height);
-      wasm?.engine.set_source(new Uint8ClampedArray(source.data), source.width, source.height);
+      if (source) {
+        wasm?.engine.set_source(new Uint8ClampedArray(source.data), source.width, source.height);
+      }
       break;
     }
     case "setCoarseSource": {
       coarse = adopt(req.buffer, req.width, req.height);
-      wasm?.engine.set_coarse(new Uint8ClampedArray(coarse.data), coarse.width, coarse.height);
+      const c = coarse;
+      wasm?.engine.set_coarse(c ? new Uint8ClampedArray(c.data) : new Uint8ClampedArray(0), c?.width ?? 0, c?.height ?? 0);
       break;
     }
     case "render":

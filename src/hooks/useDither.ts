@@ -100,6 +100,9 @@ interface Job {
   scale: number;
   /** Pixel count, for the watchdog budget. */
   pixels: number;
+  /** Identity of the plane this job renders; late results for other
+   *  sources must never touch preview state. */
+  sourceTag: object;
 }
 
 interface InFlight {
@@ -141,6 +144,7 @@ export function useDither(
   const queuedRef = useRef<Job | null>(null);
   const timerRef = useRef<number | undefined>(undefined);
   const nextId = useRef(1);
+  const strikesRef = useRef(0);
 
   // What the worker currently holds, so sources ship exactly once.
   const sentSource = useRef<ImageData | null>(null);
@@ -211,6 +215,7 @@ export function useDither(
       region: r,
       scale: 1,
       pixels: w * h,
+      sourceTag: src,
     };
   }
 
@@ -237,13 +242,13 @@ export function useDither(
         sentSource.current = src;
       }
       if (sentCoarse.current !== plane) {
-        if (plane) {
-          const copy = new Uint8ClampedArray(plane.data);
-          worker.postMessage(
-            { type: "setCoarseSource", buffer: copy.buffer as ArrayBuffer, width: plane.width, height: plane.height },
-            [copy.buffer as ArrayBuffer],
-          );
-        }
+        const copy = plane
+          ? new Uint8ClampedArray(plane.data)
+          : new Uint8ClampedArray(0); // explicit clear: previous image's plane must go
+        worker.postMessage(
+          { type: "setCoarseSource", buffer: copy.buffer as ArrayBuffer, width: plane?.width ?? 0, height: plane?.height ?? 0 },
+          [copy.buffer as ArrayBuffer],
+        );
         sentCoarse.current = plane;
       }
     }
@@ -256,7 +261,7 @@ export function useDither(
     const total = src.width * src.height;
     if (total <= SINGLE_PASS_PIXELS) {
       return {
-        job: { id: nextId.current++, stage: "coarse", settings: cfg, region: null, scale: 1, pixels: total },
+        job: { id: nextId.current++, stage: "coarse", settings: cfg, region: null, scale: 1, pixels: total, sourceTag: src },
         input: src,
       };
     }
@@ -272,6 +277,7 @@ export function useDither(
         region: null,
         scale: src.width / w,
         pixels: w * h,
+        sourceTag: src,
       },
       input: plane,
     };
@@ -288,6 +294,7 @@ export function useDither(
 
   function settle(job: Job, result: Layer, took: number) {
     clearWatchdog();
+    strikesRef.current = 0;
     setMs(took);
     if (job.stage === "coarse") {
       setCoarse((prev) => {
@@ -370,6 +377,25 @@ export function useDither(
     }
   }
 
+  /** Watchdog fired without a reply. Demotion is permanent and costly, so
+   *  first try re-kicking the current job - a wedged host stays wedged and
+   *  demotes on the second strike; a merely slow frame recovers silently. */
+  function watchdogStrike() {
+    const inflight = inflightRef.current;
+    if (!inflight || brokenRef.current || !workerRef.current) {
+      demote("timed out");
+      return;
+    }
+    strikesRef.current += 1;
+    if (strikesRef.current >= 2) {
+      demote(`timed out twice (${inflight.job.stage})`);
+      return;
+    }
+    console.warn("[dizako] render timed out; re-kicking worker.");
+    syncPlanes(latest.current.source!);
+    dispatchRef.current(inflight.job);
+  }
+
   function demote(reason: string) {
     if (brokenRef.current) return;
     brokenRef.current = true;
@@ -429,8 +455,10 @@ export function useDither(
       if (msg.type === "result") {
         const inflight = inflightRef.current;
         // A reply for a job we have already moved past is stale; dropping it
-        // keeps a slow coarse pass from overwriting a newer fine one.
+        // keeps a slow coarse pass from overwriting a newer fine one - and a
+        // reply computed from the PREVIOUS image must never reach the screen.
         if (!inflight || inflight.job.id !== msg.id) return;
+        if (latest.current.source && inflight.job.sourceTag !== latest.current.source) return;
         if (msg.bitmap) {
           settle(inflight.job, msg.bitmap, msg.ms);
         } else if (msg.buffer && msg.width && msg.height) {
@@ -482,7 +510,7 @@ export function useDither(
     }
 
     clearWatchdog();
-    timerRef.current = window.setTimeout(() => demote("timed out"), watchdogMs(job.pixels));
+    timerRef.current = window.setTimeout(watchdogStrike, watchdogMs(job.pixels));
   };
 
   /** Source or settings changed: restart from the coarse pass. */

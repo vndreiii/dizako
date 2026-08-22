@@ -238,7 +238,15 @@
 /* Expressive slider (M3): thick rounded track, a gap that opens around the
    handle, stop-indicator dots at each end, and an inset vertical-bar handle.
    Shared by every range input in the app via .m3-slider__input. */
+.m3-slider__input {
+  /* Thumb travel geometry: WebKit/Firefox centre the thumb at
+     thumbHalf + fraction * (trackWidth - thumbWidth), so the gap in the
+     track must be anchored to that same expression, not to a raw %. */
+  --slider-thumb-w: 6px;
+  --slider-gap: 7px;
+}
 .m3-slider__input::-webkit-slider-runnable-track {
+  --c: calc((100% - var(--slider-thumb-w)) * var(--m3-slider-pctf) + var(--slider-thumb-w) / 2);
   height: 16px;
   border-radius: var(--m3-shape-full);
   background:
@@ -254,15 +262,16 @@
     ),
     linear-gradient(
       to right,
-      var(--md-sys-color-primary) 0 calc(var(--m3-slider-pct) - 7px),
-      transparent calc(var(--m3-slider-pct) - 7px) calc(var(--m3-slider-pct) + 7px),
-      var(--md-sys-color-surface-container-highest) calc(var(--m3-slider-pct) + 7px) 100%
+      var(--md-sys-color-primary) 0 calc(var(--c) - var(--slider-gap)),
+      transparent calc(var(--c) - var(--slider-gap)) calc(var(--c) + var(--slider-gap)),
+      var(--md-sys-color-surface-container-highest) calc(var(--c) + var(--slider-gap)) 100%
     );
 }
 .m3-slider__input::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 6px;
+  box-sizing: border-box;
+  width: var(--slider-thumb-w);
   height: 28px;
   margin-top: -6px;
   border-radius: var(--m3-shape-full);
@@ -282,7 +291,11 @@
   height: 32px;
   margin-top: -8px;
 }
+/* Keep the gap centred while pressed: the centre expression reads the same
+   variable, so nothing extra is needed — but the narrower thumb shifts its
+   centre by 1px; acceptable and matches M3's squish. */
 .m3-slider__input::-moz-range-track {
+  --c: calc((100% - var(--slider-thumb-w)) * var(--m3-slider-pctf) + var(--slider-thumb-w) / 2);
   height: 16px;
   border-radius: var(--m3-shape-full);
   background:
@@ -298,13 +311,14 @@
     ),
     linear-gradient(
       to right,
-      var(--md-sys-color-primary) 0 calc(var(--m3-slider-pct) - 7px),
-      transparent calc(var(--m3-slider-pct) - 7px) calc(var(--m3-slider-pct) + 7px),
-      var(--md-sys-color-surface-container-highest) calc(var(--m3-slider-pct) + 7px) 100%
+      var(--md-sys-color-primary) 0 calc(var(--c) - var(--slider-gap)),
+      transparent calc(var(--c) - var(--slider-gap)) calc(var(--c) + var(--slider-gap)),
+      var(--md-sys-color-surface-container-highest) calc(var(--c) + var(--slider-gap)) 100%
     );
 }
 .m3-slider__input::-moz-range-thumb {
-  width: 6px;
+  box-sizing: border-box;
+  width: var(--slider-thumb-w);
   height: 28px;
   border-radius: var(--m3-shape-full);
   background: var(--md-sys-color-primary);

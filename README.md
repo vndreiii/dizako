@@ -52,13 +52,6 @@ Dizako can take its accent colour from [matugen](https://github.com/InioX/matuge
    ```
 3. Run matugen, then pick **Settings → Accent → Matugen** in Dizako.
 
-## Notes
-
-- The dither engine is Rust compiled to WebAssembly (`dither-wasm/`). The
-  original TypeScript engine lives frozen in `legacy/` as a test reference;
-  both are pinned byte-identical by golden-image tests.
-- Layout: `src/` UI + worker, `src-tauri/` Rust shell, `legacy/` old code.
-
 ## Licence
 
 MIT.

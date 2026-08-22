@@ -203,7 +203,6 @@ export function Slider({
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   useWheelAdjust(inputRef, value, min, max, step, onChange, disabled);
-  const pct = ((value - min) / (max - min)) * 100;
   return (
     <div className={`m3-slider ${disabled ? "is-disabled" : ""}`}>
       <div className="m3-slider__head">
@@ -223,7 +222,7 @@ export function Slider({
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}
-        style={{ ["--m3-slider-pct" as string]: `${pct}%` }}
+        style={{ ["--m3-slider-pctf" as string]: `${(value - min) / (max - min)}` }}
       />
     </div>
   );
@@ -253,7 +252,6 @@ export function BareSlider({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   useWheelAdjust(inputRef, value, min, max, step, onChange, false);
-  const pct = ((value - min) / (max - min)) * 100;
   return (
     <input
       ref={inputRef}
@@ -265,7 +263,7 @@ export function BareSlider({
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
       className={`m3-slider__input ${className}`}
-      style={{ ["--m3-slider-pct" as string]: `${pct}%` }}
+      style={{ ["--m3-slider-pctf" as string]: `${(value - min) / (max - min)}` }}
     />
   );
 }
