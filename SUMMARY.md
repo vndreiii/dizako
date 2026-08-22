@@ -249,8 +249,14 @@ commit ae911de plus a follow-up commit.
   before pnpm install (file: dependency on dither-wasm/pkg), direct
   wasm-pack call (pnpm's dep-status check trips first), and
   --config.strict-dep-builds=false for esbuild's postinstall.
-- Installed system-wide via makepkg + pacman -U (dizako-git); v2.0.0 tag
+- PKGBUILD now uses `pnpm tauri build --no-bundle` instead of raw cargo:
+  plain cargo bakes the dev-server URL (localhost:1420) into the binary,
+  which made the installed app start with "connection refused". v2.0.0 tag
   created so pkgver() reports correctly going forward.
+- Package built clean as dizako-git v2.0.0.r1.gf2d1740; the final
+  `sudo pacman -U` is left to Alex (askpass confirmations do not survive
+  headless runs): see /tmp/opencode/dizako-pkg/*.pkg.tar.zst or rerun
+  ./build-all.sh + makepkg.
 
 ### Open items / next steps
 - AppImage bundling still fails at linuxdeploy on this machine (deb/rpm/
