@@ -143,16 +143,26 @@ export function PreviewCanvas({
     return layerSize(coarse, coarseScale);
   }, [original, coarse, coarseScale]);
 
-  /** True when a preview layer belongs to a different image than `original`. */
-  const layerIsStale = useCallback(
+  /**
+   * True when the base layer belongs to a different image than `original`.
+   *
+   * Compares against the EXPECTED downscale dimensions rather than
+   * reconstructing the full size from the scale factor: the scale is derived
+   * from width alone, so `bitmapHeight * scale` drifts by a pixel on most
+   * aspect ratios and strict equality rejected every legitimate frame
+   * (blank canvas at 341 ms). Fine layers are viewport crops by construction,
+   * so they are exempt; cross-image ghosts cannot reach them anyway because
+   * the hook tags results with their source.
+   */
+  const baseIsStale = useCallback(
     (layer: Layer | null) => {
       if (!layer || !original) return false;
-      const full = layerSize(layer, coarseScale);
-      if (!full) return false;
-      return (
-        Math.round(full.width) !== original.width ||
-        Math.round(full.height) !== original.height
-      );
+      if (coarseScale === 1) {
+        return layer.width !== original.width || layer.height !== original.height;
+      }
+      const ew = Math.round(original.width / coarseScale);
+      const eh = Math.round(original.height / coarseScale);
+      return Math.abs(layer.width - ew) > 1 || Math.abs(layer.height - eh) > 1;
     },
     [original, coarseScale],
   );
@@ -189,9 +199,7 @@ export function PreviewCanvas({
     const size = sourceSize();
     // A base layer from the previous image would render stretched into this
     // one's aspect ratio; drop stale layers instead of drawing them.
-    const baseStale = layerIsStale(coarse);
-    const sharpStale = layerIsStale(fine);
-    if (!size || !coarse || baseStale) return;
+    if (!size || !coarse || baseIsStale(coarse)) return;
 
     const w = size.width * zoom;
     const h = size.height * zoom;
@@ -217,7 +225,7 @@ export function PreviewCanvas({
     // The sharp pass goes over the top, aligned to the region it covers. Until
     // it lands, the coarse layer showing through is what makes a slider drag
     // feel immediate.
-    if (fine && !sharpStale) {
+    if (fine) {
       const sharp = asDrawable(fine, fineBuf);
       if (region) {
         g.drawImage(sharp, x + region.x * zoom, y + region.y * zoom, region.width * zoom, region.height * zoom);
@@ -255,7 +263,7 @@ export function PreviewCanvas({
         onViewport(next);
       }
     }
-  }, [zoom, pan, compare, split, region, sourceSize, layerIsStale, coarse, fine, onViewport]);
+  }, [zoom, pan, compare, split, region, sourceSize, baseIsStale, coarse, fine, onViewport]);
 
   const fit = useCallback(() => {
     const stage = stageRef.current;

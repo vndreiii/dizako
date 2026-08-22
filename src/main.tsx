@@ -10,6 +10,12 @@ import App from "./App";
 import { SnackbarProvider } from "./components/primitives";
 import { I18nProvider } from "./i18n";
 
+// Forward webview console to the Rust log (stdout) so `dizako` from a
+// terminal shows renderer-side warnings and errors. No-op in browser mode.
+if ("__TAURI_INTERNALS__" in window) {
+  void import("@tauri-apps/plugin-log").then((m) => void m.attachConsole());
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <I18nProvider>
