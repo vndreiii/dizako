@@ -4,11 +4,11 @@
 
 # Dizako
 
-**A dithering studio.** Turn an image into a palette you control — 29
-algorithms, 130 palettes, and a layer stack that decides which colour lands
-in the shadows and which in the highlights.
+**A dithering studio.** Load an image, pick from 29 algorithms and 130
+palettes, and decide which colours land in the shadows and which in the
+highlights.
 
-Built with Tauri, React and Material 3. Everything runs locally: no uploads,
+Built with Tauri, React, and Material 3. Everything runs locally. No uploads,
 no tracking.
 
 <table>
@@ -43,19 +43,22 @@ no tracking.
 
 ## What it does
 
-Load an image, pick an algorithm and a palette, tune until it looks right,
-export a PNG. Every slider re-renders live; a compare wipe shows original vs
+Open an image, choose an algorithm and a palette, tune until it looks right,
+then export a PNG. Sliders re-render live. A compare wipe shows original vs
 dithered.
 
-- **Error diffusion** — Floyd–Steinberg, Jarvis, Stucki, Sierra, Atkinson and friends.
-- **Ordered** — Bayer, halftone screens, line screens, blue noise, checkerboard.
-- **Threshold / experimental** — hard threshold, random noise, Riemersma, dot diffusion, Omino-like.
-- **Palette layers** — colours stacked by tonal position, so you choose what goes where, not just what's closest.
-- **Image controls** — exposure, contrast, gamma, saturation, hue shift, blur, sharpen, all applied before the dither.
+| Area | Includes |
+| --- | --- |
+| **Error diffusion** | Floyd-Steinberg, Jarvis, Stucki, Sierra, Atkinson, and friends |
+| **Ordered** | Bayer, halftone screens, line screens, blue noise, checkerboard |
+| **Threshold / experimental** | Hard threshold, random noise, Riemersma, dot diffusion, Omino-like |
+| **Palette layers** | Colours stacked by tonal position, so you choose what goes where |
+| **Image controls** | Exposure, contrast, gamma, saturation, hue, blur, sharpen (before dither) |
 
 ## Building
 
-Needs Rust, Node 22+, pnpm and wasm-pack, plus `webkit2gtk-4.1` on Linux.
+Needs Rust, Node 22+, pnpm, and wasm-pack. On Linux you also need
+`webkit2gtk-4.1`.
 
 ```bash
 pnpm install

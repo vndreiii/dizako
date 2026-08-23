@@ -1,7 +1,7 @@
 # Maintainer: Alex <alex@milfs.party>
 pkgname=dizako-git
 # Static placeholder; pkgver() computes the real -git version at makepkg time.
-pkgver=2.0.0
+pkgver=2.0.1
 pkgrel=1
 pkgdesc="Material 3 Expressive dithering studio"
 arch=('x86_64')
@@ -16,7 +16,7 @@ sha256sums=('SKIP')
 
 pkgver() {
   cd "$pkgname" 2>/dev/null || cd dizako
-  git describe --long --tags 2>/dev/null | sed 's/\([^-]*-g\)/r\1/;s/-/./g' || echo 2.0.0
+  git describe --long --tags 2>/dev/null | sed 's/\([^-]*-g\)/r\1/;s/-/./g' || echo 2.0.1
 }
 
 build() {
