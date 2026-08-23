@@ -1,7 +1,7 @@
 # Maintainer: Alex <alex@milfs.party>
 pkgname=dizako-git
 # Static placeholder; pkgver() computes the real -git version at makepkg time.
-pkgver=2.0.1
+pkgver=v2.0.1.r0.g25d86ba
 pkgrel=1
 pkgdesc="Material 3 Expressive dithering studio"
 arch=('x86_64')
@@ -21,12 +21,8 @@ pkgver() {
 
 build() {
   cd "$pkgname" 2>/dev/null || cd dizako
-  # The wasm engine must exist before pnpm install: package.json depends on
-  # dither-wasm/pkg via a file: reference. Invoked directly because even
-  # `pnpm <script>` runs its dep-status check, which trips on that dependency.
   wasm-pack build dither-wasm --release --target web --out-dir pkg
-  # strict-dep-builds aborts on esbuild's whitelisted postinstall otherwise.
-  pnpm install --config.strict-dep-builds=false
+  pnpm install
   # Must be `tauri build`, never raw cargo: only the tauri CLI compiles the
   # release context with the frontend assets EMBEDDED; plain cargo bakes the
   # dev-server URL in and the app starts with "connection refused".
