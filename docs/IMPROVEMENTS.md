@@ -57,7 +57,7 @@ on the main thread too. On a 16 MP source that is seconds of dead UI, twice. Fix
   avoids shipping 64 MB pixel blobs through `postMessage`.
 
 ### 1.4 Translation coverage is partial — and enforced nowhere
-`TRANSLATIONS_TODO.json` tracks this informally. Hardcoded English still lives in
+The catalogue lives at `src/locales/translations.json`. Hardcoded English still lives in
 `PreviewCanvas` HUD labels ("Fit to window", "refining…", `PreviewCanvas.tsx:332–388`),
 snackbars in `App.tsx` ("Loaded …", "Exported PNG", "That file is not an image"),
 `SettingsSheet` headings, and the empty-state body at `App.tsx:464`. Also:
@@ -66,7 +66,7 @@ snackbars in `App.tsx` ("Loaded …", "Exported PNG", "That file is not an image
   resolves to itself so regressions are visible instead of silent.
 - Ship locales as separate chunks (`import(`./locales/${locale}.json`)` on demand);
   today all 18 languages ride along in the main bundle via
-  `translations.json` (≈50 KB) even though most users need one.
+  `src/locales/translations.json` (≈50 KB) even though most users need one.
 
 ### 1.5 Keyboard surface is minimal
 Only Ctrl+Z/Y/A are handled (`App.tsx:307`). Cheap wins consistent with an editor app:

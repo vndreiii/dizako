@@ -14,17 +14,23 @@ no tracking.
 <table>
   <tr>
     <td align="center" width="33%">
-      <img src="screenshots/mockup__algo_1787436742.png" alt="Algorithm picker" />
+      <a href="screenshots/mockup__algo_1787436742.png">
+        <img src="screenshots/mockup__algo_1787436742.png" alt="Algorithm picker" />
+      </a>
       <br />
       <sub>Algorithms</sub>
     </td>
     <td align="center" width="33%">
-      <img src="screenshots/mockup_palette_1787437669.png" alt="Palette editor" />
+      <a href="screenshots/mockup_palette_1787437669.png">
+        <img src="screenshots/mockup_palette_1787437669.png" alt="Palette editor" />
+      </a>
       <br />
       <sub>Palettes</sub>
     </td>
     <td align="center" width="33%">
-      <img src="screenshots/mockup__image_1787437379.png" alt="Image controls" />
+      <a href="screenshots/mockup__image_1787437379.png">
+        <img src="screenshots/mockup__image_1787437379.png" alt="Image controls" />
+      </a>
       <br />
       <sub>Image</sub>
     </td>
