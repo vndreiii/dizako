@@ -113,7 +113,7 @@ build_linux() {
     say "arch package (makepkg)"
     if (cd packaging && makepkg -cf); then
       say "installing arch package"
-      pkexec pacman -U --noconfirm packaging/*.pkg.tar.zst || warn "installation failed"
+      pkexec pacman -U --noconfirm "$PWD"/packaging/*.pkg.tar.zst || warn "installation failed"
     else
       warn "makepkg failed"
     fi
