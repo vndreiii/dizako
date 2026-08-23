@@ -14,10 +14,8 @@ dizako/
 *.pkg.tar.zst
 *.tar.gz
 
-# Qt port and other legacy material stay untracked,
-# except the frozen TS dither engine (parity reference).
-legacy/*
-!legacy/dither/
+# Qt port and other legacy material — keep locally, not on remote.
+legacy/
 
 # Docs and Assets (User requested ignores)
 docs/what-this-is.txt
