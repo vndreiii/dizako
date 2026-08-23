@@ -11,6 +11,26 @@ in the shadows and which in the highlights.
 Built with Tauri, React and Material 3. Everything runs locally: no uploads,
 no tracking.
 
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="screenshots/mockup__algo_1787436742.png" alt="Algorithm picker" />
+      <br />
+      <sub>Algorithms</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="screenshots/mockup_palette_1787437669.png" alt="Palette editor" />
+      <br />
+      <sub>Palettes</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="screenshots/mockup__image_1787437379.png" alt="Image controls" />
+      <br />
+      <sub>Image</sub>
+    </td>
+  </tr>
+</table>
+
 </div>
 
 ---
