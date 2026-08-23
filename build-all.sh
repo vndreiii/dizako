@@ -113,7 +113,16 @@ build_linux() {
     say "arch package (makepkg)"
     if (cd packaging && makepkg -cf); then
       say "installing arch package"
-      pkexec pacman -U --noconfirm "$PWD"/packaging/*.pkg.tar.zst || warn "installation failed"
+      # Install ONLY the package we just built. Globbing packaging/*.pkg.tar.zst
+      # hands pacman every stale artifact still lying around -- duplicate targets
+      # for the same pkgname, plus any truncated one -- and pacman then aborts the
+      # whole transaction, so nothing gets installed at all.
+      pkg=$(ls -t "$PWD"/packaging/*.pkg.tar.zst 2>/dev/null | head -1)
+      if [ -n "$pkg" ]; then
+        pkexec /usr/bin/pacman -U --noconfirm "$pkg" || warn "installation failed"
+      else
+        warn "makepkg reported success but produced no package"
+      fi
     else
       warn "makepkg failed"
     fi
