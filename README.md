@@ -99,6 +99,6 @@ Dizako can take its accent colour from [matugen](https://github.com/InioX/matuge
    ```
 3. Run matugen, then pick **Settings → Accent → Matugen** in Dizako.
 
-## Licence
+## License
 
 MIT.
