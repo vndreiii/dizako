@@ -57,21 +57,57 @@ dithered.
 
 ## Building
 
-Dizako includes a `./build-all.sh` script that automatically checks for missing dependencies, compiles the WebAssembly engine, builds the frontend, and bundles the application for your operating system (producing `.deb`, `.rpm`, `.AppImage`, and an Arch `.pkg.tar.zst` package on Linux).
+Each platform has its own build script. Both compile the WebAssembly engine, build the frontend, and then bundle the app; neither cross-compiles, so run the one that matches the machine you are on.
 
-To build everything, just run:
+| Platform | Script | Produces |
+| --- | --- | --- |
+| Linux | `./build-all.sh` | `.deb`, `.rpm`, `.AppImage`, Arch `.pkg.tar.zst` |
+| Windows | `.\build-win.ps1` | portable `dizako.exe`, NSIS installer |
+| macOS | `./build-all.sh macos` | prints the steps only, see below |
+
+### Shared dependencies
+Needed on every platform:
+- **Core build tools**: Node 22+, `pnpm`, Rust (`cargo`), and `wasm-pack`.
+- **Rust Wasm target**: `rustup target add wasm32-unknown-unknown`, or the `rust-wasm` package via `pacman`.
+
+### Linux
+
 ```bash
 ./build-all.sh
 ```
 
-### Dependencies
-Before building, ensure you have the following installed:
-- **Core build tools**: Node 22+, `pnpm`, Rust (`cargo`), and `wasm-pack`.
-- **Rust Wasm target**: The WebAssembly target for Rust must be installed (`rustup target add wasm32-unknown-unknown` or the `rust-wasm` package via `pacman`).
-- **Linux Tauri dependencies**: `webkit2gtk-4.1`, `base-devel`, `curl`, `wget`, `openssl`, `appmenu-gtk-module`, `gtk3`, `libvips`, `libayatana-appindicator`. *(Note: `./build-all.sh` will automatically prompt to install these for you via `pkexec pacman` if you are on Arch Linux)*.
+The script checks for missing dependencies, builds every bundle, and finally installs the Arch package it just produced via `pkexec pacman -U`. Each bundle is best effort, so one failing packager does not kill the rest.
 
-### Manual Build
-If you prefer not to use the automated script:
+Additional Tauri dependencies: `webkit2gtk-4.1`, `base-devel`, `curl`, `wget`, `openssl`, `appmenu-gtk-module`, `gtk3`, `libvips`, `libayatana-appindicator`. *(On Arch, `./build-all.sh` offers to install these for you via `pkexec pacman`.)*
+
+### Windows
+
+Run from PowerShell **on a Windows machine**:
+```powershell
+.\build-win.ps1
+```
+
+The script validates its tools, compiles the WASM engine, installs dependencies, runs the Tauri build, then collects both binaries into a fresh `release-win/` directory and prints their sizes. You get two artifacts, and they are not interchangeable:
+
+| Artifact | What it is |
+| --- | --- |
+| `dizako.exe` | Portable standalone build. Launches straight into the GUI with no console window, needs no installation. |
+| `Dizako_<version>_x64-setup.exe` | NSIS installer. Setup wizard, Start menu entry, uninstaller. |
+
+Additional Windows requirements:
+- **Rust MSVC toolchain** plus the Visual Studio Build Tools (C++ workload). Windows builds use MSVC by default.
+- **WebView2**, which is preinstalled on Windows 11 and on current Windows 10.
+
+`.cargo/config.toml` pins a mingw linker for `x86_64-pc-windows-gnu`. That only applies when you explicitly target the GNU toolchain and is ignored by the default MSVC build; delete that section if you want to build the GNU target without mingw present.
+
+Cross-building Windows binaries from Linux needs the NSIS and mingw toolchains (`pacman -S mingw-w64-gcc nsis` or equivalent) and `pnpm tauri build --runner cargo --target x86_64-pc-windows-gnu --bundles nsis`. This is untested, which is why running the script on Windows is the supported path.
+
+### macOS
+
+Scaffolding only, never exercised. `./build-all.sh macos` prints the steps: install the Xcode command line tools, then `pnpm tauri build --bundles dmg,app`.
+
+### Manual build
+If you prefer not to use the scripts:
 ```bash
 # Compile the WebAssembly engine first
 wasm-pack build dither-wasm --release --target web --out-dir pkg
@@ -85,6 +121,8 @@ pnpm tauri build          # bundle into src-tauri/target/release/bundle
 ```
 
 Frontend only: `pnpm dev` / `pnpm build`.
+
+> **Building the AppImage by hand?** Set `NO_STRIP=1`. `bundle.targets` is `"all"`, so a bare `pnpm tauri build` on Linux will try the AppImage, and linuxdeploy ships an old `strip` that chokes on the `.relr.dyn` sections in current system libraries. Without it the bundle fails with an unhelpful `failed to run linuxdeploy`. `./build-all.sh` already sets this for you.
 
 ## Matugen theming
 
