@@ -1,0 +1,27 @@
+{
+  "en": {
+    "palette.matching": "Matching",
+    "palette.matchingHint": "Perceptual distance. Best for photographic palettes.",
+    "palette.stackInfluence": "Stack influence",
+    "palette.stackInfluenceHint": "How much a layer's place in the stack outweighs plain nearest-colour matching. At zero the arrangement is decorative - the same two colours land on the same pixels however you stack them. Turn it up and a colour parked at the bottom actually claims the shadows.",
+    "palette.yourOwn": "Your own",
+    "palette.monochrome": "Monochrome",
+    "palette.layers": "Layers",
+    "palette.highlights": "Highlights",
+    "palette.shadows": "Shadows",
+    "palette.layersHint": "The dock lists highlights at the top, matching how a tone curve reads.",
+    "algorithm.available": "to choose from",
+    "picker.addColour": "Add a colour",
+    "picker.useColour": "Use colour",
+    "picker.addAllFive": "Add all five",
+    "picker.analogous": "Analogous",
+    "picker.monochromatic": "Monochromatic",
+    "picker.triad": "Triad",
+    "picker.complementary": "Complementary",
+    "picker.split": "Split",
+    "picker.doubleSplit": "Double split",
+    "picker.square": "Square",
+    "picker.compound": "Compound",
+    "picker.shades": "Shades"
+  }
+}

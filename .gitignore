@@ -28,3 +28,6 @@ assets/dizako_icon.png
 assets/dizako_icon.jpg
 patch_*.js
 TRANSLATIONS_TODO_FILL.json
+
+# Serena IDE local state
+.serena/
