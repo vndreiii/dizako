@@ -29,3 +29,7 @@ TRANSLATIONS_TODO_FILL.json
 
 # Serena IDE local state
 .serena/
+
+# Build artifacts
+release-win/
+
