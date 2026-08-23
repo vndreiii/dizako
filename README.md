@@ -57,13 +57,31 @@ dithered.
 
 ## Building
 
-Needs Rust, Node 22+, pnpm, and wasm-pack. On Linux you also need
-`webkit2gtk-4.1`.
+Dizako includes a `./build-all.sh` script that automatically checks for missing dependencies, compiles the WebAssembly engine, builds the frontend, and bundles the application for your operating system (producing `.deb`, `.rpm`, `.AppImage`, and an Arch `.pkg.tar.zst` package on Linux).
 
+To build everything, just run:
 ```bash
+./build-all.sh
+```
+
+### Dependencies
+Before building, ensure you have the following installed:
+- **Core build tools**: Node 22+, `pnpm`, Rust (`cargo`), and `wasm-pack`.
+- **Rust Wasm target**: The WebAssembly target for Rust must be installed (`rustup target add wasm32-unknown-unknown` or the `rust-wasm` package via `pacman`).
+- **Linux Tauri dependencies**: `webkit2gtk-4.1`, `base-devel`, `curl`, `wget`, `openssl`, `appmenu-gtk-module`, `gtk3`, `libvips`, `libayatana-appindicator`. *(Note: `./build-all.sh` will automatically prompt to install these for you via `pkexec pacman` if you are on Arch Linux)*.
+
+### Manual Build
+If you prefer not to use the automated script:
+```bash
+# Compile the WebAssembly engine first
+wasm-pack build dither-wasm --release --target web --out-dir pkg
+
+# Install frontend dependencies
 pnpm install
-pnpm tauri dev            # run it
-pnpm tauri build          # bundles into src-tauri/target/release/bundle
+
+# Run the app
+pnpm tauri dev            # development mode
+pnpm tauri build          # bundle into src-tauri/target/release/bundle
 ```
 
 Frontend only: `pnpm dev` / `pnpm build`.
