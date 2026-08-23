@@ -107,7 +107,11 @@ build_linux() {
   pnpm tauri build --bundles deb,rpm || warn "bundle 'deb,rpm' failed"
 
   say "tauri bundle: appimage"
-  pnpm tauri build --bundles appimage || warn "bundle 'appimage' failed"
+  # NO_STRIP is mandatory. linuxdeploy carries its own binutils `strip`, built
+  # in 2024 and too old to parse the SHT_RELR (`.relr.dyn`) sections every
+  # current Arch library ships. Without it, stripping fails on each bundled
+  # library, linuxdeploy exits non-zero and no AppImage is ever produced.
+  NO_STRIP=1 pnpm tauri build --bundles appimage || warn "bundle 'appimage' failed"
 
   if command -v makepkg >/dev/null; then
     say "arch package (makepkg)"
