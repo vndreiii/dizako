@@ -112,6 +112,11 @@ export function PreviewCanvas({
   /** Until the user zooms or pans, the view keeps re-fitting as the stage resizes. */
   const touchedRef = useRef(false);
   const reportedRef = useRef<string>("");
+  const zoomRef = useRef(zoom);
+  const panRef = useRef(pan);
+  const hasImageRef = useRef(false);
+  zoomRef.current = zoom;
+  panRef.current = pan;
 
   /**
    * Pointer and wheel events land faster than frames; applying them directly
@@ -316,14 +321,90 @@ export function PreviewCanvas({
   }, [draw, fit]);
 
   const hasImage = Boolean(coarse);
+  hasImageRef.current = hasImage;
 
-  const onWheel = (e: React.WheelEvent) => {
-    if (!hasImage) return;
-    e.preventDefault();
-    touchedRef.current = true;
-    const factor = Math.exp(-e.deltaY * 0.0015);
-    scheduleGesture(() => setZoom((z) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z * factor))));
-  };
+  /**
+   * Zoom keeping the source pixel under the cursor fixed.
+   *
+   * Trackpad pinch and mouse-wheel zoom both land here. Without the pan
+   * correction the image scales around the stage centre, which feels like the
+   * page itself is zooming rather than the canvas contents.
+   */
+  const zoomAt = useCallback(
+    (clientX: number, clientY: number, factor: number) => {
+      const stage = stageRef.current;
+      const size = sourceSize();
+      if (!stage || !size) return;
+      const cw = stage.clientWidth;
+      const ch = stage.clientHeight;
+      if (cw === 0 || ch === 0) return;
+      const rect = stage.getBoundingClientRect();
+      const mx = clientX - rect.left;
+      const my = clientY - rect.top;
+      const z = zoomRef.current;
+      const p = panRef.current;
+      const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z * factor));
+      if (next === z) return;
+      const x = (cw - size.width * z) / 2 + p.x;
+      const y = (ch - size.height * z) / 2 + p.y;
+      const ix = (mx - x) / z;
+      const iy = (my - y) / z;
+      const nx = mx - ix * next;
+      const ny = my - iy * next;
+      touchedRef.current = true;
+      zoomRef.current = next;
+      panRef.current = {
+        x: nx - (cw - size.width * next) / 2,
+        y: ny - (ch - size.height * next) / 2,
+      };
+      setZoom(next);
+      setPan(panRef.current);
+    },
+    [sourceSize],
+  );
+
+  /**
+   * Native, non-passive wheel listener.
+   *
+   * React 17+ attaches root `wheel` listeners as passive, so `preventDefault`
+   * inside `onWheel` cannot stop browser/WebView pinch-zoom of the whole UI.
+   * Handling the event here keeps pinch on the canvas. Horizontal two-finger
+   * swipes are swallowed so the WebView cannot navigate, then bubble to App
+   * which maps them to undo/redo.
+   */
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const onWheel = (e: WheelEvent) => {
+      // Always swallow ctrl/meta+wheel over the stage so the WebView cannot
+      // page-zoom even before an image is loaded.
+      const pinch = e.ctrlKey || e.metaKey;
+      if (!hasImageRef.current) {
+        if (pinch) e.preventDefault();
+        return;
+      }
+
+      const absX = Math.abs(e.deltaX);
+      const absY = Math.abs(e.deltaY);
+
+      // Horizontal swipe: block browser back/forward; App owns undo/redo.
+      if (!pinch && absX > absY && absX > 0) {
+        e.preventDefault();
+        return;
+      }
+
+      if (absY === 0 && !pinch) return;
+      e.preventDefault();
+      // Pinch events report tiny pixel deltas; line-mode mice are coarser.
+      const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      const factor = Math.exp(-dy * (pinch ? 0.01 : 0.0015));
+      scheduleGesture(() => zoomAt(e.clientX, e.clientY, factor));
+    };
+
+    stage.addEventListener("wheel", onWheel, { passive: false });
+    return () => stage.removeEventListener("wheel", onWheel);
+  }, [scheduleGesture, zoomAt]);
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (!hasImage) return;
@@ -350,8 +431,14 @@ export function PreviewCanvas({
   };
 
   const zoomBy = (f: number) => {
-    touchedRef.current = true;
-    setZoom((z) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z * f)));
+    const stage = stageRef.current;
+    if (!stage) {
+      touchedRef.current = true;
+      setZoom((z) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z * f)));
+      return;
+    }
+    const r = stage.getBoundingClientRect();
+    zoomAt(r.left + r.width / 2, r.top + r.height / 2, f);
   };
 
   const size = sourceSize();
@@ -365,7 +452,6 @@ export function PreviewCanvas({
       <div
         ref={stageRef}
         className={`preview__stage ${hasImage ? "" : "is-empty"}`}
-        onWheel={onWheel}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}

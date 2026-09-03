@@ -21,7 +21,8 @@
                 "fullscreen": false,
                 "dragDropEnabled": true,
                 "decorations": false,
-                "transparent": false
+                "transparent": false,
+                "zoomHotkeysEnabled": false
             }
         ],
         "security": {

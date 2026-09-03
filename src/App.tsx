@@ -345,6 +345,10 @@ export default function App() {
         // Inside a field, select-all is exactly right; anywhere else it selects
         // every label in the UI, which is only ever an accident.
         if (!editable(e.target)) e.preventDefault();
+      } else if (k === "=" || k === "+" || k === "-" || k === "0") {
+        // Ctrl+/-/0 are page-zoom hotkeys in every WebView; Dizako zooms the
+        // canvas itself, so these must never scale the chrome.
+        e.preventDefault();
       }
     };
 
@@ -360,6 +364,73 @@ export default function App() {
     return () => {
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("contextmenu", onContextMenu);
+    };
+  }, [undo, redo, exportPng]);
+
+  /**
+   * Trackpad gestures that browsers steal for themselves.
+   *
+   * - Pinch (ctrl/meta + wheel) must never page-zoom the shell; the preview
+   *   stage owns pinch and zooms only the canvas.
+   * - Two-finger left/right maps to undo/redo, matching "back/forth" on the
+   *   edit history rather than WebView navigation.
+   */
+  useEffect(() => {
+    const HISTORY_SWIPE_PX = 80;
+    const HISTORY_SWIPE_COOLDOWN_MS = 280;
+    let accumX = 0;
+    let lastFire = 0;
+
+    const canScrollX = (el: Element | null) => {
+      for (let n = el as HTMLElement | null; n; n = n.parentElement) {
+        const style = getComputedStyle(n);
+        const ox = style.overflowX;
+        if (ox === "auto" || ox === "scroll") {
+          return n.scrollWidth > n.clientWidth + 1;
+        }
+        if (n === document.body) break;
+      }
+      return false;
+    };
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        // PreviewCanvas handles pinch over the stage; everywhere else just
+        // kill the WebView page-zoom that would otherwise scale the UI.
+        e.preventDefault();
+        return;
+      }
+
+      const absX = Math.abs(e.deltaX);
+      const absY = Math.abs(e.deltaY);
+      if (absX <= absY || absX === 0) return;
+      if (canScrollX(e.target as Element | null)) return;
+
+      e.preventDefault();
+      accumX += e.deltaX;
+      if (Math.abs(accumX) < HISTORY_SWIPE_PX) return;
+      const now = performance.now();
+      if (now - lastFire >= HISTORY_SWIPE_COOLDOWN_MS) {
+        // Positive deltaX ≈ fingers moved left → back (undo).
+        if (accumX > 0) undo();
+        else redo();
+        lastFire = now;
+      }
+      accumX = 0;
+    };
+
+    // Safari/WebKit legacy gesture events still fire on some Linux builds.
+    const killGesture = (e: Event) => e.preventDefault();
+
+    window.addEventListener("wheel", onWheel, { passive: false, capture: true });
+    document.addEventListener("gesturestart", killGesture, { passive: false });
+    document.addEventListener("gesturechange", killGesture, { passive: false });
+    document.addEventListener("gestureend", killGesture, { passive: false });
+    return () => {
+      window.removeEventListener("wheel", onWheel, { capture: true } as EventListenerOptions);
+      document.removeEventListener("gesturestart", killGesture);
+      document.removeEventListener("gesturechange", killGesture);
+      document.removeEventListener("gestureend", killGesture);
     };
   }, [undo, redo]);
 

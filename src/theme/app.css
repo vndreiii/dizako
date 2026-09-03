@@ -448,6 +448,8 @@
   display: grid;
   place-items: center;
   cursor: grab;
+  /* Own all touch/trackpad gestures so pinch never bubbles into page-zoom. */
+  touch-action: none;
   /* Checkerboard reads through any transparency in the source. */
   background-image:
     linear-gradient(45deg, color-mix(in srgb, var(--md-sys-color-on-surface) 6%, transparent) 25%, transparent 25%),

@@ -103,6 +103,8 @@ body,
 #root {
   height: 100%;
   margin: 0;
+  /* Kill browser overscroll navigation; history swipes are handled in JS. */
+  overscroll-behavior: none;
 }
 
 body {
@@ -111,6 +113,8 @@ body {
   color: var(--md-sys-color-on-background);
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
+  /* Desktop shell: never let the WebView pinch-zoom the chrome. */
+  touch-action: manipulation;
   transition: background var(--m3-dur-med2) var(--m3-ease-standard),
     color var(--m3-dur-med2) var(--m3-ease-standard);
 }
