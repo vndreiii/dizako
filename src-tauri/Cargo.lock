@@ -644,11 +644,16 @@ dependencies = [
 name = "dizako"
 version = "2.0.1"
 dependencies = [
+ "gio",
+ "glib",
+ "gobject-sys",
+ "gtk",
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",
  "tauri-plugin-fs",
  "tauri-plugin-log",
+ "webkit2gtk",
 ]
 
 [[package]]

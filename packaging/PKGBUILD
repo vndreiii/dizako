@@ -1,7 +1,7 @@
 # Maintainer: Alex <alex@milfs.party>
 pkgname=dizako-git
 # Static placeholder; pkgver() computes the real -git version at makepkg time.
-pkgver=v2.0.1.r6.gc52d6b8
+pkgver=v2.0.1.r11.gb8220b6
 pkgrel=1
 pkgdesc="Material 3 Expressive dithering studio"
 arch=('x86_64')

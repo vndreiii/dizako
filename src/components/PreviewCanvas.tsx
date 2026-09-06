@@ -406,6 +406,24 @@ export function PreviewCanvas({
     return () => stage.removeEventListener("wheel", onWheel);
   }, [scheduleGesture, zoomAt]);
 
+  /**
+   * Native Linux pinch (WebKitGTK GestureZoom) is forwarded from Rust as
+   * `dizako-pinch` because the gesture never becomes a cancellable wheel event.
+   */
+  useEffect(() => {
+    const onPinch = (e: Event) => {
+      if (!hasImageRef.current) return;
+      const factor = (e as CustomEvent<{ factor?: number }>).detail?.factor;
+      if (!factor || !Number.isFinite(factor) || factor <= 0) return;
+      const stage = stageRef.current;
+      if (!stage) return;
+      const r = stage.getBoundingClientRect();
+      scheduleGesture(() => zoomAt(r.left + r.width / 2, r.top + r.height / 2, factor));
+    };
+    window.addEventListener("dizako-pinch", onPinch);
+    return () => window.removeEventListener("dizako-pinch", onPinch);
+  }, [scheduleGesture, zoomAt]);
+
   const onPointerDown = (e: React.PointerEvent) => {
     if (!hasImage) return;
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
