@@ -13,6 +13,8 @@ import {
   IconSettings,
   IconTune,
   IconUpload,
+  IconBack,
+  IconForward,
 } from "./components/Icons";
 import { SettingsSheet } from "./components/SettingsSheet";
 import { WheelStepContext } from "./components/primitives";
@@ -148,6 +150,7 @@ export default function App() {
   const [dragOver, setDragOver] = useState(false);
   const [decoding, setDecoding] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const historyFrameRef = useRef<HTMLDivElement>(null);
   const snack = useSnackbar();
 
   // In dynamic mode the accent follows the image; falls back to the chosen
@@ -372,14 +375,94 @@ export default function App() {
    *
    * - Pinch (ctrl/meta + wheel) must never page-zoom the shell; the preview
    *   stage owns pinch and zooms only the canvas.
-   * - Two-finger left/right maps to undo/redo, matching "back/forth" on the
-   *   edit history rather than WebView navigation.
+   * - Two-finger left/right maps to undo/redo. Progress is scrubbed live so
+   *   the arrow/rail animation follows the fingers; an idle gap ends the
+   *   gesture (commit past the arm threshold, otherwise snap back).
    */
   useEffect(() => {
-    const HISTORY_SWIPE_PX = 80;
-    const HISTORY_SWIPE_COOLDOWN_MS = 280;
-    let accumX = 0;
-    let lastFire = 0;
+    const COMMIT_PX = 140;
+    const ARM_PROGRESS = 0.55;
+    const IDLE_MS = 130;
+    const FLICK_PX_PER_MS = 1.35;
+
+    type Dir = "back" | "forward";
+    const frame = () => historyFrameRef.current;
+    const swipe = {
+      dir: null as Dir | null,
+      progress: 0,
+      lastTs: 0,
+      velocity: 0,
+      settling: false,
+      idleTimer: 0 as number | undefined,
+      raf: 0 as number | undefined,
+    };
+
+    const applyVisual = (progress: number, dir: Dir | null, settling: boolean) => {
+      const el = frame();
+      if (!el) return;
+      const p = Math.min(1, Math.max(0, progress));
+      el.style.setProperty("--history-p", p.toFixed(4));
+      if (dir) el.dataset.dir = dir;
+      else delete el.dataset.dir;
+      el.classList.toggle("is-swiping", p > 0.001 || settling);
+      el.classList.toggle("is-armed", p >= ARM_PROGRESS);
+      el.classList.toggle("is-settling", settling);
+    };
+
+    const stopRaf = () => {
+      if (swipe.raf !== undefined) {
+        cancelAnimationFrame(swipe.raf);
+        swipe.raf = undefined;
+      }
+    };
+
+    const animateTo = (target: number, ms: number, onDone?: () => void) => {
+      stopRaf();
+      const start = swipe.progress;
+      const t0 = performance.now();
+      swipe.settling = true;
+      applyVisual(start, swipe.dir, true);
+      const tick = (now: number) => {
+        const t = ms <= 0 ? 1 : Math.min(1, (now - t0) / ms);
+        const eased = 1 - (1 - t) ** 3;
+        swipe.progress = start + (target - start) * eased;
+        applyVisual(swipe.progress, swipe.dir, true);
+        if (t < 1) {
+          swipe.raf = requestAnimationFrame(tick);
+          return;
+        }
+        swipe.raf = undefined;
+        onDone?.();
+      };
+      swipe.raf = requestAnimationFrame(tick);
+    };
+
+    const resetSwipe = () => {
+      swipe.dir = null;
+      swipe.progress = 0;
+      swipe.velocity = 0;
+      swipe.settling = false;
+      applyVisual(0, null, false);
+    };
+
+    const finish = () => {
+      if (swipe.settling || !swipe.dir) return;
+      const dir = swipe.dir;
+      const flick = Math.abs(swipe.velocity) >= FLICK_PX_PER_MS;
+      const armed = swipe.progress >= ARM_PROGRESS || (flick && swipe.progress > 0.2);
+      const canCommit =
+        dir === "back" ? past.current.length > 0 : future.current.length > 0;
+
+      if (armed && canCommit) {
+        animateTo(1, flick ? 90 : 160, () => {
+          if (dir === "back") undo();
+          else redo();
+          animateTo(0, flick ? 120 : 220, resetSwipe);
+        });
+      } else {
+        animateTo(0, flick && armed ? 140 : 200, resetSwipe);
+      }
+    };
 
     const canScrollX = (el: Element | null) => {
       for (let n = el as HTMLElement | null; n; n = n.parentElement) {
@@ -395,8 +478,6 @@ export default function App() {
 
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
-        // PreviewCanvas handles pinch over the stage; everywhere else just
-        // kill the WebView page-zoom that would otherwise scale the UI.
         e.preventDefault();
         return;
       }
@@ -405,21 +486,44 @@ export default function App() {
       const absY = Math.abs(e.deltaY);
       if (absX <= absY || absX === 0) return;
       if (canScrollX(e.target as Element | null)) return;
+      if (swipe.settling) return;
 
       e.preventDefault();
-      accumX += e.deltaX;
-      if (Math.abs(accumX) < HISTORY_SWIPE_PX) return;
+
       const now = performance.now();
-      if (now - lastFire >= HISTORY_SWIPE_COOLDOWN_MS) {
-        // Positive deltaX ≈ fingers moved left → back (undo).
-        if (accumX > 0) undo();
-        else redo();
-        lastFire = now;
+      const dt = Math.max(8, now - (swipe.lastTs || now));
+      // Positive deltaX ≈ fingers left → back (undo).
+      const nextDir: Dir = e.deltaX > 0 ? "back" : "forward";
+      const delta = Math.abs(e.deltaX);
+      swipe.lastTs = now;
+
+      if (!swipe.dir) {
+        swipe.dir = nextDir;
+      } else if (nextDir !== swipe.dir) {
+        // Fingers reversed: scrub the rail closed instead of flipping sides.
+        swipe.velocity = -(delta / dt);
+        swipe.progress = Math.max(0, swipe.progress - delta / COMMIT_PX);
+        if (swipe.progress <= 0.001) {
+          swipe.dir = null;
+          swipe.progress = 0;
+          swipe.velocity = 0;
+          applyVisual(0, null, false);
+        } else {
+          applyVisual(swipe.progress, swipe.dir, false);
+        }
+        if (swipe.idleTimer !== undefined) window.clearTimeout(swipe.idleTimer);
+        swipe.idleTimer = window.setTimeout(finish, IDLE_MS);
+        return;
       }
-      accumX = 0;
+
+      swipe.velocity = delta / dt;
+      swipe.progress = Math.min(1, swipe.progress + delta / COMMIT_PX);
+      applyVisual(swipe.progress, swipe.dir, false);
+
+      if (swipe.idleTimer !== undefined) window.clearTimeout(swipe.idleTimer);
+      swipe.idleTimer = window.setTimeout(finish, IDLE_MS);
     };
 
-    // Safari/WebKit legacy gesture events still fire on some Linux builds.
     const killGesture = (e: Event) => e.preventDefault();
 
     window.addEventListener("wheel", onWheel, { passive: false, capture: true });
@@ -431,6 +535,8 @@ export default function App() {
       document.removeEventListener("gesturestart", killGesture);
       document.removeEventListener("gesturechange", killGesture);
       document.removeEventListener("gestureend", killGesture);
+      if (swipe.idleTimer !== undefined) window.clearTimeout(swipe.idleTimer);
+      stopRaf();
     };
   }, [undo, redo]);
 
@@ -476,6 +582,16 @@ export default function App() {
 
   return (
     <WheelStepContext.Provider value={wheelStep}>
+    <div
+      ref={historyFrameRef}
+      className="history-frame"
+      style={{ ["--history-p" as string]: 0 }}
+    >
+      <div className="history-rail history-rail--back" aria-hidden="true">
+        <span className="history-rail__glyph">
+          <IconBack />
+        </span>
+      </div>
     <div className={`app ${dragOver ? "is-dragging" : ""}`}>
       <header className="topbar" data-tauri-drag-region onDoubleClick={onTopbarDoubleClick}>
         <div className="topbar__brand">
@@ -617,6 +733,12 @@ export default function App() {
           </div>
         </div>
       )}
+    </div>
+      <div className="history-rail history-rail--forward" aria-hidden="true">
+        <span className="history-rail__glyph">
+          <IconForward />
+        </span>
+      </div>
     </div>
     </WheelStepContext.Provider>
   );
