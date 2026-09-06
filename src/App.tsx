@@ -482,6 +482,11 @@ export default function App() {
         return;
       }
 
+      // Canvas owns two-finger pan/orbit and pinch-zoom; never treat those as
+      // edit-history back/forth.
+      const overPreview = (e.target as Element | null)?.closest?.(".preview__stage");
+      if (overPreview) return;
+
       const absX = Math.abs(e.deltaX);
       const absY = Math.abs(e.deltaY);
       if (absX <= absY || absX === 0) return;

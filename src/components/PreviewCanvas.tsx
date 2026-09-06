@@ -385,19 +385,25 @@ export function PreviewCanvas({
         return;
       }
 
-      const absX = Math.abs(e.deltaX);
-      const absY = Math.abs(e.deltaY);
+      e.preventDefault();
 
-      // Horizontal swipe: block browser back/forward; App owns undo/redo.
-      if (!pinch && absX > absY && absX > 0) {
-        e.preventDefault();
+      // Pinch is zoom-only. Two-finger trackpad motion (pixel deltas) pans /
+      // orbits the canvas in any direction so it never becomes undo/redo.
+      // Discrete mouse-wheel notches (line/page mode) still zoom.
+      if (!pinch && e.deltaMode === 0) {
+        if (e.deltaX === 0 && e.deltaY === 0) return;
+        touchedRef.current = true;
+        scheduleGesture(() => {
+          const p = panRef.current;
+          const next = { x: p.x - e.deltaX, y: p.y - e.deltaY };
+          panRef.current = next;
+          setPan(next);
+        });
         return;
       }
 
-      if (absY === 0 && !pinch) return;
-      e.preventDefault();
-      // Pinch events report tiny pixel deltas; line-mode mice are coarser.
-      const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 32 : e.deltaY;
+      if (dy === 0 && !pinch) return;
       const factor = Math.exp(-dy * (pinch ? 0.01 : 0.0015));
       scheduleGesture(() => zoomAt(e.clientX, e.clientY, factor));
     };
