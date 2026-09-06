@@ -395,24 +395,65 @@ export default function App() {
       settling: false,
       idleTimer: 0 as number | undefined,
       raf: 0 as number | undefined,
+      scrubRaf: 0 as number | undefined,
+      paintedDir: null as Dir | null,
+      paintedArmed: false,
+      paintedSettling: false,
+      paintedSwiping: false,
     };
 
-    const applyVisual = (progress: number, dir: Dir | null, settling: boolean) => {
+    const paintVisual = (progress: number, dir: Dir | null, settling: boolean) => {
       const el = frame();
       if (!el) return;
       const p = Math.min(1, Math.max(0, progress));
       el.style.setProperty("--history-p", p.toFixed(4));
-      if (dir) el.dataset.dir = dir;
-      else delete el.dataset.dir;
-      el.classList.toggle("is-swiping", p > 0.001 || settling);
-      el.classList.toggle("is-armed", p >= ARM_PROGRESS);
-      el.classList.toggle("is-settling", settling);
+
+      const swiping = p > 0.001 || settling;
+      const armed = p >= ARM_PROGRESS;
+      if (dir !== swipe.paintedDir) {
+        if (dir) el.dataset.dir = dir;
+        else delete el.dataset.dir;
+        swipe.paintedDir = dir;
+      }
+      if (swiping !== swipe.paintedSwiping) {
+        el.classList.toggle("is-swiping", swiping);
+        swipe.paintedSwiping = swiping;
+      }
+      if (armed !== swipe.paintedArmed) {
+        el.classList.toggle("is-armed", armed);
+        swipe.paintedArmed = armed;
+      }
+      if (settling !== swipe.paintedSettling) {
+        el.classList.toggle("is-settling", settling);
+        swipe.paintedSettling = settling;
+      }
+    };
+
+    /** Scrub updates coalesce to one paint per frame; settles paint immediately. */
+    const applyVisual = (progress: number, dir: Dir | null, settling: boolean) => {
+      if (settling) {
+        if (swipe.scrubRaf !== undefined) {
+          cancelAnimationFrame(swipe.scrubRaf);
+          swipe.scrubRaf = undefined;
+        }
+        paintVisual(progress, dir, true);
+        return;
+      }
+      if (swipe.scrubRaf !== undefined) return;
+      swipe.scrubRaf = requestAnimationFrame(() => {
+        swipe.scrubRaf = undefined;
+        paintVisual(swipe.progress, swipe.dir, false);
+      });
     };
 
     const stopRaf = () => {
       if (swipe.raf !== undefined) {
         cancelAnimationFrame(swipe.raf);
         swipe.raf = undefined;
+      }
+      if (swipe.scrubRaf !== undefined) {
+        cancelAnimationFrame(swipe.scrubRaf);
+        swipe.scrubRaf = undefined;
       }
     };
 
@@ -442,7 +483,11 @@ export default function App() {
       swipe.progress = 0;
       swipe.velocity = 0;
       swipe.settling = false;
-      applyVisual(0, null, false);
+      if (swipe.scrubRaf !== undefined) {
+        cancelAnimationFrame(swipe.scrubRaf);
+        swipe.scrubRaf = undefined;
+      }
+      paintVisual(0, null, false);
     };
 
     const finish = () => {

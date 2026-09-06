@@ -2,13 +2,13 @@
    Dizako - application shell
    ================================================================== */
 
-/* Scrubbable undo/redo rails: width follows --history-p so the fingers drive
-   the animation. The flex child `.app` shrinks as a rail opens — only the
-   arrow is drawn, no filled side panel. */
+/* Scrubbable undo/redo: transform-only (no flex width / scale) so scrubbing
+   stays on the compositor and does not relayout the whole shell every event. */
 .history-frame {
   --history-p: 0;
   --history-rail-max: 88px;
-  display: flex;
+  position: relative;
+  display: block;
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -16,21 +16,42 @@
 }
 
 .history-rail {
-  flex: none;
-  width: 0;
-  min-width: 0;
-  overflow: hidden;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--history-rail-max);
+  z-index: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   background: transparent;
   color: var(--md-sys-color-on-surface-variant);
-  will-change: width;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  will-change: transform, opacity;
 }
 
-.history-frame.is-swiping[data-dir="back"] .history-rail--back,
+.history-rail--back {
+  left: 0;
+  transform: translate3d(-100%, 0, 0);
+}
+
+.history-rail--forward {
+  right: 0;
+  transform: translate3d(100%, 0, 0);
+}
+
+.history-frame.is-swiping[data-dir="back"] .history-rail--back {
+  opacity: 1;
+  visibility: visible;
+  transform: translate3d(calc((var(--history-p) - 1) * 100%), 0, 0);
+}
+
 .history-frame.is-swiping[data-dir="forward"] .history-rail--forward {
-  width: calc(var(--history-p) * var(--history-rail-max));
+  opacity: 1;
+  visibility: visible;
+  transform: translate3d(calc((1 - var(--history-p)) * 100%), 0, 0);
 }
 
 .history-frame.is-armed[data-dir="back"] .history-rail--back,
@@ -41,7 +62,8 @@
 .history-frame.is-settling .history-rail--back,
 .history-frame.is-settling .history-rail--forward {
   transition:
-    width var(--m3-dur-med2) var(--m3-spring-default),
+    transform var(--m3-dur-med2) var(--m3-spring-default),
+    opacity var(--m3-dur-short4) var(--m3-ease-standard),
     color var(--m3-dur-short4) var(--m3-ease-standard);
 }
 
@@ -51,14 +73,14 @@
   flex: none;
   background: none;
   opacity: calc(0.3 + 0.7 * var(--history-p));
-  transform: translateX(calc((1 - var(--history-p)) * -28px))
-    scale(calc(0.72 + 0.28 * var(--history-p)));
+  transform: translate3d(calc((1 - var(--history-p)) * -20px), 0, 0)
+    scale(calc(0.78 + 0.22 * var(--history-p)));
   will-change: transform, opacity;
 }
 
 .history-rail--forward .history-rail__glyph {
-  transform: translateX(calc((1 - var(--history-p)) * 28px))
-    scale(calc(0.72 + 0.28 * var(--history-p)));
+  transform: translate3d(calc((1 - var(--history-p)) * 20px), 0, 0)
+    scale(calc(0.78 + 0.22 * var(--history-p)));
 }
 
 .history-frame.is-settling .history-rail__glyph {
@@ -73,33 +95,34 @@
 }
 
 .app {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-width: 0;
+  width: 100%;
   height: 100%;
+  min-width: 0;
   background: var(--md-sys-color-surface-dim);
-  transform-origin: center center;
+  transform: translate3d(0, 0, 0);
   will-change: transform;
+  backface-visibility: hidden;
 }
 
-.history-frame.is-swiping[data-dir="back"] .app {
-  transform-origin: right center;
-  transform: scale(calc(1 - var(--history-p) * 0.045));
+.history-frame.is-swiping[data-dir="back"] > .app {
+  transform: translate3d(calc(var(--history-p) * var(--history-rail-max)), 0, 0);
 }
 
-.history-frame.is-swiping[data-dir="forward"] .app {
-  transform-origin: left center;
-  transform: scale(calc(1 - var(--history-p) * 0.045));
+.history-frame.is-swiping[data-dir="forward"] > .app {
+  transform: translate3d(calc(var(--history-p) * -1 * var(--history-rail-max)), 0, 0);
 }
 
-.history-frame.is-settling .app {
+.history-frame.is-settling > .app {
   transition: transform var(--m3-dur-med2) var(--m3-spring-default);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .history-frame.is-swiping[data-dir="back"] .app,
-  .history-frame.is-swiping[data-dir="forward"] .app {
+  .history-frame.is-swiping[data-dir="back"] > .app,
+  .history-frame.is-swiping[data-dir="forward"] > .app {
     transform: none;
   }
   .history-rail__glyph,
@@ -109,7 +132,7 @@
   .history-frame.is-settling .history-rail--back,
   .history-frame.is-settling .history-rail--forward,
   .history-frame.is-settling .history-rail__glyph,
-  .history-frame.is-settling .app {
+  .history-frame.is-settling > .app {
     transition-duration: 1ms;
   }
 }
