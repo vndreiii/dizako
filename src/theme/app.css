@@ -3,15 +3,16 @@
    ================================================================== */
 
 /* Scrubbable undo/redo rails: width follows --history-p so the fingers drive
-   the animation. The flex child `.app` shrinks as a rail opens. */
+   the animation. The flex child `.app` shrinks as a rail opens — only the
+   arrow is drawn, no filled side panel. */
 .history-frame {
   --history-p: 0;
-  --history-rail-max: 108px;
+  --history-rail-max: 88px;
   display: flex;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: var(--md-sys-color-surface-container-highest);
+  background: transparent;
 }
 
 .history-rail {
@@ -22,8 +23,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--md-sys-color-secondary-container);
-  color: var(--md-sys-color-on-secondary-container);
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
   will-change: width;
 }
 
@@ -34,27 +35,22 @@
 
 .history-frame.is-armed[data-dir="back"] .history-rail--back,
 .history-frame.is-armed[data-dir="forward"] .history-rail--forward {
-  background: var(--md-sys-color-primary);
-  color: var(--md-sys-color-on-primary);
+  color: var(--md-sys-color-primary);
 }
 
 .history-frame.is-settling .history-rail--back,
 .history-frame.is-settling .history-rail--forward {
   transition:
     width var(--m3-dur-med2) var(--m3-spring-default),
-    background-color var(--m3-dur-short4) var(--m3-ease-standard),
     color var(--m3-dur-short4) var(--m3-ease-standard);
 }
 
 .history-rail__glyph {
-  width: 44px;
-  height: 44px;
   display: grid;
   place-items: center;
   flex: none;
-  border-radius: var(--m3-shape-full);
-  background: color-mix(in srgb, currentColor 12%, transparent);
-  opacity: calc(0.25 + 0.75 * var(--history-p));
+  background: none;
+  opacity: calc(0.3 + 0.7 * var(--history-p));
   transform: translateX(calc((1 - var(--history-p)) * -28px))
     scale(calc(0.72 + 0.28 * var(--history-p)));
   will-change: transform, opacity;
@@ -72,8 +68,8 @@
 }
 
 .history-rail__glyph svg {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
 }
 
 .app {

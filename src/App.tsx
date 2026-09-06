@@ -497,8 +497,8 @@ export default function App() {
 
       const now = performance.now();
       const dt = Math.max(8, now - (swipe.lastTs || now));
-      // Positive deltaX ≈ fingers left → back (undo).
-      const nextDir: Dir = e.deltaX > 0 ? "back" : "forward";
+      // Positive deltaX ≈ fingers left → forward (redo).
+      const nextDir: Dir = e.deltaX > 0 ? "forward" : "back";
       const delta = Math.abs(e.deltaX);
       swipe.lastTs = now;
 
