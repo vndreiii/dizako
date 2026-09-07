@@ -2,10 +2,10 @@
  * Wasm-side parity gate (WASM_PLAN §8, Gate 2/3).
  *
  * Instantiates the compiled wasm32 artifact via the pkg glue's `initSync`
- * inside plain Node and runs it against the same SHA-256 manifest the TS
- * engine was captured with. Native cargo tests prove Rust-native parity;
- * this proves the *shipped wasm binary* agrees too (simd128 flags, wasm-opt
- * passes and all).
+ * inside plain Node and runs it against the same SHA-256 manifest the
+ * historical TS engine was captured with. Native cargo tests prove
+ * Rust-native parity; this proves the *shipped wasm binary* agrees too
+ * (simd128 flags, wasm-opt passes and all).
  *
  * Requires `pnpm build:wasm` to have run — skipped when pkg is absent.
  */
@@ -13,17 +13,11 @@ import { readFileSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { settingsFor } from "./golden.test";
+import { ROOT, settingsFor, suite, type Case } from "./harness";
 
-const ROOT = join(__dirname, "..");
 const PKG = join(ROOT, "dither-wasm", "pkg");
 
 const hasPkg = existsSync(join(PKG, "dither_wasm_bg.wasm"));
-
-// Shared suite/manifest loading (kept identical to the TS golden harness).
-const suite = JSON.parse(
-  readFileSync(join(ROOT, "testdata", "suites", "main.json"), "utf8"),
-) as { cases: Array<Record<string, unknown>> };
 
 const manifest = JSON.parse(
   readFileSync(join(ROOT, "testdata", "golden", "ts.json"), "utf8"),
@@ -67,11 +61,11 @@ describe.skipIf(!hasPkg)("wasm engine parity", () => {
     };
 
     let failures = 0;
-    for (const c of suite.cases) {
+    for (const c of suite.cases as Case[]) {
       const fx = loadFixture(c.fixture);
       // Resident planes mirror the worker's usage; settings-only renders after.
       engine.set_source(fx.data, fx.w, fx.h);
-      const settings = settingsFor(c as never);
+      const settings = settingsFor(c);
       const len = engine.render("fine", null, settings);
       const bytes = new Uint8Array(memory.buffer, engine.out_ptr(), len);
       const got = createHash("sha256").update(bytes).digest("hex");

@@ -34,9 +34,8 @@ jobs:
         run: pnpm lint
       - name: Typecheck + build
         run: pnpm exec tsc --noEmit && pnpm exec vite build
-      # Gate 2/3: TS engine AND the shipped wasm binary must both reproduce
-      # the committed golden manifest byte-for-byte.
-      - name: Golden parity (TS + wasm)
+      # Gate: shipped wasm binary must reproduce the committed golden manifest.
+      - name: Golden parity (wasm)
         run: pnpm test
 
   rust:
