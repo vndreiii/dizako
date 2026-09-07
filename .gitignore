@@ -21,9 +21,9 @@ dizako/
 legacy/
 
 # Docs and Assets (User requested ignores)
-docs/what-this-is.txt
-docs/TODO.md
-docs/SUMMARY.md
+# Not hiding work — IMPROVEMENTS / WASM_PLAN are already done and outdated as
+# living docs; keep them local only.
+docs/
 assets/dizako_mascot_full_body.jpg
 assets/dizako_icon.png
 assets/dizako_icon.jpg
