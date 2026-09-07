@@ -115,8 +115,10 @@ export function PreviewCanvas({
   const zoomRef = useRef(zoom);
   const panRef = useRef(pan);
   const hasImageRef = useRef(false);
-  zoomRef.current = zoom;
-  panRef.current = pan;
+  useEffect(() => {
+    zoomRef.current = zoom;
+    panRef.current = pan;
+  }, [zoom, pan]);
 
   /**
    * Pointer and wheel events land faster than frames; applying them directly
@@ -321,7 +323,9 @@ export function PreviewCanvas({
   }, [draw, fit]);
 
   const hasImage = Boolean(coarse);
-  hasImageRef.current = hasImage;
+  useEffect(() => {
+    hasImageRef.current = hasImage;
+  }, [hasImage]);
 
   /**
    * Zoom keeping the source pixel under the cursor fixed.
