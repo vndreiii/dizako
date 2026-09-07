@@ -194,6 +194,19 @@ jobs:
             echo "name=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Replace previous release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          tag="${{ steps.tag.outputs.name }}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release view "$tag" --json assets -q '.assets[].name' | while read -r name; do
+              [[ -n "$name" ]] || continue
+              gh release delete-asset "$tag" "$name" -y || true
+            done
+          fi
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -202,5 +215,6 @@ jobs:
           generate_release_notes: true
           files: artifacts/*
           fail_on_unmatched_files: false
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
