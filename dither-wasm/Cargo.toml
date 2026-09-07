@@ -24,3 +24,9 @@ opt-level = 3
 lto = "fat"
 codegen-units = 1
 panic = "abort"
+
+# GitHub's macos-latest ships an old binaryen wasm-opt that rejects newer
+# LLVM MVP multi-table wasm ("Only 1 table definition allowed"). Skip it;
+# rustc release opts already apply.
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false

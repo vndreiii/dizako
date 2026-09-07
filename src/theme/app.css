@@ -1443,6 +1443,51 @@
 .sheet__foot {
   display: flex;
   justify-content: flex-end;
+  gap: var(--m3-sp-2);
+  margin-top: var(--m3-sp-5);
+}
+
+.sheet--donate {
+  width: min(420px, 100%);
+}
+
+.donate-dialog__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--m3-sp-3);
+  text-align: center;
+}
+
+.donate-dialog__icon {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  color: var(--md-sys-color-on-tertiary-container);
+  background: var(--md-sys-color-tertiary-container);
+  border-radius: var(--m3-shape-full);
+  align-items: center;
+  justify-content: center;
+}
+.donate-dialog__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.donate-dialog__message {
+  margin: 0;
+  font: var(--m3-body-lg);
+  color: var(--md-sys-color-on-surface);
+  max-width: 36ch;
+}
+
+.donate-dialog__url {
+  margin: 0;
+  font: var(--m3-body-sm);
+  color: var(--md-sys-color-primary);
+  word-break: break-all;
+}  display: flex;
+  justify-content: flex-end;
   gap: var(--m3-sp-3);
   margin-top: var(--m3-sp-5);
 }

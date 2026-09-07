@@ -189,5 +189,11 @@
  "picker.doubleSplit": "Dvostruko podijeljene",
  "picker.square": "Kvadrat",
  "picker.compound": "Mješovite",
- "picker.shades": "Nijanse"
+ "picker.shades": "Nijanse",
+ "donate.dialogAria": "Doniraj",
+ "donate.title": "Podrži Dizako",
+ "donate.message": "Nije moguće otvoriti preglednik. Ako ti se sviđa aplikacija, doniraj na Ko-fi — kopiraj link i otvori ručno.",
+ "donate.copy": "Kopiraj Ko-fi URL",
+ "donate.copied": "Kopirano!",
+ "donate.close": "Zatvori"
 }

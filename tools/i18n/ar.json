@@ -189,5 +189,11 @@
  "picker.doubleSplit": "منفصلة مضاعفة",
  "picker.square": "رباعية",
  "picker.compound": "مركبة",
- "picker.shades": "تدرجات"
+ "picker.shades": "تدرجات",
+ "donate.dialogAria": "تبرّع",
+ "donate.title": "ادعم Dizako",
+ "donate.message": "تعذّر فتح المتصفح. إن أعجبك التطبيق فتبرّع عبر Ko-fi — انسخ الرابط وافتحه يدويًا.",
+ "donate.copy": "نسخ رابط Ko-fi",
+ "donate.copied": "تم النسخ!",
+ "donate.close": "إغلاق"
 }

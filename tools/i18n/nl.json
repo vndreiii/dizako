@@ -189,5 +189,11 @@
  "picker.doubleSplit": "Dubbel gesplitst",
  "picker.square": "Vierkant",
  "picker.compound": "Samengesteld",
- "picker.shades": "Schakeringen"
+ "picker.shades": "Schakeringen",
+ "donate.dialogAria": "Doneren",
+ "donate.title": "Steun Dizako",
+ "donate.message": "Kon de browser niet openen. Als je deze app leuk vindt, doneer op Ko-fi — kopieer de link en open hem handmatig.",
+ "donate.copy": "Ko-fi-URL kopiëren",
+ "donate.copied": "Gekopieerd!",
+ "donate.close": "Sluiten"
 }

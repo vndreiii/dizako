@@ -111,6 +111,7 @@ build_linux() {
   # in 2024 and too old to parse the SHT_RELR (`.relr.dyn`) sections every
   # current Arch library ships. Without it, stripping fails on each bundled
   # library, linuxdeploy exits non-zero and no AppImage is ever produced.
+  ./packaging/patch-linuxdeploy-gtk.sh
   NO_STRIP=1 pnpm tauri build --bundles appimage || warn "bundle 'appimage' failed"
 
   if command -v makepkg >/dev/null; then

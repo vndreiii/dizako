@@ -189,5 +189,11 @@
  "picker.doubleSplit": "이중 분할 보색",
  "picker.square": "사분 보색",
  "picker.compound": "복합",
- "picker.shades": "음영"
+ "picker.shades": "음영",
+ "donate.dialogAria": "후원",
+ "donate.title": "Dizako 지원",
+ "donate.message": "브라우저를 열 수 없습니다. 앱이 마음에 드시면 Ko-fi에서 후원해 주세요. 아래 링크를 복사해 직접 여세요.",
+ "donate.copy": "Ko-fi URL 복사",
+ "donate.copied": "복사됨!",
+ "donate.close": "닫기"
 }

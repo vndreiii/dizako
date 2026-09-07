@@ -189,5 +189,11 @@
  "picker.doubleSplit": "Çift bölünmüş",
  "picker.square": "Kare",
  "picker.compound": "Birleşik",
- "picker.shades": "Kademeli"
+ "picker.shades": "Kademeli",
+ "donate.dialogAria": "Bağış",
+ "donate.title": "Dizako’yu destekle",
+ "donate.message": "Tarayıcı açılamadı. Uygulamayı beğendiyseniz Ko-fi’den bağış yapın — bağlantıyı kopyalayıp elle açın.",
+ "donate.copy": "Ko-fi URL’sini kopyala",
+ "donate.copied": "Kopyalandı!",
+ "donate.close": "Kapat"
 }

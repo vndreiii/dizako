@@ -33,5 +33,13 @@
     "dynamic": "Dynamic",
     "language": "Language",
     "languageHint": "Interface language."
+  },
+  "donate": {
+    "dialogAria": "Donate",
+    "title": "Support Dizako",
+    "message": "Couldn’t open your browser. If you like this app, please donate on Ko-fi — copy the link below and open it manually.",
+    "copy": "Copy Ko-fi URL",
+    "copied": "Copied!",
+    "close": "Close"
   }
 }

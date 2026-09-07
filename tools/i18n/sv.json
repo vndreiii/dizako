@@ -189,5 +189,11 @@
  "picker.doubleSplit": "Dubbdelat",
  "picker.square": "Kvadrat",
  "picker.compound": "Sammansatt",
- "picker.shades": "Nyanser"
+ "picker.shades": "Nyanser",
+ "donate.dialogAria": "Donera",
+ "donate.title": "Stöd Dizako",
+ "donate.message": "Kunde inte öppna webbläsaren. Om du gillar appen, donera på Ko-fi — kopiera länken och öppna den manuellt.",
+ "donate.copy": "Kopiera Ko-fi-URL",
+ "donate.copied": "Kopierat!",
+ "donate.close": "Stäng"
 }
