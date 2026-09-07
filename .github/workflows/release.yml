@@ -7,12 +7,17 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to build (e.g. v2.1.0). Leave empty to use the latest tag on the default branch tip."
+        description: "Tag to build (e.g. v2.2.0). Leave empty to use the latest tag on the default branch tip."
         required: false
         default: ""
 
 permissions:
   contents: write
+
+env:
+  # Free Tauri minisign key (not Windows Authenticode / Apple notarization).
+  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
 jobs:
   build-linux:
@@ -44,7 +49,6 @@ jobs:
             libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev \
             patchelf libssl-dev
 
-      # package.json depends on file:./dither-wasm/pkg — build that before pnpm install.
       - name: Build wasm + install JS deps
         run: |
           printf 'strict-dep-builds=false\n' > .npmrc
@@ -55,6 +59,8 @@ jobs:
         run: ./packaging/patch-linuxdeploy-gtk.sh
 
       - name: Build Linux bundles
+        # createUpdaterArtifacts is on, but Linux is omitted from latest.json.
+        # Signing env is still needed so the build does not fail looking for a key.
         run: |
           pnpm tauri build --bundles deb,rpm
           NO_STRIP=1 pnpm tauri build --bundles appimage
@@ -108,7 +114,8 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path dist-release | Out-Null
-          Copy-Item -Force src-tauri/target/release/bundle/nsis/*.exe dist-release/ -ErrorAction SilentlyContinue
+          Copy-Item -Force src-tauri/target/release/bundle/nsis/*-setup.exe dist-release/
+          Copy-Item -Force src-tauri/target/release/bundle/nsis/*-setup.exe.sig dist-release/
           if (Test-Path src-tauri/target/release/dizako.exe) {
             Copy-Item -Force src-tauri/target/release/dizako.exe dist-release/
           }
@@ -148,19 +155,16 @@ jobs:
           pnpm install
 
       - name: Build macOS bundles
-        # dmg is the installable download; .app is also produced and zipped below.
-        # Unsigned — Gatekeeper will warn until Apple notarization is added.
+        # dmg = manual install; .app.tar.gz (+ .sig) = updater payload.
+        # Unsigned — Gatekeeper still warns without a paid Apple Developer ID.
         run: pnpm tauri build --bundles dmg,app
 
       - name: Collect artifacts
         run: |
           mkdir -p dist-release
           cp -v src-tauri/target/release/bundle/dmg/*.dmg dist-release/ || true
-          shopt -s nullglob
-          for app in src-tauri/target/release/bundle/macos/*.app; do
-            base=$(basename "$app" .app)
-            ditto -c -k --sequesterRsrc --keepParent "$app" "dist-release/${base}.app.zip"
-          done
+          cp -v src-tauri/target/release/bundle/macos/*.app.tar.gz dist-release/
+          cp -v src-tauri/target/release/bundle/macos/*.app.tar.gz.sig dist-release/
           ls -lh dist-release
 
       - uses: actions/upload-artifact@v4
@@ -193,6 +197,51 @@ jobs:
           else
             echo "name=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Build latest.json for updater
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ steps.tag.outputs.name }}"
+          version="${tag#v}"
+          base="https://github.com/vndreiii/dizako/releases/download/${tag}"
+          pub_date="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+          shopt -s nullglob
+          win_exe=(artifacts/*-setup.exe)
+          win_sig=(artifacts/*-setup.exe.sig)
+          mac_tgz=(artifacts/*.app.tar.gz)
+          mac_sig=(artifacts/*.app.tar.gz.sig)
+
+          if [[ ${#win_exe[@]} -lt 1 || ${#win_sig[@]} -lt 1 ]]; then
+            echo "missing Windows updater artifacts" >&2
+            ls -la artifacts >&2 || true
+            exit 1
+          fi
+          if [[ ${#mac_tgz[@]} -lt 1 || ${#mac_sig[@]} -lt 1 ]]; then
+            echo "missing macOS updater artifacts" >&2
+            ls -la artifacts >&2 || true
+            exit 1
+          fi
+
+          jq -n \
+            --arg version "$version" \
+            --arg notes "Dizako ${version}" \
+            --arg pub_date "$pub_date" \
+            --arg win_url "$base/$(basename "${win_exe[0]}")" \
+            --arg win_sig "$(cat "${win_sig[0]}")" \
+            --arg mac_url "$base/$(basename "${mac_tgz[0]}")" \
+            --arg mac_sig "$(cat "${mac_sig[0]}")" \
+            '{
+              version: $version,
+              notes: $notes,
+              pub_date: $pub_date,
+              platforms: {
+                "windows-x86_64": { url: $win_url, signature: $win_sig },
+                "darwin-aarch64": { url: $mac_url, signature: $mac_sig }
+              }
+            }' > artifacts/latest.json
+          cat artifacts/latest.json
 
       - name: Replace previous release assets
         env:

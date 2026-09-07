@@ -1,7 +1,7 @@
 # Maintainer: vndreiii
 pkgname=dizako-git
 # Static placeholder; pkgver() computes the real -git version at makepkg time.
-pkgver=v2.1.0
+pkgver=v2.2.0
 pkgrel=1
 pkgdesc="Material 3 Expressive dithering studio"
 arch=('x86_64')

@@ -1,6 +1,6 @@
 [package]
 name = "dizako"
-version = "2.1.0"
+version = "2.2.0"
 description = "A Material 3 Expressive dithering studio"
 authors = ["vndreiii"]
 edition = "2021"
@@ -28,6 +28,10 @@ gtk = "0.18"
 glib = "0.18"
 gio = "0.18"
 gobject-sys = "0.18"
+
+[target.'cfg(any(target_os = "macos", windows))'.dependencies]
+tauri-plugin-process = "2"
+tauri-plugin-updater = "2"
 
 [profile.release]
 codegen-units = 1

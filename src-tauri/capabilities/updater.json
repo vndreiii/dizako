@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "updater",
+  "description": "GitHub Releases auto-update (Windows + macOS)",
+  "platforms": ["windows", "macOS"],
+  "windows": ["main"],
+  "permissions": ["updater:default", "process:default"]
+}

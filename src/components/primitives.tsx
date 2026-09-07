@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useId,
@@ -354,11 +355,11 @@ export function SnackbarProvider({ children }: { children: ReactNode }) {
   const [queue, setQueue] = useState<SnackbarMessage[]>([]);
   const seq = useRef(0);
 
-  const push = (text: string, tone: "neutral" | "error" = "neutral") => {
+  const push = useCallback((text: string, tone: "neutral" | "error" = "neutral") => {
     const id = seq.current++;
     setQueue((q) => [...q, { id, text, tone }]);
     window.setTimeout(() => setQueue((q) => q.filter((m) => m.id !== id)), 4000);
-  };
+  }, []);
 
   return (
     <SnackbarContext.Provider value={push}>

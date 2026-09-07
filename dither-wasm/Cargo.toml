@@ -1,6 +1,6 @@
 [package]
 name = "dither-wasm"
-version = "2.1.0"
+version = "2.2.0"
 edition = "2021"
 description = "Dizako's dither engine compiled to WebAssembly"
 license = "MIT"
