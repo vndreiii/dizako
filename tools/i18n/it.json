@@ -189,5 +189,11 @@
  "picker.doubleSplit": "Doppio spezzato",
  "picker.square": "Quadrato",
  "picker.compound": "Composto",
- "picker.shades": "Sfumature"
+ "picker.shades": "Sfumature",
+ "donate.dialogAria": "Dona",
+ "donate.title": "Sostieni Dizako",
+ "donate.message": "Impossibile aprire il browser. Se ti piace l’app, dona su Ko-fi — copia il link e aprilo manualmente.",
+ "donate.copy": "Copia URL Ko-fi",
+ "donate.copied": "Copiato!",
+ "donate.close": "Chiudi"
 }

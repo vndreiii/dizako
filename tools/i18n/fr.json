@@ -189,5 +189,11 @@
  "picker.doubleSplit": "Double partagé",
  "picker.square": "Carré",
  "picker.compound": "Composé",
- "picker.shades": "Nuances"
+ "picker.shades": "Nuances",
+ "donate.dialogAria": "Faire un don",
+ "donate.title": "Soutenir Dizako",
+ "donate.message": "Impossible d’ouvrir le navigateur. Si vous aimez cette app, faites un don sur Ko-fi — copiez le lien et ouvrez-le manuellement.",
+ "donate.copy": "Copier l’URL Ko-fi",
+ "donate.copied": "Copié !",
+ "donate.close": "Fermer"
 }

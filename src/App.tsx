@@ -18,6 +18,7 @@ import {
   IconForward,
 } from "./components/Icons";
 import { SettingsSheet } from "./components/SettingsSheet";
+import { DonateDialog } from "./components/DonateDialog";
 import { WheelStepContext } from "./components/primitives";
 import { WindowControls } from "./components/WindowControls";
 import { openDonatePage } from "./donate";
@@ -149,6 +150,7 @@ export default function App() {
   const [wheelStep, setWheelStep] = useState(restoredSession.appearance?.wheelStep ?? 2);
   const [dynamicSeed, setDynamicSeed] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [donateOpen, setDonateOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [decoding, setDecoding] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -669,7 +671,11 @@ export default function App() {
           <Button
             variant="donate"
             icon={<IconFavorite />}
-            onClick={() => void openDonatePage()}
+            onClick={() => {
+              void openDonatePage().then((ok) => {
+                if (!ok) setDonateOpen(true);
+              });
+            }}
             title={t("topbar.donateHint")}
           >
             {t("topbar.donate")}
@@ -784,6 +790,8 @@ export default function App() {
         dynamicSeed={dynamicSeed}
         hasImage={Boolean(native)}
       />
+
+      {donateOpen && <DonateDialog onClose={() => setDonateOpen(false)} />}
 
       {dragOver && (
         <div className="dropveil">

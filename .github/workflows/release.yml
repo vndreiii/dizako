@@ -51,8 +51,13 @@ jobs:
           wasm-pack build dither-wasm --release --target web --out-dir pkg
           pnpm install
 
+      - name: Patch AppImage bundler (strip bundled libwayland)
+        run: ./packaging/patch-linuxdeploy-gtk.sh
+
       - name: Build Linux bundles
-        run: pnpm tauri build --bundles deb,rpm,appimage
+        run: |
+          pnpm tauri build --bundles deb,rpm
+          NO_STRIP=1 pnpm tauri build --bundles appimage
 
       - name: Collect artifacts
         run: |

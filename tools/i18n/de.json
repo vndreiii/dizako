@@ -190,5 +190,11 @@
  "picker.doubleSplit": "Doppelt geteilt",
  "picker.square": "Quadrat",
  "picker.compound": "Verbunden",
- "picker.shades": "Abstufungen"
+ "picker.shades": "Abstufungen",
+ "donate.dialogAria": "Spenden",
+ "donate.title": "Dizako unterstützen",
+ "donate.message": "Browser konnte nicht geöffnet werden. Wenn dir die App gefällt, spende bitte auf Ko-fi — Link kopieren und manuell öffnen.",
+ "donate.copy": "Ko-fi-URL kopieren",
+ "donate.copied": "Kopiert!",
+ "donate.close": "Schließen"
 }

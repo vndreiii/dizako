@@ -189,5 +189,11 @@
  "picker.doubleSplit": "双分裂补色",
  "picker.square": "四方补色",
  "picker.compound": "复合配色",
- "picker.shades": "明暗层次"
+ "picker.shades": "明暗层次",
+ "donate.dialogAria": "捐赠",
+ "donate.title": "支持 Dizako",
+ "donate.message": "无法打开浏览器。如果喜欢这个应用，请到 Ko-fi 捐赠——复制下方链接并手动打开。",
+ "donate.copy": "复制 Ko-fi 链接",
+ "donate.copied": "已复制",
+ "donate.close": "关闭"
 }

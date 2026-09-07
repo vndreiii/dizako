@@ -189,5 +189,11 @@
  "picker.doubleSplit": "ダブルスプリット",
  "picker.square": "スクエア",
  "picker.compound": "コンパウンド",
- "picker.shades": "シェード"
+ "picker.shades": "シェード",
+ "donate.dialogAria": "寄付",
+ "donate.title": "Dizakoを支援",
+ "donate.message": "ブラウザを開けませんでした。気に入っていただけたら Ko-fi で寄付してください。下のリンクをコピーして手動で開いてください。",
+ "donate.copy": "Ko-fiのURLをコピー",
+ "donate.copied": "コピーしました",
+ "donate.close": "閉じる"
 }

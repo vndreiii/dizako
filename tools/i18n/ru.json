@@ -189,5 +189,11 @@
  "picker.doubleSplit": "Двойные раздельные",
  "picker.square": "Квадрат",
  "picker.compound": "Смешанные",
- "picker.shades": "Оттенки"
+ "picker.shades": "Оттенки",
+ "donate.dialogAria": "Донат",
+ "donate.title": "Поддержать Dizako",
+ "donate.message": "Не удалось открыть браузер. Если вам нравится приложение, поддержите на Ko-fi — скопируйте ссылку и откройте вручную.",
+ "donate.copy": "Скопировать URL Ko-fi",
+ "donate.copied": "Скопировано!",
+ "donate.close": "Закрыть"
 }

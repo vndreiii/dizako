@@ -1,20 +1,25 @@
 /**
  * External donation page opened by the topbar Donate button.
- *
- * Replace with your real link, e.g.:
- * - https://ko-fi.com/yourname
- * - https://github.com/sponsors/yourname
- * - https://paypal.me/yourname
- * - https://buymeacoffee.com/yourname
  */
 export const DONATE_URL = "https://ko-fi.com/vndreiii";
 
-/** Open the donation URL in the system browser (Tauri) or a new tab (web). */
-export async function openDonatePage(): Promise<void> {
+/**
+ * Try to open the donation page in the system browser.
+ * Returns false when both Tauri opener and window.open fail — callers
+ * should show the in-app donate dialog with a copy-URL fallback.
+ */
+export async function openDonatePage(): Promise<boolean> {
   try {
     const { openUrl } = await import("@tauri-apps/plugin-opener");
     await openUrl(DONATE_URL);
+    return true;
   } catch {
-    window.open(DONATE_URL, "_blank", "noopener,noreferrer");
+    // Fall through to window.open (dev / non-Tauri).
+  }
+  try {
+    const w = window.open(DONATE_URL, "_blank", "noopener,noreferrer");
+    return w != null;
+  } catch {
+    return false;
   }
 }

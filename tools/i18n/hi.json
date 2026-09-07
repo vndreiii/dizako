@@ -189,5 +189,11 @@
  "picker.doubleSplit": "द्विविभाजित",
  "picker.square": "वर्ग",
  "picker.compound": "मिश्रित",
- "picker.shades": "छायात्मक"
+ "picker.shades": "छायात्मक",
+ "donate.dialogAria": "दान करें",
+ "donate.title": "Dizako का समर्थन करें",
+ "donate.message": "ब्राउज़र नहीं खुल सका। अगर यह ऐप पसंद है तो Ko-fi पर दान करें — लिंक कॉपी कर के खुद खोलें।",
+ "donate.copy": "Ko-fi URL कॉपी करें",
+ "donate.copied": "कॉपी हो गया!",
+ "donate.close": "बंद करें"
 }
