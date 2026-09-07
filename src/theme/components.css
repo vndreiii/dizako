@@ -108,6 +108,19 @@
   box-shadow: var(--m3-elev-1);
 }
 
+/* Donate: tertiary so it stands out without competing with Export (primary). */
+.m3-btn--donate {
+  background: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-on-tertiary-container);
+}
+.m3-btn--donate:hover:not(:disabled) {
+  box-shadow: var(--m3-elev-1);
+}
+.m3-btn--donate:disabled {
+  background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+  color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+}
+
 .m3-btn--elevated {
   background: var(--md-sys-color-surface-container-low);
   color: var(--md-sys-color-primary);

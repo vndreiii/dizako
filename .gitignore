@@ -14,6 +14,9 @@ dizako/
 *.pkg.tar.zst
 *.tar.gz
 
+# Local secrets / indexer state — never publish
+.tokensave/
+
 # Qt port and other legacy material — keep locally, not on remote.
 legacy/
 

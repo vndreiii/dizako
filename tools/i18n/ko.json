@@ -5,6 +5,8 @@
  "topbar.noImage": "불러온 이미지 없음",
  "topbar.open": "열기",
  "topbar.export": "내보내기",
+ "topbar.donate": "후원",
+ "topbar.donateHint": "Dizako 개발 지원",
  "topbar.exporting": "내보내는 중…",
  "empty.readingTitle": "이미지 읽는 중…",
  "empty.readingBody": "큰 이미지는 디코딩에 잠시 시간이 걸립니다.",

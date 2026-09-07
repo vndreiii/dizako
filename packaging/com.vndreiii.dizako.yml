@@ -7,7 +7,7 @@
 # Status: structurally complete but NOT yet exercised end-to-end with
 # flatpak-builder. Until someone runs that loop, prefer CI bundles
 # (deb/rpm/appimage/nsis/dmg) or the AUR package.
-app-id: com.alex.dizako
+app-id: com.vndreiii.dizako
 runtime: org.gnome.Platform
 runtime-version: '48'
 sdk: org.gnome.Sdk
@@ -46,13 +46,13 @@ modules:
       - cargo --offline build --release --manifest-path src-tauri/Cargo.toml || cargo build --release --manifest-path src-tauri/Cargo.toml
       - install -Dm755 src-tauri/target/release/dizako /app/bin/dizako
       - install -Dm644 src-tauri/icons/128x128.png
-        /app/share/icons/hicolor/128x128/apps/com.alex.dizako.png
-      - install -Dm644 packaging/com.alex.dizako.desktop
-        /app/share/applications/com.alex.dizako.desktop
+        /app/share/icons/hicolor/128x128/apps/com.vndreiii.dizako.png
+      - install -Dm644 packaging/com.vndreiii.dizako.desktop
+        /app/share/applications/com.vndreiii.dizako.desktop
     sources:
       - type: git
-        url: https://code.milfs.party/alex/dizako.git
-        tag: v2.0.0
+        url: https://github.com/vndreiii/dizako.git
+        tag: v2.1.0
         x-checker-data:
           type: git
           tag-pattern: ^v([\d.]+)$

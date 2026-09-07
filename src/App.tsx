@@ -7,6 +7,7 @@ import { useI18n } from "./i18n";
 import { Button, useSnackbar } from "./components/primitives";
 import {
   IconDownload,
+  IconFavorite,
   IconGrid,
   IconImage,
   IconPalette,
@@ -19,6 +20,7 @@ import {
 import { SettingsSheet } from "./components/SettingsSheet";
 import { WheelStepContext } from "./components/primitives";
 import { WindowControls } from "./components/WindowControls";
+import { openDonatePage } from "./donate";
 import { useDither } from "./hooks/useDither";
 import type { Rect } from "./dither/region";
 import { savePng } from "./hooks/saveImage";
@@ -663,6 +665,14 @@ export default function App() {
             onClick={() => void exportPng()}
           >
             {exporting ? t("topbar.exporting") : t("topbar.export")}
+          </Button>
+          <Button
+            variant="donate"
+            icon={<IconFavorite />}
+            onClick={() => void openDonatePage()}
+            title={t("topbar.donateHint")}
+          >
+            {t("topbar.donate")}
           </Button>
           <WindowControls />
         </div>

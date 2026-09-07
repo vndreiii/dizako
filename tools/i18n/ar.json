@@ -5,6 +5,8 @@
  "topbar.noImage": "لا صورة محملة",
  "topbar.open": "فتح",
  "topbar.export": "تصدير",
+ "topbar.donate": "تبرّع",
+ "topbar.donateHint": "ادعم تطوير Dizako",
  "topbar.exporting": "جارٍ التصدير…",
  "empty.readingTitle": "يجري قراءة الصورة…",
  "empty.readingBody": "الصور الكبيرة تحتاج لحظة لفك ترميزها.",

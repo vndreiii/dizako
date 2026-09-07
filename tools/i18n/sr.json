@@ -5,6 +5,8 @@
  "topbar.noImage": "Nema učitane slike",
  "topbar.open": "Otvori",
  "topbar.export": "Izvezi",
+ "topbar.donate": "Донирај",
+ "topbar.donateHint": "Подржи развој Dizako",
  "topbar.exporting": "Izvozim…",
  "empty.readingTitle": "Učitavam sliku…",
  "empty.readingBody": "Velikim slikama treba trenutak za dekodiranje.",

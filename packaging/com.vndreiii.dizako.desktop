@@ -2,8 +2,8 @@
 Name=Dizako
 GenericName=Dithering Studio
 Exec=dizako %f
-Icon=com.alex.dizako
-StartupWMClass=com.alex.dizako
+Icon=com.vndreiii.dizako
+StartupWMClass=com.vndreiii.dizako
 Terminal=false
 Type=Application
 Categories=Graphics;ImageProcessing;RasterGraphics;

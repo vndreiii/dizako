@@ -7,7 +7,9 @@
   "topbar": {
     "noImage": "No image loaded",
     "open": "Open",
-    "export": "Export"
+    "export": "Export",
+    "donate": "Donate",
+    "donateHint": "Support Dizako development"
   },
   "empty": {
     "readingTitle": "Reading image…",

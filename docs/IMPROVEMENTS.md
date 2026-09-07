@@ -199,13 +199,12 @@ but unbuilt. Gaps, concretely:
 - Add `"nsis"` (or `"msi"`) and `"dmg"`/`"app"` targets; icons are already in place.
 - The `windows-gnu` toolchain works for CI cross-compiles but NSIS bundling is smoother
   with `x86_64-pc-windows-msvc` on a Windows runner; decide one and encode it in CI.
-- There is **no CI at all** (no `.github/`, no Forgejo/GitLab config). Given the URL in
-  the PKGBUILD is a personal Forgejo (`code.milfs.party`), a Woodpecker/Actions workflow
-  doing `tauri build` matrix (linux, windows, macOS) + artifact upload would make the
+- There is **no CI at all** (no `.github/`, no Forgejo/GitLab config). A GitHub Actions
+  workflow doing `tauri build` matrix (linux, windows, macOS) + artifact upload would make the
   bundle targets real instead of aspirational.
 
 ### 3.2 The Flatpak manifest cannot work as written
-`packaging/com.alex.dizako.yml` installs a **prebuilt binary copied from your host
+`packaging/com.vndreiii.dizako.yml` installs a **prebuilt binary copied from your host
 `target/release` dir** — it will fail in `flatpak-builder` (sandbox has no such file and
 no node/rust modules declared), and even if the binary landed it wouldn't run:
 

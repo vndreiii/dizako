@@ -197,7 +197,9 @@
     "settings.seed.forest": "Forest",
     "settings.seed.ember": "Ember",
     "settings.seed.plum": "Plum",
-    "settings.seed.slate": "Slate"
+    "settings.seed.slate": "Slate",
+    "topbar.donate": "Donate",
+    "topbar.donateHint": "Support Dizako development"
   },
   "es": {
     "palette.layers": "Capas",
@@ -397,7 +399,9 @@
     "hud.zoomPercent": "Porcentaje de zoom",
     "algo.false-floyd-steinberg.blurb": "Variante de 3 toques. Más rápido, textura más gruesa.",
     "algo.stevenson-arce.blurb": "12 toques hexagonales. Pensado para imprenta.",
-    "param.errorAside": "Error lateral"
+    "param.errorAside": "Error lateral",
+    "topbar.donate": "Donar",
+    "topbar.donateHint": "Apoya el desarrollo de Dizako"
   },
   "fr": {
     "palette.layers": "Couches",
@@ -597,7 +601,9 @@
     "hud.zoomPercent": "Pourcentage de zoom",
     "algo.false-floyd-steinberg.blurb": "Variante à 3 touches. Plus rapide, texture plus grossière.",
     "algo.stevenson-arce.blurb": "12 touches hexagonales. Pensé pour l'impression.",
-    "param.errorAside": "Erreur latérale"
+    "param.errorAside": "Erreur latérale",
+    "topbar.donate": "Faire un don",
+    "topbar.donateHint": "Soutenir le développement de Dizako"
   },
   "ja": {
     "palette.layers": "レイヤー",
@@ -797,7 +803,9 @@
     "hud.zoomPercent": "ズーム倍率",
     "algo.false-floyd-steinberg.blurb": "3 タップ版。速いが粗い質感。",
     "algo.stevenson-arce.blurb": "六角形 12 タップ。印刷向けの設計。",
-    "param.errorAside": "横方向の誤差"
+    "param.errorAside": "横方向の誤差",
+    "topbar.donate": "寄付",
+    "topbar.donateHint": "Dizakoの開発を支援"
   },
   "zh": {
     "palette.layers": "图层",
@@ -997,7 +1005,9 @@
     "hud.zoomPercent": "缩放百分比",
     "algo.false-floyd-steinberg.blurb": "3 触点简化版。更快，颗粒更粗。",
     "algo.stevenson-arce.blurb": "六边形 12 触点。为印刷而生。",
-    "param.errorAside": "侧向误差"
+    "param.errorAside": "侧向误差",
+    "topbar.donate": "捐赠",
+    "topbar.donateHint": "支持 Dizako 开发"
   },
   "bs": {
     "palette.layers": "Slojevi",
@@ -1197,7 +1207,9 @@
     "hud.zoomPercent": "Postotak zumiranja",
     "algo.false-floyd-steinberg.blurb": "3-tap varijanta. Brža, grublja tekstura.",
     "algo.stevenson-arce.blurb": "12 heksagonalnih tapova. Dizajniran za tisak.",
-    "param.errorAside": "Greška ustranu"
+    "param.errorAside": "Greška ustranu",
+    "topbar.donate": "Doniraj",
+    "topbar.donateHint": "Podrži razvoj Dizako"
   },
   "sr": {
     "palette.layers": "Slojevi",
@@ -1397,7 +1409,9 @@
     "hud.zoomPercent": "Procenat zumiranja",
     "algo.false-floyd-steinberg.blurb": "3-tap varijanta. Brža, grublja tekstura.",
     "algo.stevenson-arce.blurb": "12 heksagonalnih tapova. Dizajniran za štampu.",
-    "param.errorAside": "Greška ustranu"
+    "param.errorAside": "Greška ustranu",
+    "topbar.donate": "Донирај",
+    "topbar.donateHint": "Подржи развој Dizako"
   },
   "de": {
     "palette.layers": "Ebenen",
@@ -1597,7 +1611,9 @@
     "hud.zoomPercent": "Zoom-Prozent",
     "algo.false-floyd-steinberg.blurb": "3-Tap-Variante. Schneller, gröbere Textur.",
     "algo.stevenson-arce.blurb": "Hexagonale 12 Tap. Für den Druck gedacht.",
-    "param.errorAside": "Fehler seitlich"
+    "param.errorAside": "Fehler seitlich",
+    "topbar.donate": "Spenden",
+    "topbar.donateHint": "Unterstütze die Entwicklung von Dizako"
   },
   "it": {
     "palette.layers": "Livelli",
@@ -1797,7 +1813,9 @@
     "hud.zoomPercent": "Percentuale zoom",
     "algo.false-floyd-steinberg.blurb": "Variante a 3 tocchi. Più veloce, texture più grossolana.",
     "algo.stevenson-arce.blurb": "12 tocchi esagonali. Pensato per la stampa.",
-    "param.errorAside": "Errore laterale"
+    "param.errorAside": "Errore laterale",
+    "topbar.donate": "Dona",
+    "topbar.donateHint": "Sostieni lo sviluppo di Dizako"
   },
   "pt": {
     "palette.layers": "Camadas",
@@ -1997,7 +2015,9 @@
     "hud.zoomPercent": "Porcentagem de zoom",
     "algo.false-floyd-steinberg.blurb": "Variante de 3 toques. Mais rápido, textura mais grosseira.",
     "algo.stevenson-arce.blurb": "12 toques hexagonais. Feito para impressão.",
-    "param.errorAside": "Erro lateral"
+    "param.errorAside": "Erro lateral",
+    "topbar.donate": "Doar",
+    "topbar.donateHint": "Apoie o desenvolvimento do Dizako"
   },
   "ru": {
     "palette.layers": "Слои",
@@ -2197,7 +2217,9 @@
     "hud.zoomPercent": "Масштаб",
     "algo.false-floyd-steinberg.blurb": "Вариант с 3 отводами. Быстрее, зерно грубее.",
     "algo.stevenson-arce.blurb": "12 гексагональных отводов. Создан для печати.",
-    "param.errorAside": "Ошибка вбок"
+    "param.errorAside": "Ошибка вбок",
+    "topbar.donate": "Донат",
+    "topbar.donateHint": "Поддержать разработку Dizako"
   },
   "ko": {
     "palette.layers": "레이어",
@@ -2397,7 +2419,9 @@
     "hud.zoomPercent": "확대 배율",
     "algo.false-floyd-steinberg.blurb": "3탭 변형. 빠르지만 거친 질감.",
     "algo.stevenson-arce.blurb": "육각형 12탭. 인쇄용 설계.",
-    "param.errorAside": "옆쪽 오차"
+    "param.errorAside": "옆쪽 오차",
+    "topbar.donate": "후원",
+    "topbar.donateHint": "Dizako 개발 지원"
   },
   "ar": {
     "palette.layers": "الطبقات",
@@ -2597,7 +2621,9 @@
     "hud.zoomPercent": "نسبة التكبير",
     "algo.false-floyd-steinberg.blurb": "نسخة بثلاث نقاط اتصال. أسرع، ملمس أخشن.",
     "algo.stevenson-arce.blurb": "12 نقطة سداسية. مصممة للطباعة.",
-    "param.errorAside": "خطأ جانبي"
+    "param.errorAside": "خطأ جانبي",
+    "topbar.donate": "تبرّع",
+    "topbar.donateHint": "ادعم تطوير Dizako"
   },
   "hi": {
     "palette.layers": "परतें",
@@ -2797,7 +2823,9 @@
     "hud.zoomPercent": "ज़ूम प्रतिशत",
     "algo.false-floyd-steinberg.blurb": "3-टैप रूप। तेज़, मोटा बुनावट।",
     "algo.stevenson-arce.blurb": "षट्कोणीय 12-टैप। छपाई के लिए रचा गया।",
-    "param.errorAside": "बगल की त्रुटि"
+    "param.errorAside": "बगल की त्रुटि",
+    "topbar.donate": "दान करें",
+    "topbar.donateHint": "Dizako के विकास का समर्थन करें"
   },
   "tr": {
     "palette.layers": "Katmanlar",
@@ -2997,7 +3025,9 @@
     "hud.zoomPercent": "Yakınlaştırma oranı",
     "algo.false-floyd-steinberg.blurb": "3 dokunuşlu varyant. Daha hızlı, daha kaba doku.",
     "algo.stevenson-arce.blurb": "On iki altıgenli. Baskı için tasarlandı.",
-    "param.errorAside": "Yana hata"
+    "param.errorAside": "Yana hata",
+    "topbar.donate": "Bağış",
+    "topbar.donateHint": "Dizako geliştirmesini destekle"
   },
   "pl": {
     "palette.layers": "Warstwy",
@@ -3197,7 +3227,9 @@
     "hud.zoomPercent": "Procent powiększenia",
     "algo.false-floyd-steinberg.blurb": "Wariant 3-tapowy. Szybszy, grubsza faktura.",
     "algo.stevenson-arce.blurb": "12 heksagonalnych tapów. Projektowane do druku.",
-    "param.errorAside": "Błąd w bok"
+    "param.errorAside": "Błąd w bok",
+    "topbar.donate": "Wesprzyj",
+    "topbar.donateHint": "Wesprzyj rozwój Dizako"
   },
   "nl": {
     "palette.layers": "Lagen",
@@ -3397,7 +3429,9 @@
     "hud.zoomPercent": "Zoompercentage",
     "algo.false-floyd-steinberg.blurb": "3-tapvariant. Sneller, grovere textuur.",
     "algo.stevenson-arce.blurb": "12 hexagonale taps. Ontworpen voor drukwerk.",
-    "param.errorAside": "Fout zijwaarts"
+    "param.errorAside": "Fout zijwaarts",
+    "topbar.donate": "Doneren",
+    "topbar.donateHint": "Steun de ontwikkeling van Dizako"
   },
   "sv": {
     "palette.layers": "Lager",
@@ -3597,6 +3631,8 @@
     "hud.zoomPercent": "Zoomnivå",
     "algo.false-floyd-steinberg.blurb": "3-tappvariant. Snabbare, grövre textur.",
     "algo.stevenson-arce.blurb": "12 hexagonala tappar. Gjord för tryck.",
-    "param.errorAside": "Fel åt sidan"
+    "param.errorAside": "Fel åt sidan",
+    "topbar.donate": "Donera",
+    "topbar.donateHint": "Stöd utvecklingen av Dizako"
   }
 }

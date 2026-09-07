@@ -1,22 +1,22 @@
-# Maintainer: Alex <alex@milfs.party>
+# Maintainer: vndreiii
 pkgname=dizako-git
 # Static placeholder; pkgver() computes the real -git version at makepkg time.
-pkgver=v2.0.1.r11.gb8220b6
+pkgver=v2.1.0
 pkgrel=1
 pkgdesc="Material 3 Expressive dithering studio"
 arch=('x86_64')
-url="https://code.milfs.party/alex/dizako"
+url="https://github.com/vndreiii/dizako"
 license=('MIT')
 depends=('webkit2gtk-4.1' 'gtk3' 'cairo' 'pango' 'glib2' 'hicolor-icon-theme')
 makedepends=('git' 'pnpm' 'rust' 'cargo' 'wasm-pack' 'clang' 'cmake')
 provides=('dizako')
 conflicts=('dizako')
-source=("git+https://code.milfs.party/alex/dizako.git")
+source=("git+https://github.com/vndreiii/dizako.git")
 sha256sums=('SKIP')
 
 pkgver() {
   cd "$pkgname" 2>/dev/null || cd dizako
-  git describe --long --tags 2>/dev/null | sed 's/\([^-]*-g\)/r\1/;s/-/./g' || echo 2.0.1
+  git describe --long --tags 2>/dev/null | sed 's/\([^-]*-g\)/r\1/;s/-/./g' || echo 2.1.0
 }
 
 build() {
@@ -39,16 +39,16 @@ package() {
   cd "$pkgname" 2>/dev/null || cd dizako
   install -Dm755 "src-tauri/target/release/dizako" "$pkgdir/usr/bin/dizako"
   install -Dm644 "src-tauri/icons/128x128.png" \
-    "$pkgdir/usr/share/icons/hicolor/128x128/apps/com.alex.dizako.png"
+    "$pkgdir/usr/share/icons/hicolor/128x128/apps/com.vndreiii.dizako.png"
 
   install -dm755 "$pkgdir/usr/share/applications"
-  cat << 'DESKTOP' > "$pkgdir/usr/share/applications/com.alex.dizako.desktop"
+  cat << 'DESKTOP' > "$pkgdir/usr/share/applications/com.vndreiii.dizako.desktop"
 [Desktop Entry]
 Name=Dizako
 GenericName=Dithering Studio
 Exec=dizako %f
-Icon=com.alex.dizako
-StartupWMClass=com.alex.dizako
+Icon=com.vndreiii.dizako
+StartupWMClass=com.vndreiii.dizako
 Terminal=false
 Type=Application
 Categories=Graphics;ImageProcessing;RasterGraphics;

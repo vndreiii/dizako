@@ -5,6 +5,8 @@
  "topbar.noImage": "画像が読み込まれていません",
  "topbar.open": "開く",
  "topbar.export": "書き出し",
+ "topbar.donate": "寄付",
+ "topbar.donateHint": "Dizakoの開発を支援",
  "topbar.exporting": "書き出し中…",
  "empty.readingTitle": "画像を読み込み中…",
  "empty.readingBody": "大きな画像のデコードには少し時間がかかります。",

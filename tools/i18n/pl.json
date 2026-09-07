@@ -5,6 +5,8 @@
  "topbar.noImage": "Nie wczytano obrazu",
  "topbar.open": "Otwórz",
  "topbar.export": "Eksportuj",
+ "topbar.donate": "Wesprzyj",
+ "topbar.donateHint": "Wesprzyj rozwój Dizako",
  "topbar.exporting": "Eksportowanie…",
  "empty.readingTitle": "Wczytywanie obrazu…",
  "empty.readingBody": "Duże obrazy chwilę się dekodują.",

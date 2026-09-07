@@ -5,6 +5,8 @@
  "topbar.noImage": "Yüklenmiş görsel yok",
  "topbar.open": "Aç",
  "topbar.export": "Dışa aktar",
+ "topbar.donate": "Bağış",
+ "topbar.donateHint": "Dizako geliştirmesini destekle",
  "topbar.exporting": "Dışa aktarılıyor…",
  "empty.readingTitle": "Görsel okunuyor…",
  "empty.readingBody": "Büyük görsellerin kodu çözülürken biraz beklemeniz gerekebilir.",

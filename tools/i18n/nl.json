@@ -5,6 +5,8 @@
  "topbar.noImage": "Geen afbeelding geladen",
  "topbar.open": "Openen",
  "topbar.export": "Exporteren",
+ "topbar.donate": "Doneren",
+ "topbar.donateHint": "Steun de ontwikkeling van Dizako",
  "topbar.exporting": "Exporteren…",
  "empty.readingTitle": "Afbeelding wordt gelezen…",
  "empty.readingBody": "Grote afbeeldingen hebben even nodig om te decoderen.",

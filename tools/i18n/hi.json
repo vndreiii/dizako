@@ -5,6 +5,8 @@
  "topbar.noImage": "कोई चित्र लोड नहीं है",
  "topbar.open": "खोलें",
  "topbar.export": "निर्यात",
+ "topbar.donate": "दान करें",
+ "topbar.donateHint": "Dizako के विकास का समर्थन करें",
  "topbar.exporting": "निर्यात हो रहा है…",
  "empty.readingTitle": "चित्र पढ़ा जा रहा है…",
  "empty.readingBody": "बड़े चित्रों को डीकोड होने में थोड़ा समय लगता है।",

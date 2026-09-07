@@ -103,7 +103,7 @@ export function useRipple() {
 /* Button                                                              */
 /* ------------------------------------------------------------------ */
 
-export type ButtonVariant = "filled" | "tonal" | "outlined" | "text" | "elevated";
+export type ButtonVariant = "filled" | "tonal" | "outlined" | "text" | "elevated" | "donate";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;

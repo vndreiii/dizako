@@ -5,6 +5,8 @@
  "topbar.noImage": "Ingen bild inläst",
  "topbar.open": "Öppna",
  "topbar.export": "Exportera",
+ "topbar.donate": "Donera",
+ "topbar.donateHint": "Stöd utvecklingen av Dizako",
  "topbar.exporting": "Exporterar…",
  "empty.readingTitle": "Läser bild…",
  "empty.readingBody": "Stora bilder tar en stund att avkoda.",

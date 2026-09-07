@@ -5,6 +5,8 @@
  "topbar.noImage": "尚未加载图像",
  "topbar.open": "打开",
  "topbar.export": "导出",
+ "topbar.donate": "捐赠",
+ "topbar.donateHint": "支持 Dizako 开发",
  "topbar.exporting": "正在导出…",
  "empty.readingTitle": "正在读取图像…",
  "empty.readingBody": "大图解码需要一点时间。",

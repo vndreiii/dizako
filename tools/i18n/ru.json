@@ -5,6 +5,8 @@
  "topbar.noImage": "Изображение не загружено",
  "topbar.open": "Открыть",
  "topbar.export": "Экспорт",
+ "topbar.donate": "Донат",
+ "topbar.donateHint": "Поддержать разработку Dizako",
  "topbar.exporting": "Экспорт…",
  "empty.readingTitle": "Чтение изображения…",
  "empty.readingBody": "Большие изображения декодируются с задержкой.",

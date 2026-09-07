@@ -14,21 +14,21 @@ no tracking.
 <table>
   <tr>
     <td align="center" width="33%">
-      <a href="https://code.milfs.party/alex/dizako/src/branch/master/screenshots/mockup__algo_1787436742.png">
+      <a href="screenshots/mockup__algo_1787436742.png">
         <img src="screenshots/mockup__algo_1787436742.png" alt="Algorithm picker" />
       </a>
       <br />
       <sub>Algorithms</sub>
     </td>
     <td align="center" width="33%">
-      <a href="https://code.milfs.party/alex/dizako/src/branch/master/screenshots/mockup_palette_1787437669.png">
+      <a href="screenshots/mockup_palette_1787437669.png">
         <img src="screenshots/mockup_palette_1787437669.png" alt="Palette editor" />
       </a>
       <br />
       <sub>Palettes</sub>
     </td>
     <td align="center" width="33%">
-      <a href="https://code.milfs.party/alex/dizako/src/branch/master/screenshots/mockup__image_1787437379.png">
+      <a href="screenshots/mockup__image_1787437379.png">
         <img src="screenshots/mockup__image_1787437379.png" alt="Image controls" />
       </a>
       <br />
@@ -139,4 +139,4 @@ Dizako can take its accent colour from [matugen](https://github.com/InioX/matuge
 
 ## License
 
-MIT.
+[MIT](LICENSE) — free to use, modify, and distribute.
