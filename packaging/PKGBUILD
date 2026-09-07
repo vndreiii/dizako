@@ -1,0 +1,58 @@
+# Maintainer: vndreiii
+pkgname=dizako-git
+# Static placeholder; pkgver() computes the real -git version at makepkg time.
+pkgver=v2.1.0
+pkgrel=1
+pkgdesc="Material 3 Expressive dithering studio"
+arch=('x86_64')
+url="https://github.com/vndreiii/dizako"
+license=('MIT')
+depends=('webkit2gtk-4.1' 'gtk3' 'cairo' 'pango' 'glib2' 'hicolor-icon-theme')
+makedepends=('git' 'pnpm' 'rust' 'cargo' 'wasm-pack' 'clang' 'cmake')
+provides=('dizako')
+conflicts=('dizako')
+source=("git+https://github.com/vndreiii/dizako.git")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$pkgname" 2>/dev/null || cd dizako
+  git describe --long --tags 2>/dev/null | sed 's/\([^-]*-g\)/r\1/;s/-/./g' || echo 2.1.0
+}
+
+build() {
+  cd "$pkgname" 2>/dev/null || cd dizako
+  wasm-pack build dither-wasm --release --target web --out-dir pkg
+  # pnpm 11 stopped reading package.json's `pnpm` field and dropped
+  # `onlyBuiltDependencies`; it wants `allowBuilds` and otherwise hard-errors on
+  # esbuild's ignored postinstall (ERR_PNPM_IGNORED_BUILDS). Pin the approval
+  # here so the package build does not depend on which pnpm release the
+  # checked-out source was written for.
+  printf 'allowBuilds:\n  esbuild: true\n' > pnpm-workspace.yaml
+  pnpm install
+  # Must be `tauri build`, never raw cargo: only the tauri CLI compiles the
+  # release context with the frontend assets EMBEDDED; plain cargo bakes the
+  # dev-server URL in and the app starts with "connection refused".
+  pnpm tauri build --no-bundle
+}
+
+package() {
+  cd "$pkgname" 2>/dev/null || cd dizako
+  install -Dm755 "src-tauri/target/release/dizako" "$pkgdir/usr/bin/dizako"
+  install -Dm644 "src-tauri/icons/128x128.png" \
+    "$pkgdir/usr/share/icons/hicolor/128x128/apps/com.vndreiii.dizako.png"
+
+  install -dm755 "$pkgdir/usr/share/applications"
+  cat << 'DESKTOP' > "$pkgdir/usr/share/applications/com.vndreiii.dizako.desktop"
+[Desktop Entry]
+Name=Dizako
+GenericName=Dithering Studio
+Exec=dizako %f
+Icon=com.vndreiii.dizako
+StartupWMClass=com.vndreiii.dizako
+Terminal=false
+Type=Application
+Categories=Graphics;ImageProcessing;RasterGraphics;
+Keywords=image;dither;pixel;palette;halftone;
+MimeType=image/png;image/jpeg;image/webp;image/gif;image/avif;
+DESKTOP
+}

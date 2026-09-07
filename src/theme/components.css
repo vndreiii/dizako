@@ -1,0 +1,502 @@
+/* ==================================================================
+   Material 3 Expressive - component layer
+   ================================================================== */
+
+/* ---------------- Ripple / state layer ---------------- */
+
+.m3-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.22;
+  pointer-events: none;
+  transform: scale(0);
+  animation: m3-ripple-in 550ms var(--m3-ease-decelerate) forwards;
+}
+
+@keyframes m3-ripple-in {
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* ---------------- Button ---------------- */
+
+.m3-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--m3-sp-2);
+  min-height: 40px;
+  padding: 0 var(--m3-sp-6);
+  border: none;
+  font: var(--m3-label-lg);
+  letter-spacing: 0.1px;
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  user-select: none;
+  /* Expressive: shape morphs from pill to squircle on press. */
+  border-radius: var(--m3-shape-full);
+  transition:
+    border-radius var(--m3-dur-med2) var(--m3-spring-default),
+    background-color var(--m3-dur-short4) var(--m3-ease-standard),
+    box-shadow var(--m3-dur-short4) var(--m3-ease-standard),
+    transform var(--m3-dur-short3) var(--m3-spring-fast);
+}
+
+.m3-btn--square {
+  border-radius: var(--m3-shape-md);
+}
+
+.m3-btn:active:not(:disabled) {
+  border-radius: var(--m3-shape-md);
+  transform: scale(0.96);
+}
+.m3-btn--square:active:not(:disabled) {
+  border-radius: var(--m3-shape-full);
+}
+
+.m3-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--m3-dur-short3) var(--m3-ease-standard);
+  z-index: -1;
+}
+.m3-btn:hover:not(:disabled)::before {
+  opacity: var(--m3-state-hover);
+}
+.m3-btn:focus-visible::before {
+  opacity: var(--m3-state-focus);
+}
+
+.m3-btn:disabled {
+  cursor: not-allowed;
+  background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+  color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  box-shadow: none;
+}
+
+.m3-btn__icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+}
+.m3-btn__icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.m3-btn--filled {
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+.m3-btn--filled:hover:not(:disabled) {
+  box-shadow: var(--m3-elev-1);
+}
+
+.m3-btn--tonal {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+.m3-btn--tonal:hover:not(:disabled) {
+  box-shadow: var(--m3-elev-1);
+}
+
+/* Donate: tertiary so it stands out without competing with Export (primary). */
+.m3-btn--donate {
+  background: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-on-tertiary-container);
+}
+.m3-btn--donate:hover:not(:disabled) {
+  box-shadow: var(--m3-elev-1);
+}
+.m3-btn--donate:disabled {
+  background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+  color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+}
+
+.m3-btn--elevated {
+  background: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-primary);
+  box-shadow: var(--m3-elev-1);
+}
+.m3-btn--elevated:hover:not(:disabled) {
+  box-shadow: var(--m3-elev-2);
+}
+
+.m3-btn--outlined {
+  background: transparent;
+  color: var(--md-sys-color-primary);
+  box-shadow: inset 0 0 0 1px var(--md-sys-color-outline);
+}
+.m3-btn--outlined:disabled {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+}
+
+.m3-btn--text {
+  background: transparent;
+  color: var(--md-sys-color-primary);
+  padding: 0 var(--m3-sp-3);
+}
+.m3-btn--text:disabled {
+  background: transparent;
+}
+
+/* ---------------- Icon button ---------------- */
+
+.m3-iconbtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border: none;
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: var(--m3-shape-full);
+  transition:
+    background-color var(--m3-dur-short4) var(--m3-ease-standard),
+    color var(--m3-dur-short4) var(--m3-ease-standard),
+    border-radius var(--m3-dur-med2) var(--m3-spring-default),
+    transform var(--m3-dur-short3) var(--m3-spring-fast);
+}
+.m3-iconbtn:active:not(:disabled) {
+  border-radius: var(--m3-shape-md);
+  transform: scale(0.92);
+}
+.m3-iconbtn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--m3-dur-short3) var(--m3-ease-standard);
+  z-index: -1;
+}
+.m3-iconbtn:hover:not(:disabled)::before {
+  opacity: var(--m3-state-hover);
+}
+.m3-iconbtn svg {
+  width: 20px;
+  height: 20px;
+}
+.m3-iconbtn--filled {
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+.m3-iconbtn--tonal {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+.m3-iconbtn.is-selected {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+.m3-iconbtn:disabled {
+  color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  cursor: not-allowed;
+}
+
+/* ---------------- Slider ---------------- */
+
+.m3-slider {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m3-sp-1);
+}
+.m3-slider.is-disabled {
+  opacity: 0.38;
+  pointer-events: none;
+}
+.m3-slider__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--m3-sp-3);
+}
+.m3-slider__label {
+  font: var(--m3-label-lg);
+  color: var(--md-sys-color-on-surface);
+}
+.m3-slider__value {
+  font: var(--m3-label-md);
+  font-family: var(--m3-font-mono);
+  color: var(--md-sys-color-on-surface-variant);
+  background: var(--md-sys-color-surface-container-high);
+  padding: 2px var(--m3-sp-2);
+  border-radius: var(--m3-shape-sm);
+}
+
+.m3-slider__input {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 20px;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+}
+/* Expressive slider (M3): thick rounded track, a gap that opens around the
+   handle, stop-indicator dots at each end, and an inset vertical-bar handle.
+   Shared by every range input in the app via .m3-slider__input. */
+.m3-slider__input {
+  /* Thumb travel geometry: WebKit/Firefox centre the thumb at
+     thumbHalf + fraction * (trackWidth - thumbWidth), so the gap in the
+     track must be anchored to that same expression, not to a raw %. */
+  --slider-thumb-w: 6px;
+  --slider-gap: 7px;
+}
+.m3-slider__input::-webkit-slider-runnable-track {
+  --c: calc((100% - var(--slider-thumb-w)) * var(--m3-slider-pctf) + var(--slider-thumb-w) / 2);
+  height: 16px;
+  border-radius: var(--m3-shape-full);
+  background:
+    radial-gradient(
+      circle at 10px 50%,
+      color-mix(in srgb, var(--md-sys-color-on-surface-variant) 55%, transparent) 0 2px,
+      transparent 2.5px
+    ),
+    radial-gradient(
+      circle at calc(100% - 10px) 50%,
+      color-mix(in srgb, var(--md-sys-color-on-surface-variant) 55%, transparent) 0 2px,
+      transparent 2.5px
+    ),
+    linear-gradient(
+      to right,
+      var(--md-sys-color-primary) 0 calc(var(--c) - var(--slider-gap)),
+      transparent calc(var(--c) - var(--slider-gap)) calc(var(--c) + var(--slider-gap)),
+      var(--md-sys-color-surface-container-highest) calc(var(--c) + var(--slider-gap)) 100%
+    );
+}
+.m3-slider__input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  width: var(--slider-thumb-w);
+  height: 28px;
+  margin-top: -6px;
+  border-radius: var(--m3-shape-full);
+  background: var(--md-sys-color-primary);
+  border: none;
+  box-shadow: var(--m3-elev-1);
+  transition:
+    width var(--m3-dur-short4) var(--m3-spring-fast),
+    height var(--m3-dur-short4) var(--m3-spring-fast);
+}
+.m3-slider__input:hover::-webkit-slider-thumb {
+  width: 8px;
+  margin-top: -6px;
+}
+.m3-slider__input:active::-webkit-slider-thumb {
+  width: 4px;
+  height: 32px;
+  margin-top: -8px;
+}
+/* Keep the gap centred while pressed: the centre expression reads the same
+   variable, so nothing extra is needed — but the narrower thumb shifts its
+   centre by 1px; acceptable and matches M3's squish. */
+.m3-slider__input::-moz-range-track {
+  --c: calc((100% - var(--slider-thumb-w)) * var(--m3-slider-pctf) + var(--slider-thumb-w) / 2);
+  height: 16px;
+  border-radius: var(--m3-shape-full);
+  background:
+    radial-gradient(
+      circle at 10px 50%,
+      color-mix(in srgb, var(--md-sys-color-on-surface-variant) 55%, transparent) 0 2px,
+      transparent 2.5px
+    ),
+    radial-gradient(
+      circle at calc(100% - 10px) 50%,
+      color-mix(in srgb, var(--md-sys-color-on-surface-variant) 55%, transparent) 0 2px,
+      transparent 2.5px
+    ),
+    linear-gradient(
+      to right,
+      var(--md-sys-color-primary) 0 calc(var(--c) - var(--slider-gap)),
+      transparent calc(var(--c) - var(--slider-gap)) calc(var(--c) + var(--slider-gap)),
+      var(--md-sys-color-surface-container-highest) calc(var(--c) + var(--slider-gap)) 100%
+    );
+}
+.m3-slider__input::-moz-range-thumb {
+  box-sizing: border-box;
+  width: var(--slider-thumb-w);
+  height: 28px;
+  border-radius: var(--m3-shape-full);
+  background: var(--md-sys-color-primary);
+  border: none;
+  box-shadow: var(--m3-elev-1);
+}
+
+/* ---------------- Switch ---------------- */
+
+.m3-switchrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--m3-sp-4);
+  padding: var(--m3-sp-2) 0;
+}
+.m3-switchrow.is-disabled {
+  opacity: 0.38;
+  pointer-events: none;
+}
+.m3-switchrow__label {
+  font: var(--m3-label-lg);
+  color: var(--md-sys-color-on-surface);
+  cursor: pointer;
+}
+.m3-switchrow__desc {
+  margin: 2px 0 0;
+  font: var(--m3-body-sm);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.m3-switch {
+  flex: none;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+.m3-switch__track {
+  display: block;
+  position: relative;
+  width: 52px;
+  height: 32px;
+  border-radius: var(--m3-shape-full);
+  background: var(--md-sys-color-surface-container-highest);
+  box-shadow: inset 0 0 0 2px var(--md-sys-color-outline);
+  transition: background-color var(--m3-dur-med1) var(--m3-ease-standard),
+    box-shadow var(--m3-dur-med1) var(--m3-ease-standard);
+}
+.m3-switch.is-on .m3-switch__track {
+  background: var(--md-sys-color-primary);
+  box-shadow: inset 0 0 0 2px var(--md-sys-color-primary);
+}
+.m3-switch__thumb {
+  position: absolute;
+  top: 50%;
+  left: 6px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--m3-shape-full);
+  background: var(--md-sys-color-outline);
+  transform: translate(0, -50%);
+  /* Spring transition is the Expressive signature on toggles. */
+  transition:
+    transform var(--m3-dur-med2) var(--m3-spring-default),
+    width var(--m3-dur-med2) var(--m3-spring-default),
+    height var(--m3-dur-med2) var(--m3-spring-default),
+    left var(--m3-dur-med2) var(--m3-spring-default),
+    background-color var(--m3-dur-med1) var(--m3-ease-standard);
+}
+.m3-switch.is-on .m3-switch__thumb {
+  width: 24px;
+  height: 24px;
+  left: 4px;
+  background: var(--md-sys-color-on-primary);
+  transform: translate(20px, -50%);
+}
+.m3-switch:active .m3-switch__thumb {
+  width: 28px;
+}
+
+/* ---------------- Segmented button ---------------- */
+
+.m3-segmented {
+  display: flex;
+  width: 100%;
+  border-radius: var(--m3-shape-full);
+  background: var(--md-sys-color-surface-container-high);
+  padding: var(--m3-sp-1);
+  gap: var(--m3-sp-1);
+}
+.m3-segmented__item {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--m3-sp-2);
+  min-height: 34px;
+  padding: 0 var(--m3-sp-3);
+  border: none;
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--m3-label-md);
+  cursor: pointer;
+  border-radius: var(--m3-shape-full);
+  transition:
+    background-color var(--m3-dur-med1) var(--m3-ease-standard),
+    color var(--m3-dur-med1) var(--m3-ease-standard),
+    transform var(--m3-dur-short3) var(--m3-spring-fast);
+  white-space: nowrap;
+}
+.m3-segmented__item:hover:not(.is-selected) {
+  background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
+}
+.m3-segmented__item.is-selected {
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+.m3-segmented__item:active {
+  transform: scale(0.95);
+}
+.m3-segmented__icon {
+  display: inline-flex;
+}
+.m3-segmented__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ---------------- Snackbar ---------------- */
+
+/* Anchored bottom-left rather than centred: the preview HUD owns the bottom
+   centre of the stage, and a centred snackbar would land on top of it. */
+.m3-snackbar-host {
+  position: fixed;
+  left: var(--m3-sp-6);
+  bottom: var(--m3-sp-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--m3-sp-2);
+  z-index: 100;
+  pointer-events: none;
+}
+.m3-snackbar {
+  min-width: 280px;
+  max-width: 560px;
+  padding: var(--m3-sp-4) var(--m3-sp-5);
+  border-radius: var(--m3-shape-md);
+  background: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
+  font: var(--m3-body-md);
+  box-shadow: var(--m3-elev-3);
+  animation: m3-snack-in var(--m3-dur-med3) var(--m3-spring-default);
+}
+.m3-snackbar--error {
+  background: var(--md-sys-color-error-container);
+  color: var(--md-sys-color-on-error-container);
+}
+@keyframes m3-snack-in {
+  from {
+    opacity: 0;
+    transform: translateX(-16px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}

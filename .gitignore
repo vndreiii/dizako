@@ -1,0 +1,38 @@
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Tauri
+dither-wasm/target/
+src-tauri/target/
+
+# Packaging
+pkg/
+dizako/
+*.pkg.tar.zst
+*.tar.gz
+
+# Local secrets / indexer state — never publish
+.tokensave/
+
+# Qt port and other legacy material — keep locally, not on remote.
+legacy/
+
+# Docs and Assets (User requested ignores)
+docs/what-this-is.txt
+docs/TODO.md
+docs/SUMMARY.md
+assets/dizako_mascot_full_body.jpg
+assets/dizako_icon.png
+assets/dizako_icon.jpg
+patch_*.js
+TRANSLATIONS_TODO_FILL.json
+
+# Serena IDE local state
+.serena/
+
+# Build artifacts
+release-win/
+

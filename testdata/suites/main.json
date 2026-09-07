@@ -1,0 +1,6216 @@
+{
+ "version": 1,
+ "palettes": {
+  "bw": {
+   "layers": [
+    {
+     "id": "p0",
+     "hex": "#000000",
+     "level": 0,
+     "width": 2,
+     "enabled": true
+    },
+    {
+     "id": "p1",
+     "hex": "#FFFFFF",
+     "level": 1,
+     "width": 2,
+     "enabled": true
+    }
+   ]
+  },
+  "stack12": {
+   "layers": [
+    {
+     "id": "p0",
+     "hex": "#0B0D17",
+     "level": 0,
+     "width": 1.5,
+     "enabled": true
+    },
+    {
+     "id": "p1",
+     "hex": "#221A33",
+     "level": 0.09,
+     "width": 2,
+     "enabled": true
+    },
+    {
+     "id": "p2",
+     "hex": "#3E2A5B",
+     "level": 0.18,
+     "width": 3,
+     "enabled": true
+    },
+    {
+     "id": "p3",
+     "hex": "#7A3B6E",
+     "level": 0.27,
+     "width": 2.5,
+     "enabled": true
+    },
+    {
+     "id": "p4",
+     "hex": "#B8434F",
+     "level": 0.36,
+     "width": 2,
+     "enabled": true
+    },
+    {
+     "id": "p5",
+     "hex": "#E06C4A",
+     "level": 0.45,
+     "width": 3.5,
+     "enabled": true
+    },
+    {
+     "id": "p6",
+     "hex": "#F2A65A",
+     "level": 0.54,
+     "width": 2,
+     "enabled": true
+    },
+    {
+     "id": "p7",
+     "hex": "#F7D488",
+     "level": 0.63,
+     "width": 2.5,
+     "enabled": true
+    },
+    {
+     "id": "p8",
+     "hex": "#9FB87F",
+     "level": 0.72,
+     "width": 2,
+     "enabled": true
+    },
+    {
+     "id": "p9",
+     "hex": "#4E937A",
+     "level": 0.81,
+     "width": 3,
+     "enabled": true
+    },
+    {
+     "id": "p10",
+     "hex": "#33658A",
+     "level": 0.9,
+     "width": 2,
+     "enabled": true
+    },
+    {
+     "id": "p11",
+     "hex": "#F4F4F0",
+     "level": 1,
+     "width": 1.5,
+     "enabled": true
+    }
+   ]
+  },
+  "reorder": {
+   "layers": [
+    {
+     "id": "q0",
+     "hex": "#FFFFFF",
+     "level": 0,
+     "width": 2,
+     "enabled": true
+    },
+    {
+     "id": "q1",
+     "hex": "#000000",
+     "level": 1,
+     "width": 2,
+     "enabled": true
+    }
+   ]
+  }
+ },
+ "cases": [
+  {
+   "id": "case-0001",
+   "fixture": "gradient",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0002",
+   "fixture": "gradient",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0003",
+   "fixture": "gradient",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0004",
+   "fixture": "gradient",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0005",
+   "fixture": "gradient",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0006",
+   "fixture": "gradient",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0007",
+   "fixture": "gradient",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0008",
+   "fixture": "gradient",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0009",
+   "fixture": "gradient",
+   "algorithm": "floyd-steinberg",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0010",
+   "fixture": "gradient",
+   "algorithm": "floyd-steinberg",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0011",
+   "fixture": "gradient",
+   "algorithm": "floyd-steinberg",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0012",
+   "fixture": "gradient",
+   "algorithm": "floyd-steinberg",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0013",
+   "fixture": "gradient",
+   "algorithm": "floyd-steinberg",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0014",
+   "fixture": "gradient",
+   "algorithm": "floyd-steinberg",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0015",
+   "fixture": "gradient",
+   "algorithm": "floyd-steinberg",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0016",
+   "fixture": "gradient",
+   "algorithm": "floyd-steinberg",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0017",
+   "fixture": "gradient",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0018",
+   "fixture": "gradient",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0019",
+   "fixture": "gradient",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0020",
+   "fixture": "gradient",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0021",
+   "fixture": "gradient",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0022",
+   "fixture": "gradient",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0023",
+   "fixture": "gradient",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0024",
+   "fixture": "gradient",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0025",
+   "fixture": "gradient",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0026",
+   "fixture": "gradient",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0027",
+   "fixture": "gradient",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0028",
+   "fixture": "gradient",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0029",
+   "fixture": "gradient",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0030",
+   "fixture": "gradient",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0031",
+   "fixture": "gradient",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0032",
+   "fixture": "gradient",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0033",
+   "fixture": "gradient",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0034",
+   "fixture": "gradient",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0035",
+   "fixture": "gradient",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0036",
+   "fixture": "gradient",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0037",
+   "fixture": "gradient",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0038",
+   "fixture": "gradient",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0039",
+   "fixture": "gradient",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0040",
+   "fixture": "gradient",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0041",
+   "fixture": "gradient",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0042",
+   "fixture": "gradient",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0043",
+   "fixture": "gradient",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0044",
+   "fixture": "gradient",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0045",
+   "fixture": "gradient",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0046",
+   "fixture": "gradient",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0047",
+   "fixture": "gradient",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0048",
+   "fixture": "gradient",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0049",
+   "fixture": "gradient",
+   "algorithm": "stucki",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0050",
+   "fixture": "gradient",
+   "algorithm": "stucki",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0051",
+   "fixture": "gradient",
+   "algorithm": "stucki",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0052",
+   "fixture": "gradient",
+   "algorithm": "stucki",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0053",
+   "fixture": "gradient",
+   "algorithm": "stucki",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0054",
+   "fixture": "gradient",
+   "algorithm": "stucki",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0055",
+   "fixture": "gradient",
+   "algorithm": "stucki",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0056",
+   "fixture": "gradient",
+   "algorithm": "stucki",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0057",
+   "fixture": "gradient",
+   "algorithm": "stucki",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0058",
+   "fixture": "gradient",
+   "algorithm": "stucki",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0059",
+   "fixture": "gradient",
+   "algorithm": "stucki",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0060",
+   "fixture": "gradient",
+   "algorithm": "stucki",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0061",
+   "fixture": "gradient",
+   "algorithm": "stucki",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0062",
+   "fixture": "gradient",
+   "algorithm": "stucki",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0063",
+   "fixture": "gradient",
+   "algorithm": "stucki",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0064",
+   "fixture": "gradient",
+   "algorithm": "stucki",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0065",
+   "fixture": "gradient",
+   "algorithm": "burkes",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0066",
+   "fixture": "gradient",
+   "algorithm": "burkes",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0067",
+   "fixture": "gradient",
+   "algorithm": "burkes",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0068",
+   "fixture": "gradient",
+   "algorithm": "burkes",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0069",
+   "fixture": "gradient",
+   "algorithm": "burkes",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0070",
+   "fixture": "gradient",
+   "algorithm": "burkes",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0071",
+   "fixture": "gradient",
+   "algorithm": "burkes",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0072",
+   "fixture": "gradient",
+   "algorithm": "burkes",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0073",
+   "fixture": "gradient",
+   "algorithm": "burkes",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0074",
+   "fixture": "gradient",
+   "algorithm": "burkes",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0075",
+   "fixture": "gradient",
+   "algorithm": "burkes",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0076",
+   "fixture": "gradient",
+   "algorithm": "burkes",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0077",
+   "fixture": "gradient",
+   "algorithm": "burkes",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0078",
+   "fixture": "gradient",
+   "algorithm": "burkes",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0079",
+   "fixture": "gradient",
+   "algorithm": "burkes",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0080",
+   "fixture": "gradient",
+   "algorithm": "burkes",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0081",
+   "fixture": "gradient",
+   "algorithm": "sierra",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0082",
+   "fixture": "gradient",
+   "algorithm": "sierra",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0083",
+   "fixture": "gradient",
+   "algorithm": "sierra",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0084",
+   "fixture": "gradient",
+   "algorithm": "sierra",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0085",
+   "fixture": "gradient",
+   "algorithm": "sierra",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0086",
+   "fixture": "gradient",
+   "algorithm": "sierra",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0087",
+   "fixture": "gradient",
+   "algorithm": "sierra",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0088",
+   "fixture": "gradient",
+   "algorithm": "sierra",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0089",
+   "fixture": "gradient",
+   "algorithm": "sierra",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0090",
+   "fixture": "gradient",
+   "algorithm": "sierra",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0091",
+   "fixture": "gradient",
+   "algorithm": "sierra",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0092",
+   "fixture": "gradient",
+   "algorithm": "sierra",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0093",
+   "fixture": "gradient",
+   "algorithm": "sierra",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0094",
+   "fixture": "gradient",
+   "algorithm": "sierra",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0095",
+   "fixture": "gradient",
+   "algorithm": "sierra",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0096",
+   "fixture": "gradient",
+   "algorithm": "sierra",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0097",
+   "fixture": "gradient",
+   "algorithm": "sierra-two-row",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0098",
+   "fixture": "gradient",
+   "algorithm": "sierra-two-row",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0099",
+   "fixture": "gradient",
+   "algorithm": "sierra-two-row",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0100",
+   "fixture": "gradient",
+   "algorithm": "sierra-two-row",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0101",
+   "fixture": "gradient",
+   "algorithm": "sierra-two-row",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0102",
+   "fixture": "gradient",
+   "algorithm": "sierra-two-row",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0103",
+   "fixture": "gradient",
+   "algorithm": "sierra-two-row",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0104",
+   "fixture": "gradient",
+   "algorithm": "sierra-two-row",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0105",
+   "fixture": "gradient",
+   "algorithm": "sierra-two-row",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0106",
+   "fixture": "gradient",
+   "algorithm": "sierra-two-row",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0107",
+   "fixture": "gradient",
+   "algorithm": "sierra-two-row",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0108",
+   "fixture": "gradient",
+   "algorithm": "sierra-two-row",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0109",
+   "fixture": "gradient",
+   "algorithm": "sierra-two-row",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0110",
+   "fixture": "gradient",
+   "algorithm": "sierra-two-row",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0111",
+   "fixture": "gradient",
+   "algorithm": "sierra-two-row",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0112",
+   "fixture": "gradient",
+   "algorithm": "sierra-two-row",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0113",
+   "fixture": "gradient",
+   "algorithm": "sierra-lite",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0114",
+   "fixture": "gradient",
+   "algorithm": "sierra-lite",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0115",
+   "fixture": "gradient",
+   "algorithm": "sierra-lite",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0116",
+   "fixture": "gradient",
+   "algorithm": "sierra-lite",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0117",
+   "fixture": "gradient",
+   "algorithm": "sierra-lite",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0118",
+   "fixture": "gradient",
+   "algorithm": "sierra-lite",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0119",
+   "fixture": "gradient",
+   "algorithm": "sierra-lite",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0120",
+   "fixture": "gradient",
+   "algorithm": "sierra-lite",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0121",
+   "fixture": "gradient",
+   "algorithm": "sierra-lite",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0122",
+   "fixture": "gradient",
+   "algorithm": "sierra-lite",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0123",
+   "fixture": "gradient",
+   "algorithm": "sierra-lite",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0124",
+   "fixture": "gradient",
+   "algorithm": "sierra-lite",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0125",
+   "fixture": "gradient",
+   "algorithm": "sierra-lite",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0126",
+   "fixture": "gradient",
+   "algorithm": "sierra-lite",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0127",
+   "fixture": "gradient",
+   "algorithm": "sierra-lite",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0128",
+   "fixture": "gradient",
+   "algorithm": "sierra-lite",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0129",
+   "fixture": "gradient",
+   "algorithm": "stevenson-arce",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0130",
+   "fixture": "gradient",
+   "algorithm": "stevenson-arce",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0131",
+   "fixture": "gradient",
+   "algorithm": "stevenson-arce",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0132",
+   "fixture": "gradient",
+   "algorithm": "stevenson-arce",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0133",
+   "fixture": "gradient",
+   "algorithm": "stevenson-arce",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0134",
+   "fixture": "gradient",
+   "algorithm": "stevenson-arce",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0135",
+   "fixture": "gradient",
+   "algorithm": "stevenson-arce",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0136",
+   "fixture": "gradient",
+   "algorithm": "stevenson-arce",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0137",
+   "fixture": "gradient",
+   "algorithm": "stevenson-arce",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0138",
+   "fixture": "gradient",
+   "algorithm": "stevenson-arce",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0139",
+   "fixture": "gradient",
+   "algorithm": "stevenson-arce",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0140",
+   "fixture": "gradient",
+   "algorithm": "stevenson-arce",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0141",
+   "fixture": "gradient",
+   "algorithm": "stevenson-arce",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0142",
+   "fixture": "gradient",
+   "algorithm": "stevenson-arce",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0143",
+   "fixture": "gradient",
+   "algorithm": "stevenson-arce",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0144",
+   "fixture": "gradient",
+   "algorithm": "stevenson-arce",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0145",
+   "fixture": "gradient",
+   "algorithm": "fan",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0146",
+   "fixture": "gradient",
+   "algorithm": "fan",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0147",
+   "fixture": "gradient",
+   "algorithm": "fan",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0148",
+   "fixture": "gradient",
+   "algorithm": "fan",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0149",
+   "fixture": "gradient",
+   "algorithm": "fan",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0150",
+   "fixture": "gradient",
+   "algorithm": "fan",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0151",
+   "fixture": "gradient",
+   "algorithm": "fan",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0152",
+   "fixture": "gradient",
+   "algorithm": "fan",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0153",
+   "fixture": "gradient",
+   "algorithm": "fan",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0154",
+   "fixture": "gradient",
+   "algorithm": "fan",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0155",
+   "fixture": "gradient",
+   "algorithm": "fan",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0156",
+   "fixture": "gradient",
+   "algorithm": "fan",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0157",
+   "fixture": "gradient",
+   "algorithm": "fan",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0158",
+   "fixture": "gradient",
+   "algorithm": "fan",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0159",
+   "fixture": "gradient",
+   "algorithm": "fan",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0160",
+   "fixture": "gradient",
+   "algorithm": "fan",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0161",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0162",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0163",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0164",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0165",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0166",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0167",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0168",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0169",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0170",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0171",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0172",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0173",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0174",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0175",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0176",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0177",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan-2",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0178",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan-2",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0179",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan-2",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0180",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan-2",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0181",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan-2",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0182",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan-2",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0183",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan-2",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0184",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan-2",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0185",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan-2",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0186",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan-2",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0187",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan-2",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0188",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan-2",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0189",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan-2",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0190",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan-2",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0191",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan-2",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0192",
+   "fixture": "gradient",
+   "algorithm": "shiau-fan-2",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0193",
+   "fixture": "gradient",
+   "algorithm": "pigeon",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0194",
+   "fixture": "gradient",
+   "algorithm": "pigeon",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0195",
+   "fixture": "gradient",
+   "algorithm": "pigeon",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0196",
+   "fixture": "gradient",
+   "algorithm": "pigeon",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0197",
+   "fixture": "gradient",
+   "algorithm": "pigeon",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0198",
+   "fixture": "gradient",
+   "algorithm": "pigeon",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0199",
+   "fixture": "gradient",
+   "algorithm": "pigeon",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0200",
+   "fixture": "gradient",
+   "algorithm": "pigeon",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0201",
+   "fixture": "gradient",
+   "algorithm": "pigeon",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0202",
+   "fixture": "gradient",
+   "algorithm": "pigeon",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0203",
+   "fixture": "gradient",
+   "algorithm": "pigeon",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0204",
+   "fixture": "gradient",
+   "algorithm": "pigeon",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0205",
+   "fixture": "gradient",
+   "algorithm": "pigeon",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0206",
+   "fixture": "gradient",
+   "algorithm": "pigeon",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0207",
+   "fixture": "gradient",
+   "algorithm": "pigeon",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0208",
+   "fixture": "gradient",
+   "algorithm": "pigeon",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0209",
+   "fixture": "gradient",
+   "algorithm": "simple-2d",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0210",
+   "fixture": "gradient",
+   "algorithm": "simple-2d",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0211",
+   "fixture": "gradient",
+   "algorithm": "simple-2d",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0212",
+   "fixture": "gradient",
+   "algorithm": "simple-2d",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0213",
+   "fixture": "gradient",
+   "algorithm": "simple-2d",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0214",
+   "fixture": "gradient",
+   "algorithm": "simple-2d",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0215",
+   "fixture": "gradient",
+   "algorithm": "simple-2d",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0216",
+   "fixture": "gradient",
+   "algorithm": "simple-2d",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0217",
+   "fixture": "gradient",
+   "algorithm": "simple-2d",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0218",
+   "fixture": "gradient",
+   "algorithm": "simple-2d",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0219",
+   "fixture": "gradient",
+   "algorithm": "simple-2d",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0220",
+   "fixture": "gradient",
+   "algorithm": "simple-2d",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0221",
+   "fixture": "gradient",
+   "algorithm": "simple-2d",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0222",
+   "fixture": "gradient",
+   "algorithm": "simple-2d",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0223",
+   "fixture": "gradient",
+   "algorithm": "simple-2d",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0224",
+   "fixture": "gradient",
+   "algorithm": "simple-2d",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0225",
+   "fixture": "gradient",
+   "algorithm": "atkinson",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0226",
+   "fixture": "gradient",
+   "algorithm": "atkinson",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0227",
+   "fixture": "gradient",
+   "algorithm": "atkinson",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0228",
+   "fixture": "gradient",
+   "algorithm": "atkinson",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0229",
+   "fixture": "gradient",
+   "algorithm": "atkinson",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0230",
+   "fixture": "gradient",
+   "algorithm": "atkinson",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0231",
+   "fixture": "gradient",
+   "algorithm": "atkinson",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0232",
+   "fixture": "gradient",
+   "algorithm": "atkinson",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0233",
+   "fixture": "gradient",
+   "algorithm": "atkinson",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0234",
+   "fixture": "gradient",
+   "algorithm": "atkinson",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0235",
+   "fixture": "gradient",
+   "algorithm": "atkinson",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0236",
+   "fixture": "gradient",
+   "algorithm": "atkinson",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0237",
+   "fixture": "gradient",
+   "algorithm": "atkinson",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0238",
+   "fixture": "gradient",
+   "algorithm": "atkinson",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0239",
+   "fixture": "gradient",
+   "algorithm": "atkinson",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0240",
+   "fixture": "gradient",
+   "algorithm": "atkinson",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0241",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0242",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0243",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0244",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0245",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0246",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0247",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0248",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0249",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0250",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0251",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0252",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0253",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0254",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0255",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0256",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0257",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0258",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0259",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0260",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0261",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0262",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0263",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0264",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0265",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0266",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0267",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0268",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0269",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0270",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0271",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0272",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0273",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0274",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0275",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0276",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0277",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0278",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0279",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0280",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0281",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0282",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0283",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0284",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0285",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0286",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0287",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0288",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0289",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0290",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0291",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0292",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0293",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0294",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0295",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0296",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0297",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0298",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0299",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0300",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0301",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0302",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0303",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0304",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0305",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0306",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0307",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0308",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0309",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0310",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0311",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0312",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0313",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0314",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0315",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0316",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0317",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0318",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0319",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0320",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0321",
+   "fixture": "gradient",
+   "algorithm": "checker",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0322",
+   "fixture": "gradient",
+   "algorithm": "checker",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0323",
+   "fixture": "gradient",
+   "algorithm": "checker",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0324",
+   "fixture": "gradient",
+   "algorithm": "checker",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0325",
+   "fixture": "gradient",
+   "algorithm": "checker",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0326",
+   "fixture": "gradient",
+   "algorithm": "checker",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0327",
+   "fixture": "gradient",
+   "algorithm": "checker",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0328",
+   "fixture": "gradient",
+   "algorithm": "checker",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0329",
+   "fixture": "gradient",
+   "algorithm": "checker",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0330",
+   "fixture": "gradient",
+   "algorithm": "checker",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0331",
+   "fixture": "gradient",
+   "algorithm": "checker",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0332",
+   "fixture": "gradient",
+   "algorithm": "checker",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0333",
+   "fixture": "gradient",
+   "algorithm": "checker",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0334",
+   "fixture": "gradient",
+   "algorithm": "checker",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0335",
+   "fixture": "gradient",
+   "algorithm": "checker",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0336",
+   "fixture": "gradient",
+   "algorithm": "checker",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0337",
+   "fixture": "gradient",
+   "algorithm": "blue-noise",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0338",
+   "fixture": "gradient",
+   "algorithm": "blue-noise",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0339",
+   "fixture": "gradient",
+   "algorithm": "blue-noise",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0340",
+   "fixture": "gradient",
+   "algorithm": "blue-noise",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0341",
+   "fixture": "gradient",
+   "algorithm": "blue-noise",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0342",
+   "fixture": "gradient",
+   "algorithm": "blue-noise",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0343",
+   "fixture": "gradient",
+   "algorithm": "blue-noise",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0344",
+   "fixture": "gradient",
+   "algorithm": "blue-noise",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0345",
+   "fixture": "gradient",
+   "algorithm": "blue-noise",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0346",
+   "fixture": "gradient",
+   "algorithm": "blue-noise",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0347",
+   "fixture": "gradient",
+   "algorithm": "blue-noise",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0348",
+   "fixture": "gradient",
+   "algorithm": "blue-noise",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0349",
+   "fixture": "gradient",
+   "algorithm": "blue-noise",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0350",
+   "fixture": "gradient",
+   "algorithm": "blue-noise",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0351",
+   "fixture": "gradient",
+   "algorithm": "blue-noise",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0352",
+   "fixture": "gradient",
+   "algorithm": "blue-noise",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0353",
+   "fixture": "gradient",
+   "algorithm": "ign",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0354",
+   "fixture": "gradient",
+   "algorithm": "ign",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0355",
+   "fixture": "gradient",
+   "algorithm": "ign",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0356",
+   "fixture": "gradient",
+   "algorithm": "ign",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0357",
+   "fixture": "gradient",
+   "algorithm": "ign",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0358",
+   "fixture": "gradient",
+   "algorithm": "ign",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0359",
+   "fixture": "gradient",
+   "algorithm": "ign",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0360",
+   "fixture": "gradient",
+   "algorithm": "ign",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0361",
+   "fixture": "gradient",
+   "algorithm": "ign",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0362",
+   "fixture": "gradient",
+   "algorithm": "ign",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0363",
+   "fixture": "gradient",
+   "algorithm": "ign",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0364",
+   "fixture": "gradient",
+   "algorithm": "ign",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0365",
+   "fixture": "gradient",
+   "algorithm": "ign",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0366",
+   "fixture": "gradient",
+   "algorithm": "ign",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0367",
+   "fixture": "gradient",
+   "algorithm": "ign",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0368",
+   "fixture": "gradient",
+   "algorithm": "ign",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0369",
+   "fixture": "gradient",
+   "algorithm": "threshold",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0370",
+   "fixture": "gradient",
+   "algorithm": "threshold",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0371",
+   "fixture": "gradient",
+   "algorithm": "threshold",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0372",
+   "fixture": "gradient",
+   "algorithm": "threshold",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0373",
+   "fixture": "gradient",
+   "algorithm": "threshold",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0374",
+   "fixture": "gradient",
+   "algorithm": "threshold",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0375",
+   "fixture": "gradient",
+   "algorithm": "threshold",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0376",
+   "fixture": "gradient",
+   "algorithm": "threshold",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0377",
+   "fixture": "gradient",
+   "algorithm": "threshold",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0378",
+   "fixture": "gradient",
+   "algorithm": "threshold",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0379",
+   "fixture": "gradient",
+   "algorithm": "threshold",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0380",
+   "fixture": "gradient",
+   "algorithm": "threshold",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0381",
+   "fixture": "gradient",
+   "algorithm": "threshold",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0382",
+   "fixture": "gradient",
+   "algorithm": "threshold",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0383",
+   "fixture": "gradient",
+   "algorithm": "threshold",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0384",
+   "fixture": "gradient",
+   "algorithm": "threshold",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0385",
+   "fixture": "gradient",
+   "algorithm": "random",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0386",
+   "fixture": "gradient",
+   "algorithm": "random",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0387",
+   "fixture": "gradient",
+   "algorithm": "random",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0388",
+   "fixture": "gradient",
+   "algorithm": "random",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0389",
+   "fixture": "gradient",
+   "algorithm": "random",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0390",
+   "fixture": "gradient",
+   "algorithm": "random",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0391",
+   "fixture": "gradient",
+   "algorithm": "random",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0392",
+   "fixture": "gradient",
+   "algorithm": "random",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0393",
+   "fixture": "gradient",
+   "algorithm": "random",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0394",
+   "fixture": "gradient",
+   "algorithm": "random",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0395",
+   "fixture": "gradient",
+   "algorithm": "random",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0396",
+   "fixture": "gradient",
+   "algorithm": "random",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0397",
+   "fixture": "gradient",
+   "algorithm": "random",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0398",
+   "fixture": "gradient",
+   "algorithm": "random",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0399",
+   "fixture": "gradient",
+   "algorithm": "random",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0400",
+   "fixture": "gradient",
+   "algorithm": "random",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0401",
+   "fixture": "gradient",
+   "algorithm": "riemersma",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0402",
+   "fixture": "gradient",
+   "algorithm": "riemersma",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0403",
+   "fixture": "gradient",
+   "algorithm": "riemersma",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0404",
+   "fixture": "gradient",
+   "algorithm": "riemersma",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0405",
+   "fixture": "gradient",
+   "algorithm": "riemersma",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0406",
+   "fixture": "gradient",
+   "algorithm": "riemersma",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0407",
+   "fixture": "gradient",
+   "algorithm": "riemersma",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0408",
+   "fixture": "gradient",
+   "algorithm": "riemersma",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0409",
+   "fixture": "gradient",
+   "algorithm": "riemersma",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0410",
+   "fixture": "gradient",
+   "algorithm": "riemersma",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0411",
+   "fixture": "gradient",
+   "algorithm": "riemersma",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0412",
+   "fixture": "gradient",
+   "algorithm": "riemersma",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0413",
+   "fixture": "gradient",
+   "algorithm": "riemersma",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0414",
+   "fixture": "gradient",
+   "algorithm": "riemersma",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0415",
+   "fixture": "gradient",
+   "algorithm": "riemersma",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0416",
+   "fixture": "gradient",
+   "algorithm": "riemersma",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0417",
+   "fixture": "gradient",
+   "algorithm": "dot-diffusion",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0418",
+   "fixture": "gradient",
+   "algorithm": "dot-diffusion",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0419",
+   "fixture": "gradient",
+   "algorithm": "dot-diffusion",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0420",
+   "fixture": "gradient",
+   "algorithm": "dot-diffusion",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0421",
+   "fixture": "gradient",
+   "algorithm": "dot-diffusion",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0422",
+   "fixture": "gradient",
+   "algorithm": "dot-diffusion",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0423",
+   "fixture": "gradient",
+   "algorithm": "dot-diffusion",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0424",
+   "fixture": "gradient",
+   "algorithm": "dot-diffusion",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0425",
+   "fixture": "gradient",
+   "algorithm": "dot-diffusion",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0426",
+   "fixture": "gradient",
+   "algorithm": "dot-diffusion",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0427",
+   "fixture": "gradient",
+   "algorithm": "dot-diffusion",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0428",
+   "fixture": "gradient",
+   "algorithm": "dot-diffusion",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0429",
+   "fixture": "gradient",
+   "algorithm": "dot-diffusion",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0430",
+   "fixture": "gradient",
+   "algorithm": "dot-diffusion",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0431",
+   "fixture": "gradient",
+   "algorithm": "dot-diffusion",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0432",
+   "fixture": "gradient",
+   "algorithm": "dot-diffusion",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0433",
+   "fixture": "gradient",
+   "algorithm": "ostromoukhov",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0434",
+   "fixture": "gradient",
+   "algorithm": "ostromoukhov",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0435",
+   "fixture": "gradient",
+   "algorithm": "ostromoukhov",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0436",
+   "fixture": "gradient",
+   "algorithm": "ostromoukhov",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0437",
+   "fixture": "gradient",
+   "algorithm": "ostromoukhov",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0438",
+   "fixture": "gradient",
+   "algorithm": "ostromoukhov",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0439",
+   "fixture": "gradient",
+   "algorithm": "ostromoukhov",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0440",
+   "fixture": "gradient",
+   "algorithm": "ostromoukhov",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0441",
+   "fixture": "gradient",
+   "algorithm": "ostromoukhov",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0442",
+   "fixture": "gradient",
+   "algorithm": "ostromoukhov",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0443",
+   "fixture": "gradient",
+   "algorithm": "ostromoukhov",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0444",
+   "fixture": "gradient",
+   "algorithm": "ostromoukhov",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0445",
+   "fixture": "gradient",
+   "algorithm": "ostromoukhov",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0446",
+   "fixture": "gradient",
+   "algorithm": "ostromoukhov",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0447",
+   "fixture": "gradient",
+   "algorithm": "ostromoukhov",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0448",
+   "fixture": "gradient",
+   "algorithm": "ostromoukhov",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0449",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0450",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "bw",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0451",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0452",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "bw",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0453",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0454",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0455",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0456",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "bw",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0457",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0458",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0459",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0460",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "stack12",
+   "matchMode": "luma",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0461",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0462",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0463",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0
+  },
+  {
+   "id": "case-0464",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "stack12",
+   "matchMode": "tonal",
+   "tonalBias": 0.5
+  },
+  {
+   "id": "case-0465",
+   "fixture": "photo",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0466",
+   "fixture": "photo",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0467",
+   "fixture": "photo",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0468",
+   "fixture": "photo",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0469",
+   "fixture": "photo",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0470",
+   "fixture": "photo",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0471",
+   "fixture": "photo",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0472",
+   "fixture": "photo",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0473",
+   "fixture": "photo",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0474",
+   "fixture": "photo",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0475",
+   "fixture": "photo",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0476",
+   "fixture": "photo",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0477",
+   "fixture": "photo",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0478",
+   "fixture": "photo",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0479",
+   "fixture": "photo",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0480",
+   "fixture": "photo",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0481",
+   "fixture": "photo",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0482",
+   "fixture": "photo",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0483",
+   "fixture": "photo",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0484",
+   "fixture": "photo",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0485",
+   "fixture": "photo",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0486",
+   "fixture": "photo",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0487",
+   "fixture": "photo",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0488",
+   "fixture": "photo",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0489",
+   "fixture": "photo",
+   "algorithm": "stucki",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0490",
+   "fixture": "photo",
+   "algorithm": "stucki",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0491",
+   "fixture": "photo",
+   "algorithm": "stucki",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0492",
+   "fixture": "photo",
+   "algorithm": "stucki",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0493",
+   "fixture": "photo",
+   "algorithm": "stucki",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0494",
+   "fixture": "photo",
+   "algorithm": "stucki",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0495",
+   "fixture": "photo",
+   "algorithm": "stucki",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0496",
+   "fixture": "photo",
+   "algorithm": "stucki",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0497",
+   "fixture": "photo",
+   "algorithm": "burkes",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0498",
+   "fixture": "photo",
+   "algorithm": "burkes",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0499",
+   "fixture": "photo",
+   "algorithm": "burkes",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0500",
+   "fixture": "photo",
+   "algorithm": "burkes",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0501",
+   "fixture": "photo",
+   "algorithm": "burkes",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0502",
+   "fixture": "photo",
+   "algorithm": "burkes",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0503",
+   "fixture": "photo",
+   "algorithm": "burkes",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0504",
+   "fixture": "photo",
+   "algorithm": "burkes",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0505",
+   "fixture": "photo",
+   "algorithm": "sierra",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0506",
+   "fixture": "photo",
+   "algorithm": "sierra",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0507",
+   "fixture": "photo",
+   "algorithm": "sierra",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0508",
+   "fixture": "photo",
+   "algorithm": "sierra",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0509",
+   "fixture": "photo",
+   "algorithm": "sierra",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0510",
+   "fixture": "photo",
+   "algorithm": "sierra",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0511",
+   "fixture": "photo",
+   "algorithm": "sierra",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0512",
+   "fixture": "photo",
+   "algorithm": "sierra",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0513",
+   "fixture": "photo",
+   "algorithm": "sierra-two-row",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0514",
+   "fixture": "photo",
+   "algorithm": "sierra-two-row",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0515",
+   "fixture": "photo",
+   "algorithm": "sierra-two-row",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0516",
+   "fixture": "photo",
+   "algorithm": "sierra-two-row",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0517",
+   "fixture": "photo",
+   "algorithm": "sierra-two-row",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0518",
+   "fixture": "photo",
+   "algorithm": "sierra-two-row",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0519",
+   "fixture": "photo",
+   "algorithm": "sierra-two-row",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0520",
+   "fixture": "photo",
+   "algorithm": "sierra-two-row",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0521",
+   "fixture": "photo",
+   "algorithm": "sierra-lite",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0522",
+   "fixture": "photo",
+   "algorithm": "sierra-lite",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0523",
+   "fixture": "photo",
+   "algorithm": "sierra-lite",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0524",
+   "fixture": "photo",
+   "algorithm": "sierra-lite",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0525",
+   "fixture": "photo",
+   "algorithm": "sierra-lite",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0526",
+   "fixture": "photo",
+   "algorithm": "sierra-lite",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0527",
+   "fixture": "photo",
+   "algorithm": "sierra-lite",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0528",
+   "fixture": "photo",
+   "algorithm": "sierra-lite",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0529",
+   "fixture": "photo",
+   "algorithm": "stevenson-arce",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0530",
+   "fixture": "photo",
+   "algorithm": "stevenson-arce",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0531",
+   "fixture": "photo",
+   "algorithm": "stevenson-arce",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0532",
+   "fixture": "photo",
+   "algorithm": "stevenson-arce",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0533",
+   "fixture": "photo",
+   "algorithm": "stevenson-arce",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0534",
+   "fixture": "photo",
+   "algorithm": "stevenson-arce",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0535",
+   "fixture": "photo",
+   "algorithm": "stevenson-arce",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0536",
+   "fixture": "photo",
+   "algorithm": "stevenson-arce",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0537",
+   "fixture": "photo",
+   "algorithm": "fan",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0538",
+   "fixture": "photo",
+   "algorithm": "fan",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0539",
+   "fixture": "photo",
+   "algorithm": "fan",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0540",
+   "fixture": "photo",
+   "algorithm": "fan",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0541",
+   "fixture": "photo",
+   "algorithm": "fan",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0542",
+   "fixture": "photo",
+   "algorithm": "fan",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0543",
+   "fixture": "photo",
+   "algorithm": "fan",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0544",
+   "fixture": "photo",
+   "algorithm": "fan",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0545",
+   "fixture": "photo",
+   "algorithm": "shiau-fan",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0546",
+   "fixture": "photo",
+   "algorithm": "shiau-fan",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0547",
+   "fixture": "photo",
+   "algorithm": "shiau-fan",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0548",
+   "fixture": "photo",
+   "algorithm": "shiau-fan",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0549",
+   "fixture": "photo",
+   "algorithm": "shiau-fan",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0550",
+   "fixture": "photo",
+   "algorithm": "shiau-fan",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0551",
+   "fixture": "photo",
+   "algorithm": "shiau-fan",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0552",
+   "fixture": "photo",
+   "algorithm": "shiau-fan",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0553",
+   "fixture": "photo",
+   "algorithm": "shiau-fan-2",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0554",
+   "fixture": "photo",
+   "algorithm": "shiau-fan-2",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0555",
+   "fixture": "photo",
+   "algorithm": "shiau-fan-2",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0556",
+   "fixture": "photo",
+   "algorithm": "shiau-fan-2",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0557",
+   "fixture": "photo",
+   "algorithm": "shiau-fan-2",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0558",
+   "fixture": "photo",
+   "algorithm": "shiau-fan-2",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0559",
+   "fixture": "photo",
+   "algorithm": "shiau-fan-2",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0560",
+   "fixture": "photo",
+   "algorithm": "shiau-fan-2",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0561",
+   "fixture": "photo",
+   "algorithm": "pigeon",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0562",
+   "fixture": "photo",
+   "algorithm": "pigeon",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0563",
+   "fixture": "photo",
+   "algorithm": "pigeon",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0564",
+   "fixture": "photo",
+   "algorithm": "pigeon",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0565",
+   "fixture": "photo",
+   "algorithm": "pigeon",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0566",
+   "fixture": "photo",
+   "algorithm": "pigeon",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0567",
+   "fixture": "photo",
+   "algorithm": "pigeon",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0568",
+   "fixture": "photo",
+   "algorithm": "pigeon",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0569",
+   "fixture": "photo",
+   "algorithm": "simple-2d",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0570",
+   "fixture": "photo",
+   "algorithm": "simple-2d",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0571",
+   "fixture": "photo",
+   "algorithm": "simple-2d",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0572",
+   "fixture": "photo",
+   "algorithm": "simple-2d",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0573",
+   "fixture": "photo",
+   "algorithm": "simple-2d",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0574",
+   "fixture": "photo",
+   "algorithm": "simple-2d",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0575",
+   "fixture": "photo",
+   "algorithm": "simple-2d",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0576",
+   "fixture": "photo",
+   "algorithm": "simple-2d",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0577",
+   "fixture": "photo",
+   "algorithm": "atkinson",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0578",
+   "fixture": "photo",
+   "algorithm": "atkinson",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0579",
+   "fixture": "photo",
+   "algorithm": "atkinson",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0580",
+   "fixture": "photo",
+   "algorithm": "atkinson",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": true,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0581",
+   "fixture": "photo",
+   "algorithm": "atkinson",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0582",
+   "fixture": "photo",
+   "algorithm": "atkinson",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0583",
+   "fixture": "photo",
+   "algorithm": "atkinson",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 0
+  },
+  {
+   "id": "case-0584",
+   "fixture": "photo",
+   "algorithm": "atkinson",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "serpentine": false,
+   "jitter": 0.4,
+   "errorClamp": 255
+  },
+  {
+   "id": "case-0585",
+   "fixture": "checker",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0586",
+   "fixture": "flat-noise",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0587",
+   "fixture": "posterized",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0588",
+   "fixture": "checker",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0589",
+   "fixture": "flat-noise",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0590",
+   "fixture": "posterized",
+   "algorithm": "false-floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0591",
+   "fixture": "checker",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0592",
+   "fixture": "flat-noise",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0593",
+   "fixture": "posterized",
+   "algorithm": "jarvis-judice-ninke",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0594",
+   "fixture": "checker",
+   "algorithm": "stucki",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0595",
+   "fixture": "flat-noise",
+   "algorithm": "stucki",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0596",
+   "fixture": "posterized",
+   "algorithm": "stucki",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0597",
+   "fixture": "checker",
+   "algorithm": "burkes",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0598",
+   "fixture": "flat-noise",
+   "algorithm": "burkes",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0599",
+   "fixture": "posterized",
+   "algorithm": "burkes",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0600",
+   "fixture": "checker",
+   "algorithm": "sierra",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0601",
+   "fixture": "flat-noise",
+   "algorithm": "sierra",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0602",
+   "fixture": "posterized",
+   "algorithm": "sierra",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0603",
+   "fixture": "checker",
+   "algorithm": "sierra-two-row",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0604",
+   "fixture": "flat-noise",
+   "algorithm": "sierra-two-row",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0605",
+   "fixture": "posterized",
+   "algorithm": "sierra-two-row",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0606",
+   "fixture": "checker",
+   "algorithm": "sierra-lite",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0607",
+   "fixture": "flat-noise",
+   "algorithm": "sierra-lite",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0608",
+   "fixture": "posterized",
+   "algorithm": "sierra-lite",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0609",
+   "fixture": "checker",
+   "algorithm": "stevenson-arce",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0610",
+   "fixture": "flat-noise",
+   "algorithm": "stevenson-arce",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0611",
+   "fixture": "posterized",
+   "algorithm": "stevenson-arce",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0612",
+   "fixture": "checker",
+   "algorithm": "fan",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0613",
+   "fixture": "flat-noise",
+   "algorithm": "fan",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0614",
+   "fixture": "posterized",
+   "algorithm": "fan",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0615",
+   "fixture": "checker",
+   "algorithm": "shiau-fan",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0616",
+   "fixture": "flat-noise",
+   "algorithm": "shiau-fan",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0617",
+   "fixture": "posterized",
+   "algorithm": "shiau-fan",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0618",
+   "fixture": "checker",
+   "algorithm": "shiau-fan-2",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0619",
+   "fixture": "flat-noise",
+   "algorithm": "shiau-fan-2",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0620",
+   "fixture": "posterized",
+   "algorithm": "shiau-fan-2",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0621",
+   "fixture": "checker",
+   "algorithm": "pigeon",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0622",
+   "fixture": "flat-noise",
+   "algorithm": "pigeon",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0623",
+   "fixture": "posterized",
+   "algorithm": "pigeon",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0624",
+   "fixture": "checker",
+   "algorithm": "simple-2d",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0625",
+   "fixture": "flat-noise",
+   "algorithm": "simple-2d",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0626",
+   "fixture": "posterized",
+   "algorithm": "simple-2d",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0627",
+   "fixture": "checker",
+   "algorithm": "atkinson",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0628",
+   "fixture": "flat-noise",
+   "algorithm": "atkinson",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0629",
+   "fixture": "posterized",
+   "algorithm": "atkinson",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0630",
+   "fixture": "gradient",
+   "algorithm": "ostromoukhov",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "serpentine": true
+  },
+  {
+   "id": "case-0631",
+   "fixture": "photo",
+   "algorithm": "ostromoukhov",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "serpentine": true
+  },
+  {
+   "id": "case-0632",
+   "fixture": "gradient",
+   "algorithm": "ostromoukhov",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "serpentine": false
+  },
+  {
+   "id": "case-0633",
+   "fixture": "photo",
+   "algorithm": "ostromoukhov",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "serpentine": false
+  },
+  {
+   "id": "case-0634",
+   "fixture": "photo",
+   "algorithm": "riemersma",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "riemersmaQueue": 4,
+   "riemersmaDecay": 0.3
+  },
+  {
+   "id": "case-0635",
+   "fixture": "photo",
+   "algorithm": "riemersma",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "riemersmaQueue": 4,
+   "riemersmaDecay": 0.75
+  },
+  {
+   "id": "case-0636",
+   "fixture": "photo",
+   "algorithm": "riemersma",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "riemersmaQueue": 4,
+   "riemersmaDecay": 0.95
+  },
+  {
+   "id": "case-0637",
+   "fixture": "photo",
+   "algorithm": "riemersma",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "riemersmaQueue": 16,
+   "riemersmaDecay": 0.3
+  },
+  {
+   "id": "case-0638",
+   "fixture": "photo",
+   "algorithm": "riemersma",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "riemersmaQueue": 16,
+   "riemersmaDecay": 0.75
+  },
+  {
+   "id": "case-0639",
+   "fixture": "photo",
+   "algorithm": "riemersma",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "riemersmaQueue": 16,
+   "riemersmaDecay": 0.95
+  },
+  {
+   "id": "case-0640",
+   "fixture": "photo",
+   "algorithm": "riemersma",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "riemersmaQueue": 32,
+   "riemersmaDecay": 0.3
+  },
+  {
+   "id": "case-0641",
+   "fixture": "photo",
+   "algorithm": "riemersma",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "riemersmaQueue": 32,
+   "riemersmaDecay": 0.75
+  },
+  {
+   "id": "case-0642",
+   "fixture": "photo",
+   "algorithm": "riemersma",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "riemersmaQueue": 32,
+   "riemersmaDecay": 0.95
+  },
+  {
+   "id": "case-0643",
+   "fixture": "photo",
+   "algorithm": "dot-diffusion",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "dotClassSize": 2
+  },
+  {
+   "id": "case-0644",
+   "fixture": "flat-noise",
+   "algorithm": "dot-diffusion",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "dotClassSize": 2
+  },
+  {
+   "id": "case-0645",
+   "fixture": "photo",
+   "algorithm": "dot-diffusion",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "dotClassSize": 8
+  },
+  {
+   "id": "case-0646",
+   "fixture": "flat-noise",
+   "algorithm": "dot-diffusion",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "dotClassSize": 8
+  },
+  {
+   "id": "case-0647",
+   "fixture": "photo",
+   "algorithm": "dot-diffusion",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "dotClassSize": 16
+  },
+  {
+   "id": "case-0648",
+   "fixture": "flat-noise",
+   "algorithm": "dot-diffusion",
+   "palette": "stack12",
+   "matchMode": "oklab",
+   "dotClassSize": 16
+  },
+  {
+   "id": "case-0649",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "ominoDirection": "right",
+   "ominoPhase": 0
+  },
+  {
+   "id": "case-0650",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "ominoDirection": "right",
+   "ominoPhase": 180
+  },
+  {
+   "id": "case-0651",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "ominoDirection": "left",
+   "ominoPhase": 0
+  },
+  {
+   "id": "case-0652",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "ominoDirection": "left",
+   "ominoPhase": 180
+  },
+  {
+   "id": "case-0653",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "ominoDirection": "down",
+   "ominoPhase": 0
+  },
+  {
+   "id": "case-0654",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "ominoDirection": "down",
+   "ominoPhase": 180
+  },
+  {
+   "id": "case-0655",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "ominoDirection": "up",
+   "ominoPhase": 0
+  },
+  {
+   "id": "case-0656",
+   "fixture": "gradient",
+   "algorithm": "omino",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "ominoDirection": "up",
+   "ominoPhase": 180
+  },
+  {
+   "id": "case-0657",
+   "fixture": "photo",
+   "algorithm": "omino",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "ominoColorCount": 2
+  },
+  {
+   "id": "case-0658",
+   "fixture": "photo",
+   "algorithm": "omino",
+   "palette": "stack12",
+   "matchMode": "rgb",
+   "ominoColorCount": 12
+  },
+  {
+   "id": "case-0659",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "bayerSize": 2
+  },
+  {
+   "id": "case-0660",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "bayerSize": 4
+  },
+  {
+   "id": "case-0661",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "bayerSize": 8
+  },
+  {
+   "id": "case-0662",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "bayerSize": 16
+  },
+  {
+   "id": "case-0663",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "bayerSize": 32
+  },
+  {
+   "id": "case-0664",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 4,
+   "screenAngle": 0
+  },
+  {
+   "id": "case-0665",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 4,
+   "screenAngle": 27
+  },
+  {
+   "id": "case-0666",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 4,
+   "screenAngle": 90
+  },
+  {
+   "id": "case-0667",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 12,
+   "screenAngle": 0
+  },
+  {
+   "id": "case-0668",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 12,
+   "screenAngle": 27
+  },
+  {
+   "id": "case-0669",
+   "fixture": "gradient",
+   "algorithm": "halftone",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 12,
+   "screenAngle": 90
+  },
+  {
+   "id": "case-0670",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 4,
+   "screenAngle": 0
+  },
+  {
+   "id": "case-0671",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 4,
+   "screenAngle": 27
+  },
+  {
+   "id": "case-0672",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 4,
+   "screenAngle": 90
+  },
+  {
+   "id": "case-0673",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 12,
+   "screenAngle": 0
+  },
+  {
+   "id": "case-0674",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 12,
+   "screenAngle": 27
+  },
+  {
+   "id": "case-0675",
+   "fixture": "gradient",
+   "algorithm": "cluster-diagonal",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 12,
+   "screenAngle": 90
+  },
+  {
+   "id": "case-0676",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 4,
+   "screenAngle": 0
+  },
+  {
+   "id": "case-0677",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 4,
+   "screenAngle": 27
+  },
+  {
+   "id": "case-0678",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 4,
+   "screenAngle": 90
+  },
+  {
+   "id": "case-0679",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 12,
+   "screenAngle": 0
+  },
+  {
+   "id": "case-0680",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 12,
+   "screenAngle": 27
+  },
+  {
+   "id": "case-0681",
+   "fixture": "gradient",
+   "algorithm": "halftone-line",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 12,
+   "screenAngle": 90
+  },
+  {
+   "id": "case-0682",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 4,
+   "screenAngle": 0
+  },
+  {
+   "id": "case-0683",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 4,
+   "screenAngle": 27
+  },
+  {
+   "id": "case-0684",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 4,
+   "screenAngle": 90
+  },
+  {
+   "id": "case-0685",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 12,
+   "screenAngle": 0
+  },
+  {
+   "id": "case-0686",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 12,
+   "screenAngle": 27
+  },
+  {
+   "id": "case-0687",
+   "fixture": "gradient",
+   "algorithm": "diagonal-line",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "cellSize": 12,
+   "screenAngle": 90
+  },
+  {
+   "id": "case-0688",
+   "fixture": "gradient",
+   "algorithm": "blue-noise",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "noiseScale": 0.5
+  },
+  {
+   "id": "case-0689",
+   "fixture": "gradient",
+   "algorithm": "blue-noise",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "noiseScale": 2.7
+  },
+  {
+   "id": "case-0690",
+   "fixture": "gradient",
+   "algorithm": "ign",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "noiseScale": 0.5
+  },
+  {
+   "id": "case-0691",
+   "fixture": "gradient",
+   "algorithm": "ign",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "noiseScale": 2.7
+  },
+  {
+   "id": "case-0692",
+   "fixture": "photo",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "threshold": 64
+  },
+  {
+   "id": "case-0693",
+   "fixture": "photo",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "threshold": 200
+  },
+  {
+   "id": "case-0694",
+   "fixture": "photo",
+   "algorithm": "halftone",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "threshold": 64
+  },
+  {
+   "id": "case-0695",
+   "fixture": "photo",
+   "algorithm": "halftone",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "threshold": 200
+  },
+  {
+   "id": "case-0696",
+   "fixture": "photo",
+   "algorithm": "cluster-diagonal",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "threshold": 64
+  },
+  {
+   "id": "case-0697",
+   "fixture": "photo",
+   "algorithm": "cluster-diagonal",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "threshold": 200
+  },
+  {
+   "id": "case-0698",
+   "fixture": "photo",
+   "algorithm": "halftone-line",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "threshold": 64
+  },
+  {
+   "id": "case-0699",
+   "fixture": "photo",
+   "algorithm": "halftone-line",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "threshold": 200
+  },
+  {
+   "id": "case-0700",
+   "fixture": "photo",
+   "algorithm": "diagonal-line",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "threshold": 64
+  },
+  {
+   "id": "case-0701",
+   "fixture": "photo",
+   "algorithm": "diagonal-line",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "threshold": 200
+  },
+  {
+   "id": "case-0702",
+   "fixture": "photo",
+   "algorithm": "checker",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "threshold": 64
+  },
+  {
+   "id": "case-0703",
+   "fixture": "photo",
+   "algorithm": "checker",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "threshold": 200
+  },
+  {
+   "id": "case-0704",
+   "fixture": "photo",
+   "algorithm": "blue-noise",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "threshold": 64
+  },
+  {
+   "id": "case-0705",
+   "fixture": "photo",
+   "algorithm": "blue-noise",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "threshold": 200
+  },
+  {
+   "id": "case-0706",
+   "fixture": "photo",
+   "algorithm": "ign",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "threshold": 64
+  },
+  {
+   "id": "case-0707",
+   "fixture": "photo",
+   "algorithm": "ign",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "threshold": 200
+  },
+  {
+   "id": "case-0708",
+   "fixture": "gradient",
+   "algorithm": "threshold",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "threshold": 10
+  },
+  {
+   "id": "case-0709",
+   "fixture": "gradient",
+   "algorithm": "threshold",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "threshold": 128
+  },
+  {
+   "id": "case-0710",
+   "fixture": "gradient",
+   "algorithm": "threshold",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "threshold": 245
+  },
+  {
+   "id": "case-0711",
+   "fixture": "photo",
+   "algorithm": "random",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "noiseAmount": 0.05
+  },
+  {
+   "id": "case-0712",
+   "fixture": "photo",
+   "algorithm": "random",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "noiseAmount": 1
+  },
+  {
+   "id": "case-0713",
+   "fixture": "photo",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "blur": 1
+  },
+  {
+   "id": "case-0714",
+   "fixture": "photo",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "blur": 1
+  },
+  {
+   "id": "case-0715",
+   "fixture": "gradient",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "blur": 1
+  },
+  {
+   "id": "case-0716",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "blur": 1
+  },
+  {
+   "id": "case-0717",
+   "fixture": "photo",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "blur": 4
+  },
+  {
+   "id": "case-0718",
+   "fixture": "photo",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "blur": 4
+  },
+  {
+   "id": "case-0719",
+   "fixture": "gradient",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "blur": 4
+  },
+  {
+   "id": "case-0720",
+   "fixture": "gradient",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "blur": 4
+  },
+  {
+   "id": "case-0721",
+   "fixture": "photo",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "sharpen": 0.5
+  },
+  {
+   "id": "case-0722",
+   "fixture": "gradient",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "sharpen": 0.5
+  },
+  {
+   "id": "case-0723",
+   "fixture": "photo",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "grayscale": true
+  },
+  {
+   "id": "case-0724",
+   "fixture": "photo",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab",
+   "grayscale": false,
+   "invert": true
+  },
+  {
+   "id": "case-0725",
+   "fixture": "large",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0726",
+   "fixture": "large",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0727",
+   "fixture": "large",
+   "algorithm": "riemersma",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0728",
+   "fixture": "large",
+   "algorithm": "dot-diffusion",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0729",
+   "fixture": "large",
+   "algorithm": "omino",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0730",
+   "fixture": "large",
+   "algorithm": "halftone",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0731",
+   "fixture": "alpha",
+   "algorithm": "floyd-steinberg",
+   "palette": "bw",
+   "matchMode": "oklab"
+  },
+  {
+   "id": "case-0732",
+   "fixture": "alpha",
+   "algorithm": "bayer",
+   "palette": "bw",
+   "matchMode": "oklab"
+  }
+ ]
+}

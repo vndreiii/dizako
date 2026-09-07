@@ -1,0 +1,7 @@
+# pnpm 11 renamed this setting to `allowBuilds`; `onlyBuiltDependencies` is kept
+# for pnpm 10. Without it `pnpm install` hard-errors (ERR_PNPM_IGNORED_BUILDS)
+# on esbuild's postinstall instead of running it.
+allowBuilds:
+  esbuild: true
+onlyBuiltDependencies:
+  - esbuild

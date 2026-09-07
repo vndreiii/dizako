@@ -1,0 +1,58 @@
+# Flatpak manifest for Dizako.
+#
+# Uses the GNOME runtime because WebKitGTK ships there (Tauri apps need it);
+# node/rust toolchains come from SDK extensions. wasm-pack is installed into
+# CARGO_HOME during build.
+#
+# Status: structurally complete but NOT yet exercised end-to-end with
+# flatpak-builder. Until someone runs that loop, prefer CI bundles
+# (deb/rpm/appimage/nsis/dmg) or the AUR package.
+app-id: com.vndreiii.dizako
+runtime: org.gnome.Platform
+runtime-version: '48'
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.gnome.Sdk.Extension.node22
+  - org.gnome.Sdk.Extension.rust-stable
+command: dizako
+finish-args:
+  # Windowed app
+  - --socket=wayland
+  - --socket=x11
+  - --device=dri
+  - --share=ipc
+  # Open/save dialogs hit arbitrary user-chosen paths
+  - --filesystem=home
+build-options:
+  append-path: /usr/lib/sdk/node22/bin:/usr/lib/sdk/rust-stable/bin
+  prepend-pkg-config-path: /usr/lib/sdk/node22/lib/pkgconfig
+  env:
+    CARGO_HOME: /run/build/dizako/cargo
+modules:
+  - name: wasm-pack
+    buildsystem: simple
+    build-commands:
+      - cargo install --locked wasm-pack --root /usr/local
+      - mv /usr/local/bin/wasm-pack /app/bin/
+    sources: [] # vendored via cargo below when networked builds land
+
+  - name: dizako
+    buildsystem: simple
+    build-commands:
+      - pnpm config set store-dir .pnpm-store
+      - pnpm install
+      - pnpm build:wasm
+      - pnpm exec vite build
+      - cargo --offline build --release --manifest-path src-tauri/Cargo.toml || cargo build --release --manifest-path src-tauri/Cargo.toml
+      - install -Dm755 src-tauri/target/release/dizako /app/bin/dizako
+      - install -Dm644 src-tauri/icons/128x128.png
+        /app/share/icons/hicolor/128x128/apps/com.vndreiii.dizako.png
+      - install -Dm644 packaging/com.vndreiii.dizako.desktop
+        /app/share/applications/com.vndreiii.dizako.desktop
+    sources:
+      - type: git
+        url: https://github.com/vndreiii/dizako.git
+        tag: v2.1.0
+        x-checker-data:
+          type: git
+          tag-pattern: ^v([\d.]+)$

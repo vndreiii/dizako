@@ -1,0 +1,154 @@
+/* ==================================================================
+   Material 3 Expressive - token layer
+   Colour roles are injected at runtime by theme.ts (dynamic colour from
+   a seed), so this file defines only the *structural* tokens: shape,
+   motion, typography, elevation, state layers and spacing.
+   ================================================================== */
+
+:root {
+  /* ---- Shape scale (M3 Expressive leans on larger, friendlier radii) ---- */
+  --m3-shape-none: 0px;
+  --m3-shape-xs: 4px;
+  --m3-shape-sm: 8px;
+  --m3-shape-md: 12px;
+  --m3-shape-lg: 16px;
+  --m3-shape-xl: 28px;
+  --m3-shape-xxl: 36px;
+  --m3-shape-full: 999px;
+
+  /* ---- Motion: M3 Expressive spatial springs ----
+     Expressive motion overshoots slightly instead of easing flat - that
+     tiny bounce is what separates it from baseline M3. */
+  --m3-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --m3-ease-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --m3-ease-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --m3-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --m3-spring-fast: cubic-bezier(0.42, 1.67, 0.21, 0.9);
+  --m3-spring-default: cubic-bezier(0.38, 1.21, 0.22, 1);
+  --m3-spring-slow: cubic-bezier(0.32, 1.14, 0.18, 1);
+
+  --m3-dur-short1: 50ms;
+  --m3-dur-short2: 100ms;
+  --m3-dur-short3: 150ms;
+  --m3-dur-short4: 200ms;
+  --m3-dur-med1: 250ms;
+  --m3-dur-med2: 300ms;
+  --m3-dur-med3: 350ms;
+  --m3-dur-med4: 400ms;
+  --m3-dur-long1: 450ms;
+  --m3-dur-long2: 500ms;
+
+  /* ---- Typography (Roboto Flex, variable optical sizing) ---- */
+  --m3-font: "Roboto Flex", "Inter", system-ui, -apple-system, sans-serif;
+  --m3-font-mono: "Roboto Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --m3-display-lg: 700 57px/64px var(--m3-font);
+  --m3-display-md: 700 45px/52px var(--m3-font);
+  --m3-display-sm: 700 36px/44px var(--m3-font);
+  --m3-headline-lg: 600 32px/40px var(--m3-font);
+  --m3-headline-md: 600 28px/36px var(--m3-font);
+  --m3-headline-sm: 600 24px/32px var(--m3-font);
+  --m3-title-lg: 500 22px/28px var(--m3-font);
+  --m3-title-md: 600 16px/24px var(--m3-font);
+  --m3-title-sm: 600 14px/20px var(--m3-font);
+  --m3-body-lg: 400 16px/24px var(--m3-font);
+  --m3-body-md: 400 14px/20px var(--m3-font);
+  --m3-body-sm: 400 12px/16px var(--m3-font);
+  --m3-label-lg: 600 14px/20px var(--m3-font);
+  --m3-label-md: 600 12px/16px var(--m3-font);
+  --m3-label-sm: 600 11px/16px var(--m3-font);
+
+  /* ---- Spacing ---- */
+  --m3-sp-1: 4px;
+  --m3-sp-2: 8px;
+  --m3-sp-3: 12px;
+  --m3-sp-4: 16px;
+  --m3-sp-5: 20px;
+  --m3-sp-6: 24px;
+  --m3-sp-8: 32px;
+  --m3-sp-10: 40px;
+  --m3-sp-12: 48px;
+
+  /* ---- State layer opacities ---- */
+  --m3-state-hover: 0.08;
+  --m3-state-focus: 0.10;
+  --m3-state-press: 0.10;
+  --m3-state-drag: 0.16;
+  --m3-state-disabled-content: 0.38;
+  --m3-state-disabled-container: 0.12;
+}
+
+/* Elevation is tonal in M3: a surface tint overlay plus a soft shadow. */
+:root {
+  --m3-elev-0: none;
+  --m3-elev-1: 0 1px 2px rgba(0, 0, 0, 0.30), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  --m3-elev-2: 0 1px 2px rgba(0, 0, 0, 0.30), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --m3-elev-3: 0 4px 8px 3px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.30);
+  --m3-elev-4: 0 6px 10px 4px rgba(0, 0, 0, 0.15), 0 2px 3px rgba(0, 0, 0, 0.30);
+  --m3-elev-5: 0 8px 12px 6px rgba(0, 0, 0, 0.15), 0 4px 4px rgba(0, 0, 0, 0.30);
+}
+
+/* ------------------------------------------------------------------ */
+/* Reset + base                                                        */
+/* ------------------------------------------------------------------ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  /* Kill browser overscroll navigation; history swipes are handled in JS. */
+  overscroll-behavior: none;
+}
+
+body {
+  font: var(--m3-body-md);
+  background: var(--md-sys-color-background);
+  color: var(--md-sys-color-on-background);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  /* Desktop shell: never let the WebView pinch-zoom the chrome. */
+  touch-action: manipulation;
+  transition: background var(--m3-dur-med2) var(--m3-ease-standard),
+    color var(--m3-dur-med2) var(--m3-ease-standard);
+}
+
+:focus-visible {
+  outline: 3px solid var(--md-sys-color-secondary);
+  outline-offset: 2px;
+  border-radius: var(--m3-shape-xs);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--md-sys-color-on-surface) 18%, transparent);
+  border-radius: var(--m3-shape-full);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--md-sys-color-on-surface) 32%, transparent);
+  background-clip: content-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

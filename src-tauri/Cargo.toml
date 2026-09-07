@@ -1,0 +1,37 @@
+[package]
+name = "dizako"
+version = "2.1.0"
+description = "A Material 3 Expressive dithering studio"
+authors = ["vndreiii"]
+edition = "2021"
+rust-version = "1.77"
+license = "MIT"
+
+[lib]
+name = "dizako_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-log = "2.0.0-rc.2"
+tauri-plugin-opener = "2"
+
+# Linux-only: strip WebKitGTK's native pinch page-zoom (JS cannot reach it).
+[target.'cfg(target_os = "linux")'.dependencies]
+webkit2gtk = { version = "2.0", features = ["v2_40"] }
+gtk = "0.18"
+glib = "0.18"
+gio = "0.18"
+gobject-sys = "0.18"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

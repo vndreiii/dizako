@@ -1,0 +1,37 @@
+{
+  "tabs": {
+    "algorithm": "Algorithm",
+    "palette": "Palette",
+    "image": "Image"
+  },
+  "topbar": {
+    "noImage": "No image loaded",
+    "open": "Open",
+    "export": "Export",
+    "donate": "Donate",
+    "donateHint": "Support Dizako development"
+  },
+  "empty": {
+    "readingTitle": "Reading image…",
+    "readingBody": "Large images take a moment to decode.",
+    "dropTitle": "Drop an image to begin",
+    "dropBody": "PNG, JPEG, WebP, GIF or AVIF. Everything is processed locally - nothing leaves your machine.",
+    "chooseBtn": "Choose image"
+  },
+  "settings": {
+    "title": "Settings",
+    "appearance": "Appearance",
+    "mode": "Mode",
+    "modeHint": "Light or dark surfaces.",
+    "light": "Light",
+    "dark": "Dark",
+    "accent": "Accent",
+    "accentDynamicHint": "Taken from the colours in your image.",
+    "accentDynamicEmpty": "Will follow your image once one is loaded.",
+    "accentPresetHint": "A fixed accent colour.",
+    "preset": "Preset",
+    "dynamic": "Dynamic",
+    "language": "Language",
+    "languageHint": "Interface language."
+  }
+}

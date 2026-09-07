@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Dizako
+GenericName=Dithering Studio
+Exec=dizako %f
+Icon=com.vndreiii.dizako
+StartupWMClass=com.vndreiii.dizako
+Terminal=false
+Type=Application
+Categories=Graphics;ImageProcessing;RasterGraphics;
+Keywords=image;dither;pixel;palette;halftone;
+MimeType=image/png;image/jpeg;image/webp;image/gif;image/avif;

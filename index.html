@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Dizako</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Kill WebView page-zoom as early as possible (before React mounts).
+      // On Linux the decisive fix is native (WebKitGTK GestureZoom); this still
+      // covers ctrl/meta+wheel on Windows and any leftover wheel pinch path.
+      document.addEventListener(
+        "wheel",
+        (e) => {
+          if (e.ctrlKey || e.metaKey) e.preventDefault();
+        },
+        { passive: false, capture: true },
+      );
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
