@@ -114,8 +114,57 @@ jobs:
           name: windows
           path: dist-release/*
 
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: jetli/wasm-pack-action@v0.4.0
+
+      - name: Build wasm + install JS deps
+        run: |
+          printf 'strict-dep-builds=false\n' > .npmrc
+          wasm-pack build dither-wasm --release --target web --out-dir pkg
+          pnpm install
+
+      - name: Build macOS bundles
+        # dmg is the installable download; .app is also produced and zipped below.
+        # Unsigned — Gatekeeper will warn until Apple notarization is added.
+        run: pnpm tauri build --bundles dmg,app
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p dist-release
+          cp -v src-tauri/target/release/bundle/dmg/*.dmg dist-release/ || true
+          shopt -s nullglob
+          for app in src-tauri/target/release/bundle/macos/*.app; do
+            base=$(basename "$app" .app)
+            ditto -c -k --sequesterRsrc --keepParent "$app" "dist-release/${base}.app.zip"
+          done
+          ls -lh dist-release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: dist-release/*
+
   publish:
-    needs: [build-linux, build-windows]
+    needs: [build-linux, build-windows, build-macos]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
