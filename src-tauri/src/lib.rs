@@ -66,7 +66,7 @@ fn disable_linux_page_zoom(web_view: webkit2gtk::WebView) {
 }
 
 pub fn run() {
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default()
         .plugin(
             tauri_plugin_log::Builder::new()
                 .target(tauri_plugin_log::Target::new(
@@ -76,7 +76,17 @@ pub fn run() {
         )
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_opener::init());
+
+    // Auto-update from GitHub Releases (Windows + macOS only).
+    #[cfg(any(target_os = "macos", windows))]
+    {
+        builder = builder
+            .plugin(tauri_plugin_updater::Builder::new().build())
+            .plugin(tauri_plugin_process::init());
+    }
+
+    builder
         .setup(|app| {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.with_webview(|webview| {

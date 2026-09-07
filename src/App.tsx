@@ -22,6 +22,7 @@ import { DonateDialog } from "./components/DonateDialog";
 import { WheelStepContext } from "./components/primitives";
 import { WindowControls } from "./components/WindowControls";
 import { openDonatePage } from "./donate";
+import { checkAndInstallUpdates } from "./updater";
 import { useDither } from "./hooks/useDither";
 import type { Rect } from "./dither/region";
 import { savePng } from "./hooks/saveImage";
@@ -156,6 +157,12 @@ export default function App() {
   const inputRef = useRef<HTMLInputElement>(null);
   const historyFrameRef = useRef<HTMLDivElement>(null);
   const snack = useSnackbar();
+
+  // Windows / macOS: pull GitHub Releases updates on launch (unsigned OS builds
+  // still get SmartScreen/Gatekeeper; Tauri minisign only authenticates the payload).
+  useEffect(() => {
+    void checkAndInstallUpdates((msg) => snack(msg));
+  }, [snack]);
 
   // In dynamic mode the accent follows the image; falls back to the chosen
   // preset until one is loaded.

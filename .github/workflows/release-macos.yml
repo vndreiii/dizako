@@ -6,14 +6,18 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to attach assets to (e.g. v2.1.0)"
+        description: "Release tag to attach assets to (e.g. v2.2.0)"
         required: true
-        default: "v2.1.0"
+        default: "v2.2.0"
   push:
     branches: [ci/macos-release]
 
 permissions:
   contents: write
+
+env:
+  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
 jobs:
   build-macos:
@@ -51,11 +55,8 @@ jobs:
         run: |
           mkdir -p dist-release
           cp -v src-tauri/target/release/bundle/dmg/*.dmg dist-release/ || true
-          shopt -s nullglob
-          for app in src-tauri/target/release/bundle/macos/*.app; do
-            base=$(basename "$app" .app)
-            ditto -c -k --sequesterRsrc --keepParent "$app" "dist-release/${base}.app.zip"
-          done
+          cp -v src-tauri/target/release/bundle/macos/*.app.tar.gz dist-release/ || true
+          cp -v src-tauri/target/release/bundle/macos/*.app.tar.gz.sig dist-release/ || true
           ls -lh dist-release
 
       - name: Resolve tag name
@@ -64,7 +65,7 @@ jobs:
           if [[ -n "${{ inputs.tag }}" ]]; then
             echo "name=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
           else
-            echo "name=v2.1.0" >> "$GITHUB_OUTPUT"
+            echo "name=v2.2.0" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Attach to GitHub Release
