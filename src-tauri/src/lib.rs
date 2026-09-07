@@ -66,6 +66,7 @@ fn disable_linux_page_zoom(web_view: webkit2gtk::WebView) {
 }
 
 pub fn run() {
+    #[allow(unused_mut)] // mutated only on Windows/macOS for updater plugins
     let mut builder = tauri::Builder::default()
         .plugin(
             tauri_plugin_log::Builder::new()
