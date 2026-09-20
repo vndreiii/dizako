@@ -1,5 +1,5 @@
 /**
- * Auto-update from GitHub Releases (Windows + macOS only).
+ * Auto-update from GitHub Releases (Linux + Windows only).
  *
  * Uses Tauri minisign (free) — not Authenticode / Apple notarization.
  * SmartScreen / Gatekeeper warnings on first install are expected without
@@ -11,7 +11,7 @@ import { relaunch } from "@tauri-apps/plugin-process";
 function supportsUpdater(): boolean {
   // Set by `@tauri-apps/cli` during `tauri build` / `tauri dev`.
   const platform = import.meta.env.TAURI_ENV_PLATFORM as string | undefined;
-  return platform === "windows" || platform === "macos";
+  return platform === "windows" || platform === "linux";
 }
 
 /** Check GitHub latest.json; if newer, download, install, and relaunch. */

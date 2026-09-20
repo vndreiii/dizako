@@ -173,6 +173,51 @@ fn ordered_pass(c: &mut Ctx, mask: impl Fn(usize, usize) -> f64) {
     }
 }
 
+/// A deterministic, lightweight simulation of repeated JPEG saves. It keeps
+/// the characteristic 8x8 block quantisation and chroma smearing while making
+/// the control logarithmic: 0.01 is almost invisible, 1_000 and above become
+/// progressively destructive without actually encoding hundreds of thousands
+/// of JPEG files.
+fn jpeg_sort_pass(c: &mut Ctx) {
+    let (w, h) = (c.w, c.h);
+    let log = (1.0 + c.s.jpeg_damage.max(0.0)).log10();
+    let block = (8.0 + log * 4.0).round().clamp(8.0, 32.0) as usize;
+    let quant = (1.0 + log * 8.0).max(1.0);
+    let retention = 1.0 / (1.0 + log * 0.7);
+    let bw = (w + block - 1) / block;
+    let bh = (h + block - 1) / block;
+    let mut avgs = vec![[0.0f64; 3]; bw * bh];
+    for by_i in 0..bh {
+        for bx_i in 0..bw {
+            let bx = bx_i * block;
+            let by = by_i * block;
+            let ex = (bx + block).min(w);
+            let ey = (by + block).min(h);
+            let mut n = 0.0;
+            for yy in by..ey {
+                for xx in bx..ex {
+                    let j = (yy * w + xx) * 3;
+                    for ch in 0..3 { avgs[by_i * bw + bx_i][ch] += f64::from(c.src[j + ch]); }
+                    n += 1.0;
+                }
+            }
+            for ch in 0..3 { avgs[by_i * bw + bx_i][ch] /= n; }
+        }
+    }
+    for y in 0..h {
+        for x in 0..w {
+            let avg = avgs[(y / block) * bw + x / block];
+            let j = (y * w + x) * 3;
+            let mut rgb = [0.0; 3];
+            for ch in 0..3 {
+                let v = avg[ch] + (f64::from(c.src[j + ch]) - avg[ch]) * retention;
+                rgb[ch] = (v / quant).round() * quant;
+            }
+            put(c, y * w + x, (c.match_fn)(c.p, rgb[0], rgb[1], rgb[2]));
+        }
+    }
+}
+
 fn threshold_pass(c: &mut Ctx, noise: f64) {
     let (w, h) = (c.w, c.h);
     let mut rand = Rng::new();
@@ -680,6 +725,7 @@ pub fn dither(data: &[u8], width: usize, height: usize, s: &Settings) -> Vec<u8>
         "dot-diffusion" => dot_diffuse_pass(&mut ctx),
         "ostromoukhov" => adaptive_diffuse_pass(&mut ctx),
         "omino" => omino_pass(&mut ctx),
+        "jpeg-sort" => jpeg_sort_pass(&mut ctx),
         other => {
             match kernels::kernel_for(other) {
                 Some((k, div)) => error_diffuse_pass(&mut ctx, k, div),

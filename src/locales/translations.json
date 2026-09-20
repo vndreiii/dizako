@@ -63,6 +63,11 @@
     "app.loaded": "Loaded {name} ({w}×{h})",
     "app.loadedReduced": "Loaded {name} - reduced from {fw}×{fh} to {w}×{h}",
     "app.loadFailed": "Could not read {name}: {error}",
+    "app.extracting": "Extracting frames…",
+    "app.clipFailed": "Video failed: {error}",
+    "app.needsApp": "Videos need the desktop app with ffmpeg installed",
+    "timeline.label": "Frame picker",
+    "timeline.frame": "Frame {i} of {n}",
     "palette.title": "Palette",
     "palette.presetsCount": "{n} presets",
     "palette.matchRgb": "Nearest colour by weighted RGB distance.",
@@ -152,6 +157,8 @@
     "algo.riemersma.blurb": "Diffuses along a Hilbert curve. No directional bias.",
     "algo.dot-diffusion.blurb": "Knuth's class matrix. Ordered structure, diffused tone.",
     "algo.omino.blurb": "Error diffusion applied for the worse. Marching stripes.",
+    "algo.jpeg-sort.blurb": "Repeated JPEG generation loss, from a whisper of damage to total mush.",
+    "param.jpegDamage": "JPEG damage (log scale)",
     "adjust.title": "Image",
     "adjust.resolution": "Resolution",
     "adjust.pixelScale": "Pixel scale",
@@ -197,15 +204,7 @@
     "settings.seed.forest": "Forest",
     "settings.seed.ember": "Ember",
     "settings.seed.plum": "Plum",
-    "settings.seed.slate": "Slate",
-    "topbar.donate": "Donate",
-    "topbar.donateHint": "Support Dizako development",
-    "donate.dialogAria": "Donate",
-    "donate.title": "Support Dizako",
-    "donate.message": "Couldn’t open your browser. If you like this app, please donate on Ko-fi — copy the link below and open it manually.",
-    "donate.copy": "Copy Ko-fi URL",
-    "donate.copied": "Copied!",
-    "donate.close": "Close"
+    "settings.seed.slate": "Slate"
   },
   "es": {
     "palette.layers": "Capas",
@@ -405,15 +404,7 @@
     "hud.zoomPercent": "Porcentaje de zoom",
     "algo.false-floyd-steinberg.blurb": "Variante de 3 toques. Más rápido, textura más gruesa.",
     "algo.stevenson-arce.blurb": "12 toques hexagonales. Pensado para imprenta.",
-    "param.errorAside": "Error lateral",
-    "topbar.donate": "Donar",
-    "topbar.donateHint": "Apoya el desarrollo de Dizako",
-    "donate.dialogAria": "Donar",
-    "donate.title": "Apoya Dizako",
-    "donate.message": "No se pudo abrir el navegador. Si te gusta esta app, dona en Ko-fi: copia el enlace e ábrelo a mano.",
-    "donate.copy": "Copiar URL de Ko-fi",
-    "donate.copied": "¡Copiado!",
-    "donate.close": "Cerrar"
+    "param.errorAside": "Error lateral"
   },
   "fr": {
     "palette.layers": "Couches",
@@ -613,15 +604,7 @@
     "hud.zoomPercent": "Pourcentage de zoom",
     "algo.false-floyd-steinberg.blurb": "Variante à 3 touches. Plus rapide, texture plus grossière.",
     "algo.stevenson-arce.blurb": "12 touches hexagonales. Pensé pour l'impression.",
-    "param.errorAside": "Erreur latérale",
-    "topbar.donate": "Faire un don",
-    "topbar.donateHint": "Soutenir le développement de Dizako",
-    "donate.dialogAria": "Faire un don",
-    "donate.title": "Soutenir Dizako",
-    "donate.message": "Impossible d’ouvrir le navigateur. Si vous aimez cette app, faites un don sur Ko-fi — copiez le lien et ouvrez-le manuellement.",
-    "donate.copy": "Copier l’URL Ko-fi",
-    "donate.copied": "Copié !",
-    "donate.close": "Fermer"
+    "param.errorAside": "Erreur latérale"
   },
   "ja": {
     "palette.layers": "レイヤー",
@@ -821,15 +804,7 @@
     "hud.zoomPercent": "ズーム倍率",
     "algo.false-floyd-steinberg.blurb": "3 タップ版。速いが粗い質感。",
     "algo.stevenson-arce.blurb": "六角形 12 タップ。印刷向けの設計。",
-    "param.errorAside": "横方向の誤差",
-    "topbar.donate": "寄付",
-    "topbar.donateHint": "Dizakoの開発を支援",
-    "donate.dialogAria": "寄付",
-    "donate.title": "Dizakoを支援",
-    "donate.message": "ブラウザを開けませんでした。気に入っていただけたら Ko-fi で寄付してください。下のリンクをコピーして手動で開いてください。",
-    "donate.copy": "Ko-fiのURLをコピー",
-    "donate.copied": "コピーしました",
-    "donate.close": "閉じる"
+    "param.errorAside": "横方向の誤差"
   },
   "zh": {
     "palette.layers": "图层",
@@ -1029,15 +1004,7 @@
     "hud.zoomPercent": "缩放百分比",
     "algo.false-floyd-steinberg.blurb": "3 触点简化版。更快，颗粒更粗。",
     "algo.stevenson-arce.blurb": "六边形 12 触点。为印刷而生。",
-    "param.errorAside": "侧向误差",
-    "topbar.donate": "捐赠",
-    "topbar.donateHint": "支持 Dizako 开发",
-    "donate.dialogAria": "捐赠",
-    "donate.title": "支持 Dizako",
-    "donate.message": "无法打开浏览器。如果喜欢这个应用，请到 Ko-fi 捐赠——复制下方链接并手动打开。",
-    "donate.copy": "复制 Ko-fi 链接",
-    "donate.copied": "已复制",
-    "donate.close": "关闭"
+    "param.errorAside": "侧向误差"
   },
   "bs": {
     "palette.layers": "Slojevi",
@@ -1237,15 +1204,7 @@
     "hud.zoomPercent": "Postotak zumiranja",
     "algo.false-floyd-steinberg.blurb": "3-tap varijanta. Brža, grublja tekstura.",
     "algo.stevenson-arce.blurb": "12 heksagonalnih tapova. Dizajniran za tisak.",
-    "param.errorAside": "Greška ustranu",
-    "topbar.donate": "Doniraj",
-    "topbar.donateHint": "Podrži razvoj Dizako",
-    "donate.dialogAria": "Doniraj",
-    "donate.title": "Podrži Dizako",
-    "donate.message": "Nije moguće otvoriti preglednik. Ako ti se sviđa aplikacija, doniraj na Ko-fi — kopiraj link i otvori ručno.",
-    "donate.copy": "Kopiraj Ko-fi URL",
-    "donate.copied": "Kopirano!",
-    "donate.close": "Zatvori"
+    "param.errorAside": "Greška ustranu"
   },
   "sr": {
     "palette.layers": "Slojevi",
@@ -1445,15 +1404,7 @@
     "hud.zoomPercent": "Procenat zumiranja",
     "algo.false-floyd-steinberg.blurb": "3-tap varijanta. Brža, grublja tekstura.",
     "algo.stevenson-arce.blurb": "12 heksagonalnih tapova. Dizajniran za štampu.",
-    "param.errorAside": "Greška ustranu",
-    "topbar.donate": "Донирај",
-    "topbar.donateHint": "Подржи развој Dizako",
-    "donate.dialogAria": "Донирај",
-    "donate.title": "Подржи Dizako",
-    "donate.message": "Није могуће отворити прегледач. Ако ти се свиђа апликација, донирај на Ko-fi — копирај линк и отвори ручно.",
-    "donate.copy": "Копирај Ko-fi URL",
-    "donate.copied": "Копирано!",
-    "donate.close": "Затвори"
+    "param.errorAside": "Greška ustranu"
   },
   "de": {
     "palette.layers": "Ebenen",
@@ -1653,15 +1604,7 @@
     "hud.zoomPercent": "Zoom-Prozent",
     "algo.false-floyd-steinberg.blurb": "3-Tap-Variante. Schneller, gröbere Textur.",
     "algo.stevenson-arce.blurb": "Hexagonale 12 Tap. Für den Druck gedacht.",
-    "param.errorAside": "Fehler seitlich",
-    "topbar.donate": "Spenden",
-    "topbar.donateHint": "Unterstütze die Entwicklung von Dizako",
-    "donate.dialogAria": "Spenden",
-    "donate.title": "Dizako unterstützen",
-    "donate.message": "Browser konnte nicht geöffnet werden. Wenn dir die App gefällt, spende bitte auf Ko-fi — Link kopieren und manuell öffnen.",
-    "donate.copy": "Ko-fi-URL kopieren",
-    "donate.copied": "Kopiert!",
-    "donate.close": "Schließen"
+    "param.errorAside": "Fehler seitlich"
   },
   "it": {
     "palette.layers": "Livelli",
@@ -1861,15 +1804,7 @@
     "hud.zoomPercent": "Percentuale zoom",
     "algo.false-floyd-steinberg.blurb": "Variante a 3 tocchi. Più veloce, texture più grossolana.",
     "algo.stevenson-arce.blurb": "12 tocchi esagonali. Pensato per la stampa.",
-    "param.errorAside": "Errore laterale",
-    "topbar.donate": "Dona",
-    "topbar.donateHint": "Sostieni lo sviluppo di Dizako",
-    "donate.dialogAria": "Dona",
-    "donate.title": "Sostieni Dizako",
-    "donate.message": "Impossibile aprire il browser. Se ti piace l’app, dona su Ko-fi — copia il link e aprilo manualmente.",
-    "donate.copy": "Copia URL Ko-fi",
-    "donate.copied": "Copiato!",
-    "donate.close": "Chiudi"
+    "param.errorAside": "Errore laterale"
   },
   "pt": {
     "palette.layers": "Camadas",
@@ -2069,15 +2004,7 @@
     "hud.zoomPercent": "Porcentagem de zoom",
     "algo.false-floyd-steinberg.blurb": "Variante de 3 toques. Mais rápido, textura mais grosseira.",
     "algo.stevenson-arce.blurb": "12 toques hexagonais. Feito para impressão.",
-    "param.errorAside": "Erro lateral",
-    "topbar.donate": "Doar",
-    "topbar.donateHint": "Apoie o desenvolvimento do Dizako",
-    "donate.dialogAria": "Doar",
-    "donate.title": "Apoie o Dizako",
-    "donate.message": "Não foi possível abrir o navegador. Se gosta desta app, doe no Ko-fi — copie o link e abra manualmente.",
-    "donate.copy": "Copiar URL do Ko-fi",
-    "donate.copied": "Copiado!",
-    "donate.close": "Fechar"
+    "param.errorAside": "Erro lateral"
   },
   "ru": {
     "palette.layers": "Слои",
@@ -2277,15 +2204,7 @@
     "hud.zoomPercent": "Масштаб",
     "algo.false-floyd-steinberg.blurb": "Вариант с 3 отводами. Быстрее, зерно грубее.",
     "algo.stevenson-arce.blurb": "12 гексагональных отводов. Создан для печати.",
-    "param.errorAside": "Ошибка вбок",
-    "topbar.donate": "Донат",
-    "topbar.donateHint": "Поддержать разработку Dizako",
-    "donate.dialogAria": "Донат",
-    "donate.title": "Поддержать Dizako",
-    "donate.message": "Не удалось открыть браузер. Если вам нравится приложение, поддержите на Ko-fi — скопируйте ссылку и откройте вручную.",
-    "donate.copy": "Скопировать URL Ko-fi",
-    "donate.copied": "Скопировано!",
-    "donate.close": "Закрыть"
+    "param.errorAside": "Ошибка вбок"
   },
   "ko": {
     "palette.layers": "레이어",
@@ -2485,15 +2404,7 @@
     "hud.zoomPercent": "확대 배율",
     "algo.false-floyd-steinberg.blurb": "3탭 변형. 빠르지만 거친 질감.",
     "algo.stevenson-arce.blurb": "육각형 12탭. 인쇄용 설계.",
-    "param.errorAside": "옆쪽 오차",
-    "topbar.donate": "후원",
-    "topbar.donateHint": "Dizako 개발 지원",
-    "donate.dialogAria": "후원",
-    "donate.title": "Dizako 지원",
-    "donate.message": "브라우저를 열 수 없습니다. 앱이 마음에 드시면 Ko-fi에서 후원해 주세요. 아래 링크를 복사해 직접 여세요.",
-    "donate.copy": "Ko-fi URL 복사",
-    "donate.copied": "복사됨!",
-    "donate.close": "닫기"
+    "param.errorAside": "옆쪽 오차"
   },
   "ar": {
     "palette.layers": "الطبقات",
@@ -2693,15 +2604,7 @@
     "hud.zoomPercent": "نسبة التكبير",
     "algo.false-floyd-steinberg.blurb": "نسخة بثلاث نقاط اتصال. أسرع، ملمس أخشن.",
     "algo.stevenson-arce.blurb": "12 نقطة سداسية. مصممة للطباعة.",
-    "param.errorAside": "خطأ جانبي",
-    "topbar.donate": "تبرّع",
-    "topbar.donateHint": "ادعم تطوير Dizako",
-    "donate.dialogAria": "تبرّع",
-    "donate.title": "ادعم Dizako",
-    "donate.message": "تعذّر فتح المتصفح. إن أعجبك التطبيق فتبرّع عبر Ko-fi — انسخ الرابط وافتحه يدويًا.",
-    "donate.copy": "نسخ رابط Ko-fi",
-    "donate.copied": "تم النسخ!",
-    "donate.close": "إغلاق"
+    "param.errorAside": "خطأ جانبي"
   },
   "hi": {
     "palette.layers": "परतें",
@@ -2901,15 +2804,7 @@
     "hud.zoomPercent": "ज़ूम प्रतिशत",
     "algo.false-floyd-steinberg.blurb": "3-टैप रूप। तेज़, मोटा बुनावट।",
     "algo.stevenson-arce.blurb": "षट्कोणीय 12-टैप। छपाई के लिए रचा गया।",
-    "param.errorAside": "बगल की त्रुटि",
-    "topbar.donate": "दान करें",
-    "topbar.donateHint": "Dizako के विकास का समर्थन करें",
-    "donate.dialogAria": "दान करें",
-    "donate.title": "Dizako का समर्थन करें",
-    "donate.message": "ब्राउज़र नहीं खुल सका। अगर यह ऐप पसंद है तो Ko-fi पर दान करें — लिंक कॉपी कर के खुद खोलें।",
-    "donate.copy": "Ko-fi URL कॉपी करें",
-    "donate.copied": "कॉपी हो गया!",
-    "donate.close": "बंद करें"
+    "param.errorAside": "बगल की त्रुटि"
   },
   "tr": {
     "palette.layers": "Katmanlar",
@@ -3109,15 +3004,7 @@
     "hud.zoomPercent": "Yakınlaştırma oranı",
     "algo.false-floyd-steinberg.blurb": "3 dokunuşlu varyant. Daha hızlı, daha kaba doku.",
     "algo.stevenson-arce.blurb": "On iki altıgenli. Baskı için tasarlandı.",
-    "param.errorAside": "Yana hata",
-    "topbar.donate": "Bağış",
-    "topbar.donateHint": "Dizako geliştirmesini destekle",
-    "donate.dialogAria": "Bağış",
-    "donate.title": "Dizako’yu destekle",
-    "donate.message": "Tarayıcı açılamadı. Uygulamayı beğendiyseniz Ko-fi’den bağış yapın — bağlantıyı kopyalayıp elle açın.",
-    "donate.copy": "Ko-fi URL’sini kopyala",
-    "donate.copied": "Kopyalandı!",
-    "donate.close": "Kapat"
+    "param.errorAside": "Yana hata"
   },
   "pl": {
     "palette.layers": "Warstwy",
@@ -3317,15 +3204,7 @@
     "hud.zoomPercent": "Procent powiększenia",
     "algo.false-floyd-steinberg.blurb": "Wariant 3-tapowy. Szybszy, grubsza faktura.",
     "algo.stevenson-arce.blurb": "12 heksagonalnych tapów. Projektowane do druku.",
-    "param.errorAside": "Błąd w bok",
-    "topbar.donate": "Wesprzyj",
-    "topbar.donateHint": "Wesprzyj rozwój Dizako",
-    "donate.dialogAria": "Wesprzyj",
-    "donate.title": "Wesprzyj Dizako",
-    "donate.message": "Nie udało się otworzyć przeglądarki. Jeśli lubisz tę aplikację, wesprzyj na Ko-fi — skopiuj link i otwórz ręcznie.",
-    "donate.copy": "Kopiuj URL Ko-fi",
-    "donate.copied": "Skopiowano!",
-    "donate.close": "Zamknij"
+    "param.errorAside": "Błąd w bok"
   },
   "nl": {
     "palette.layers": "Lagen",
@@ -3525,15 +3404,7 @@
     "hud.zoomPercent": "Zoompercentage",
     "algo.false-floyd-steinberg.blurb": "3-tapvariant. Sneller, grovere textuur.",
     "algo.stevenson-arce.blurb": "12 hexagonale taps. Ontworpen voor drukwerk.",
-    "param.errorAside": "Fout zijwaarts",
-    "topbar.donate": "Doneren",
-    "topbar.donateHint": "Steun de ontwikkeling van Dizako",
-    "donate.dialogAria": "Doneren",
-    "donate.title": "Steun Dizako",
-    "donate.message": "Kon de browser niet openen. Als je deze app leuk vindt, doneer op Ko-fi — kopieer de link en open hem handmatig.",
-    "donate.copy": "Ko-fi-URL kopiëren",
-    "donate.copied": "Gekopieerd!",
-    "donate.close": "Sluiten"
+    "param.errorAside": "Fout zijwaarts"
   },
   "sv": {
     "palette.layers": "Lager",
@@ -3733,14 +3604,6 @@
     "hud.zoomPercent": "Zoomnivå",
     "algo.false-floyd-steinberg.blurb": "3-tappvariant. Snabbare, grövre textur.",
     "algo.stevenson-arce.blurb": "12 hexagonala tappar. Gjord för tryck.",
-    "param.errorAside": "Fel åt sidan",
-    "topbar.donate": "Donera",
-    "topbar.donateHint": "Stöd utvecklingen av Dizako",
-    "donate.dialogAria": "Donera",
-    "donate.title": "Stöd Dizako",
-    "donate.message": "Kunde inte öppna webbläsaren. Om du gillar appen, donera på Ko-fi — kopiera länken och öppna den manuellt.",
-    "donate.copy": "Kopiera Ko-fi-URL",
-    "donate.copied": "Kopierat!",
-    "donate.close": "Stäng"
+    "param.errorAside": "Fel åt sidan"
   }
 }

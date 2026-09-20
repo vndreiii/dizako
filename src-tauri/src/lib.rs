@@ -79,8 +79,8 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init());
 
-    // Auto-update from GitHub Releases (Windows + macOS only).
-    #[cfg(any(target_os = "macos", windows))]
+    // Auto-update from GitHub Releases (Linux + Windows only).
+    #[cfg(any(target_os = "linux", windows))]
     {
         builder = builder
             .plugin(tauri_plugin_updater::Builder::new().build())

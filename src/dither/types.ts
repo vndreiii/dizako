@@ -38,7 +38,8 @@ export type AlgorithmId =
   | "ostromoukhov"
   // experimental
   | "dot-diffusion"
-  | "omino";
+  | "omino"
+  | "jpeg-sort";
 
 export type AlgorithmFamily = "ordered" | "error-diffusion" | "threshold" | "experimental";
 
@@ -66,7 +67,8 @@ export type ParamKey =
   | "riemersmaQueue"
   | "riemersmaDecay"
   | "dotClassSize"
-  | "omino";
+  | "omino"
+  | "jpegDamage";
 
 /**
  * One colour in the palette stack.
@@ -154,6 +156,7 @@ export interface Settings {
   ominoPhase: number;
   /** How many of the palette layers take part, 1..12. */
   ominoColorCount: number;
+  jpegDamage: number;
 
   // --- tone ---
   invert: boolean;
@@ -227,6 +230,7 @@ export const DEFAULT_SETTINGS: Settings = {
   ominoAside: 0.25,
   ominoPhase: 0,
   ominoColorCount: 6,
+  jpegDamage: 0.01,
 
   invert: false,
   grayscale: false,
@@ -453,5 +457,12 @@ export const ALGORITHMS: AlgorithmMeta[] = [
     family: "experimental",
     blurb: "Error diffusion applied for the worse. Marching stripes.",
     params: ["omino"],
+  },
+  {
+    id: "jpeg-sort",
+    name: "JPEG sort",
+    family: "experimental",
+    blurb: "Repeated JPEG generation loss, from a whisper of damage to total mush.",
+    params: ["jpegDamage"],
   },
 ];

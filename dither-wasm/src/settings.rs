@@ -5,7 +5,7 @@
 //! which keeps the protocol forward-compatible.
 
 use crate::palette::PaletteLayer;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 fn default_layers() -> Vec<PaletteLayer> {
     vec![
@@ -26,7 +26,7 @@ fn default_layers() -> Vec<PaletteLayer> {
     ]
 }
 
-#[derive(Deserialize, Clone, Debug, Default)]
+#[derive(Deserialize, Serialize, Clone, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     #[serde(default)]
@@ -87,6 +87,8 @@ pub struct Settings {
     pub omino_phase: f64,
     #[serde(default)]
     pub omino_color_count: f64,
+    #[serde(default)]
+    pub jpeg_damage: f64,
 
     // --- tone ---
     #[serde(default)]
@@ -146,6 +148,7 @@ impl Settings {
             omino_aside: 0.25,
             omino_phase: 0.0,
             omino_color_count: 6.0,
+            jpeg_damage: 0.01,
             invert: false,
             grayscale: false,
             brightness: 0.0,

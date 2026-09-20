@@ -49,6 +49,7 @@ const RESET_KEYS: Record<ParamKey, Array<keyof Settings>> = {
     "ominoPhase",
     "ominoColorCount",
   ],
+  jpegDamage: ["jpegDamage"],
 };
 
 function AlgorithmPanelImpl({ settings, patch }: Props) {
@@ -304,6 +305,17 @@ function AlgorithmPanelImpl({ settings, patch }: Props) {
               />
               <p className="panel__note">{t("omino.note")}</p>
             </>
+          )}
+
+          {has("jpegDamage") && (
+            <Slider
+              label={t("param.jpegDamage")}
+              value={Math.round((Math.log10(Math.max(settings.jpegDamage, 0.01)) + 2) * 100)}
+              min={0}
+              max={800}
+              display={settings.jpegDamage < 1 ? settings.jpegDamage.toFixed(2) : `${Math.round(settings.jpegDamage).toLocaleString()}×`}
+              onChange={(v) => patch({ jpegDamage: Math.pow(10, v / 100 - 2) })}
+            />
           )}
 
           {has("serpentine") && (

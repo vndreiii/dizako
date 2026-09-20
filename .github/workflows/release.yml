@@ -59,8 +59,8 @@ jobs:
         run: ./packaging/patch-linuxdeploy-gtk.sh
 
       - name: Build Linux bundles
-        # createUpdaterArtifacts is on, but Linux is omitted from latest.json.
-        # Signing env is still needed so the build does not fail looking for a key.
+        # AppImage is the self-updating Linux format; deb/rpm remain available
+        # for normal package-manager installs.
         run: |
           pnpm tauri build --bundles deb,rpm
           NO_STRIP=1 pnpm tauri build --bundles appimage
@@ -71,6 +71,8 @@ jobs:
           cp -v src-tauri/target/release/bundle/deb/*.deb dist-release/ || true
           cp -v src-tauri/target/release/bundle/rpm/*.rpm dist-release/ || true
           cp -v src-tauri/target/release/bundle/appimage/*.AppImage dist-release/ || true
+          cp -v src-tauri/target/release/bundle/appimage/*.AppImage.tar.gz dist-release/ || true
+          cp -v src-tauri/target/release/bundle/appimage/*.AppImage.tar.gz.sig dist-release/ || true
           ls -lh dist-release
 
       - uses: actions/upload-artifact@v4
@@ -210,16 +212,16 @@ jobs:
           shopt -s nullglob
           win_exe=(artifacts/*-setup.exe)
           win_sig=(artifacts/*-setup.exe.sig)
-          mac_tgz=(artifacts/*.app.tar.gz)
-          mac_sig=(artifacts/*.app.tar.gz.sig)
+          linux_tgz=(artifacts/*.AppImage.tar.gz)
+          linux_sig=(artifacts/*.AppImage.tar.gz.sig)
 
           if [[ ${#win_exe[@]} -lt 1 || ${#win_sig[@]} -lt 1 ]]; then
             echo "missing Windows updater artifacts" >&2
             ls -la artifacts >&2 || true
             exit 1
           fi
-          if [[ ${#mac_tgz[@]} -lt 1 || ${#mac_sig[@]} -lt 1 ]]; then
-            echo "missing macOS updater artifacts" >&2
+          if [[ ${#linux_tgz[@]} -lt 1 || ${#linux_sig[@]} -lt 1 ]]; then
+            echo "missing Linux updater artifacts" >&2
             ls -la artifacts >&2 || true
             exit 1
           fi
@@ -230,15 +232,15 @@ jobs:
             --arg pub_date "$pub_date" \
             --arg win_url "$base/$(basename "${win_exe[0]}")" \
             --arg win_sig "$(cat "${win_sig[0]}")" \
-            --arg mac_url "$base/$(basename "${mac_tgz[0]}")" \
-            --arg mac_sig "$(cat "${mac_sig[0]}")" \
+            --arg linux_url "$base/$(basename "${linux_tgz[0]}")" \
+            --arg linux_sig "$(cat "${linux_sig[0]}")" \
             '{
               version: $version,
               notes: $notes,
               pub_date: $pub_date,
               platforms: {
                 "windows-x86_64": { url: $win_url, signature: $win_sig },
-                "darwin-aarch64": { url: $mac_url, signature: $mac_sig }
+                "linux-x86_64": { url: $linux_url, signature: $linux_sig }
               }
             }' > artifacts/latest.json
           cat artifacts/latest.json
