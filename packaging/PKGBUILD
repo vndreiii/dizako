@@ -1,7 +1,7 @@
 # Maintainer: vndreiii
 pkgname=dizako-git
 # Static placeholder; pkgver() computes the real -git version at makepkg time.
-pkgver=v2.2.0
+pkgver=v2.2.1.r13.ge91e410
 pkgrel=1
 pkgdesc="Material 3 Expressive dithering studio"
 arch=('x86_64')
@@ -11,7 +11,7 @@ depends=('webkit2gtk-4.1' 'gtk3' 'cairo' 'pango' 'glib2' 'hicolor-icon-theme')
 makedepends=('git' 'pnpm' 'rust' 'cargo' 'wasm-pack' 'clang' 'cmake')
 provides=('dizako')
 conflicts=('dizako')
-source=("git+https://github.com/vndreiii/dizako.git")
+source=("git+ssh://git@code.milfs.party:2222/alex/dizako.git")
 sha256sums=('SKIP')
 
 pkgver() {
@@ -21,6 +21,12 @@ pkgver() {
 
 build() {
   cd "$pkgname" 2>/dev/null || cd dizako
+  # Some Arch environments select clang/LLD globally; ring's generated
+  # assembly needs the system GNU linker for the native Linux package.
+  export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=gcc
+  export CARGO_PROFILE_RELEASE_LTO=false
+  export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16
+  export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS="-C link-arg=-Wl,--no-as-needed"
   wasm-pack build dither-wasm --release --target web --out-dir pkg
   # pnpm 11 stopped reading package.json's `pnpm` field and dropped
   # `onlyBuiltDependencies`; it wants `allowBuilds` and otherwise hard-errors on
@@ -29,6 +35,10 @@ build() {
   # checked-out source was written for.
   printf 'allowBuilds:\n  esbuild: true\n' > pnpm-workspace.yaml
   pnpm install
+  # The distro build does not ship the self-updater plugin on Linux; package
+  # managers should own upgrades and this avoids pulling its ring verifier into
+  # the native Arch link. Windows keeps the updater in the cross-platform build.
+  sed -i 's/cfg(any(target_os = "linux", windows))/cfg(windows)/g' src-tauri/Cargo.toml src-tauri/src/lib.rs
   # Must be `tauri build`, never raw cargo: only the tauri CLI compiles the
   # release context with the frontend assets EMBEDDED; plain cargo bakes the
   # dev-server URL in and the app starts with "connection refused".
