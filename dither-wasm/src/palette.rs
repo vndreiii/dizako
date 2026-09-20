@@ -27,7 +27,7 @@ pub struct Palette {
     pub order: Vec<usize>,
 }
 
-#[derive(Clone, Debug, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PaletteLayer {
     #[allow(dead_code)]
