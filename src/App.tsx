@@ -149,6 +149,9 @@ export default function App() {
   const [seed, setSeed] = useState(restoredSession.appearance?.seed ?? DEFAULT_SEED);
   const [themeSource, setThemeSource] = useState<ThemeSource>(restoredSession.appearance?.themeSource ?? "preset");
   const [wheelStep, setWheelStep] = useState(restoredSession.appearance?.wheelStep ?? 2);
+  const [wheelBehavior, setWheelBehavior] = useState<"pan" | "zoom">(
+    restoredSession.appearance?.wheelBehavior === "zoom" ? "zoom" : "pan",
+  );
   const [dynamicSeed, setDynamicSeed] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [donateOpen, setDonateOpen] = useState(false);
@@ -313,8 +316,8 @@ export default function App() {
 
   // Persist everything that used to reset on launch.
   useEffect(() => {
-    saveSession(settings, { mode, themeSource, seed, wheelStep });
-  }, [settings, mode, themeSource, seed, wheelStep]);
+    saveSession(settings, { mode, themeSource, seed, wheelStep, wheelBehavior });
+  }, [settings, mode, themeSource, seed, wheelStep, wheelBehavior]);
 
   /**
    * App-level keyboard and pointer behaviour.
@@ -736,6 +739,7 @@ export default function App() {
         <main className="stage">
           {native ? (
             <PreviewCanvas
+              wheelBehavior={wheelBehavior}
               original={source}
               coarse={coarse}
               coarseScale={coarseScale}
@@ -793,6 +797,8 @@ export default function App() {
         onSeed={setSeed}
         wheelStep={wheelStep}
         onWheelStep={setWheelStep}
+        wheelBehavior={wheelBehavior}
+        onWheelBehavior={setWheelBehavior}
         dynamicSeed={dynamicSeed}
         hasImage={Boolean(native)}
       />

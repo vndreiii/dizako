@@ -6,6 +6,7 @@ import type { Layer } from "../hooks/useDither";
 import { useI18n } from "../i18n";
 
 interface Props {
+  wheelBehavior: "pan" | "zoom";
   original: ImageData | null;
   /** Whole-image pass, possibly at reduced resolution. */
   coarse: Layer | null;
@@ -70,6 +71,7 @@ function layerSize(layer: ImageData | ImageBitmap | null, coarseScale: number) {
 }
 
 export function PreviewCanvas({
+  wheelBehavior,
   original,
   coarse,
   coarseScale,
@@ -123,18 +125,19 @@ export function PreviewCanvas({
   /**
    * Pointer and wheel events land faster than frames; applying them directly
    * makes React commit several times per frame on high-frequency mice. The
-   * latest event wins and one rAF applies it - same frame budget, no queue.
+   * one rAF applies them in order. Pinch and wheel deltas are incremental, so
+   * dropping intermediate events loses most of a fast gesture.
    */
-  const pendingGesture = useRef<(() => void) | null>(null);
+  const pendingGesture = useRef<Array<() => void>>([]);
   const gestureFrame = useRef<number | undefined>(undefined);
   const scheduleGesture = useCallback((apply: () => void) => {
-    pendingGesture.current = apply;
+    pendingGesture.current.push(apply);
     if (gestureFrame.current !== undefined) return;
     gestureFrame.current = requestAnimationFrame(() => {
       gestureFrame.current = undefined;
       const run = pendingGesture.current;
-      pendingGesture.current = null;
-      run?.();
+      pendingGesture.current = [];
+      run.forEach((apply) => apply());
     });
   }, []);
   useEffect(
@@ -391,22 +394,23 @@ export function PreviewCanvas({
 
       e.preventDefault();
 
-      // Pinch is zoom-only. Two-finger trackpad motion (pixel deltas) pans /
-      // orbits the canvas in any direction so it never becomes undo/redo.
-      // Discrete mouse-wheel notches (line/page mode) still zoom.
-      if (!pinch && e.deltaMode === 0) {
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? stage.clientHeight : 1;
+      const dx = e.deltaX * unit;
+      const dy = e.deltaY * unit;
+      // A horizontal swipe always pans. Vertical wheel motion follows the
+      // saved preference; ctrl/meta wheel is a touchpad pinch and always zooms.
+      if (!pinch && (wheelBehavior === "pan" || (Math.abs(dx) > Math.abs(dy) && dx !== 0))) {
         if (e.deltaX === 0 && e.deltaY === 0) return;
         touchedRef.current = true;
         scheduleGesture(() => {
           const p = panRef.current;
-          const next = { x: p.x - e.deltaX, y: p.y - e.deltaY };
+          const next = { x: p.x - dx, y: p.y - dy };
           panRef.current = next;
           setPan(next);
         });
         return;
       }
 
-      const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 32 : e.deltaY;
       if (dy === 0 && !pinch) return;
       const factor = Math.exp(-dy * (pinch ? 0.01 : 0.0015));
       scheduleGesture(() => zoomAt(e.clientX, e.clientY, factor));
@@ -414,6 +418,35 @@ export function PreviewCanvas({
 
     stage.addEventListener("wheel", onWheel, { passive: false });
     return () => stage.removeEventListener("wheel", onWheel);
+  }, [scheduleGesture, wheelBehavior, zoomAt]);
+
+  /** Safari/WebKit exposes some trackpad pinches as GestureEvents, not wheels. */
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    let previousScale = 1;
+    const onStart = (event: Event) => {
+      event.preventDefault();
+      previousScale = 1;
+    };
+    const onChange = (event: Event) => {
+      event.preventDefault();
+      const gesture = event as Event & { scale?: number; clientX?: number; clientY?: number };
+      const scale = gesture.scale;
+      if (!hasImageRef.current || !scale || !Number.isFinite(scale) || scale <= 0) return;
+      const factor = scale / previousScale;
+      previousScale = scale;
+      const rect = stage.getBoundingClientRect();
+      const x = gesture.clientX ?? rect.left + rect.width / 2;
+      const y = gesture.clientY ?? rect.top + rect.height / 2;
+      scheduleGesture(() => zoomAt(x, y, factor));
+    };
+    stage.addEventListener("gesturestart", onStart, { passive: false });
+    stage.addEventListener("gesturechange", onChange, { passive: false });
+    return () => {
+      stage.removeEventListener("gesturestart", onStart);
+      stage.removeEventListener("gesturechange", onChange);
+    };
   }, [scheduleGesture, zoomAt]);
 
   /**
