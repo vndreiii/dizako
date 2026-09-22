@@ -43,6 +43,27 @@ export type AlgorithmId =
 
 export type AlgorithmFamily = "ordered" | "error-diffusion" | "threshold" | "experimental";
 
+/** Ordered processing pass. The first entry runs on the source image. */
+export interface AlgorithmLayer {
+  id: string;
+  algorithm: AlgorithmId;
+  enabled: boolean;
+  opacity: number;
+  /** Controls owned by this pass; absent values use the session defaults. */
+  params?: Partial<Pick<Settings,
+    "strength" | "serpentine" | "jitter" | "errorClamp" | "bayerSize" |
+    "threshold" | "noiseAmount" | "cellSize" | "screenAngle" | "noiseScale" |
+    "riemersmaQueue" | "riemersmaDecay" | "dotClassSize" | "ominoDirection" |
+    "ominoErrorStrength" | "ominoAcross" | "ominoAside" | "ominoPhase" |
+    "ominoColorCount" | "jpegDamage"
+  >>;
+}
+
+let algorithmLayerSeq = 0;
+export function makeAlgorithmLayer(algorithm: AlgorithmId): AlgorithmLayer {
+  return { id: `algorithm-${Date.now()}-${++algorithmLayerSeq}`, algorithm, enabled: true, opacity: 1 };
+}
+
 export interface AlgorithmMeta {
   id: AlgorithmId;
   name: string;
@@ -102,6 +123,8 @@ export type OminoDirection = "right" | "left" | "down" | "up";
 
 export interface Settings {
   algorithm: AlgorithmId;
+  /** Empty preserves the single-algorithm format used by older sessions. */
+  algorithmLayers: AlgorithmLayer[];
   layers: PaletteLayer[];
   matchMode: MatchMode;
   /**
@@ -202,6 +225,7 @@ function luminanceOf(hex: string): number {
 
 export const DEFAULT_SETTINGS: Settings = {
   algorithm: "floyd-steinberg",
+  algorithmLayers: [],
   layers: layersFromColors(["#000000", "#FFFFFF"]),
   matchMode: "oklab",
   tonalBias: 0.5,

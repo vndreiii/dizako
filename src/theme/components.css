@@ -238,6 +238,33 @@
   padding: 2px var(--m3-sp-2);
   border-radius: var(--m3-shape-sm);
 }
+.m3-slider__control { position: relative; min-width: 0; }
+.m3-slider__control--bare { width: 100%; }
+.m3-slider__indicator {
+  position: absolute;
+  bottom: calc(100% + 2px);
+  transform: translateX(-50%);
+  z-index: 3;
+  min-width: 22px;
+  padding: 3px 6px;
+  border-radius: var(--m3-shape-full);
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  font: var(--m3-label-md);
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.m3-slider__ticks { position: absolute; inset: 0 3px; pointer-events: none; }
+.m3-slider__ticks span {
+  position: absolute;
+  top: 50%;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--md-sys-color-on-surface-variant);
+  transform: translate(-50%, -50%);
+}
 
 .m3-slider__input {
   -webkit-appearance: none;
@@ -252,22 +279,15 @@
    handle, stop-indicator dots at each end, and an inset vertical-bar handle.
    Shared by every range input in the app via .m3-slider__input. */
 .m3-slider__input {
-  /* Thumb travel geometry: WebKit/Firefox centre the thumb at
-     thumbHalf + fraction * (trackWidth - thumbWidth), so the gap in the
-     track must be anchored to that same expression, not to a raw %. */
+  /* Use percentage positioning supported by WebKitGTK as well as browsers. */
   --slider-thumb-w: 6px;
   --slider-gap: 7px;
 }
 .m3-slider__input::-webkit-slider-runnable-track {
-  --c: calc((100% - var(--slider-thumb-w)) * var(--m3-slider-pctf) + var(--slider-thumb-w) / 2);
+  --c: var(--m3-slider-pct);
   height: 16px;
   border-radius: var(--m3-shape-full);
   background:
-    radial-gradient(
-      circle at 10px 50%,
-      color-mix(in srgb, var(--md-sys-color-on-surface-variant) 55%, transparent) 0 2px,
-      transparent 2.5px
-    ),
     radial-gradient(
       circle at calc(100% - 10px) 50%,
       color-mix(in srgb, var(--md-sys-color-on-surface-variant) 55%, transparent) 0 2px,
@@ -308,15 +328,10 @@
    variable, so nothing extra is needed — but the narrower thumb shifts its
    centre by 1px; acceptable and matches M3's squish. */
 .m3-slider__input::-moz-range-track {
-  --c: calc((100% - var(--slider-thumb-w)) * var(--m3-slider-pctf) + var(--slider-thumb-w) / 2);
+  --c: var(--m3-slider-pct);
   height: 16px;
   border-radius: var(--m3-shape-full);
   background:
-    radial-gradient(
-      circle at 10px 50%,
-      color-mix(in srgb, var(--md-sys-color-on-surface-variant) 55%, transparent) 0 2px,
-      transparent 2.5px
-    ),
     radial-gradient(
       circle at calc(100% - 10px) 50%,
       color-mix(in srgb, var(--md-sys-color-on-surface-variant) 55%, transparent) 0 2px,

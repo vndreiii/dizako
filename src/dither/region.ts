@@ -40,8 +40,13 @@ export function regionFor(
   // Omino marches a whole line at a time and its bands are the accumulated
   // error of everything behind them, so a partial line is a different picture
   // rather than a slightly rougher one. Crop across the march, never along it.
-  if (settings.algorithm === "omino") {
-    if (settings.ominoDirection === "left" || settings.ominoDirection === "right") {
+  const ominoDirections = settings.algorithmLayers.length
+    ? settings.algorithmLayers
+      .filter((layer) => layer.enabled && layer.opacity > 0 && layer.algorithm === "omino")
+      .map((layer) => layer.params?.ominoDirection ?? settings.ominoDirection)
+    : settings.algorithm === "omino" ? [settings.ominoDirection] : [];
+  for (const direction of ominoDirections) {
+    if (direction === "left" || direction === "right") {
       x0 = 0;
       x1 = width;
     } else {

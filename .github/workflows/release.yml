@@ -71,8 +71,7 @@ jobs:
           cp -v src-tauri/target/release/bundle/deb/*.deb dist-release/ || true
           cp -v src-tauri/target/release/bundle/rpm/*.rpm dist-release/ || true
           cp -v src-tauri/target/release/bundle/appimage/*.AppImage dist-release/ || true
-          cp -v src-tauri/target/release/bundle/appimage/*.AppImage.tar.gz dist-release/ || true
-          cp -v src-tauri/target/release/bundle/appimage/*.AppImage.tar.gz.sig dist-release/ || true
+          cp -v src-tauri/target/release/bundle/appimage/*.AppImage.sig dist-release/
           ls -lh dist-release
 
       - uses: actions/upload-artifact@v4
@@ -212,15 +211,15 @@ jobs:
           shopt -s nullglob
           win_exe=(artifacts/*-setup.exe)
           win_sig=(artifacts/*-setup.exe.sig)
-          linux_tgz=(artifacts/*.AppImage.tar.gz)
-          linux_sig=(artifacts/*.AppImage.tar.gz.sig)
+          linux_appimage=(artifacts/*.AppImage)
+          linux_sig=(artifacts/*.AppImage.sig)
 
           if [[ ${#win_exe[@]} -lt 1 || ${#win_sig[@]} -lt 1 ]]; then
             echo "missing Windows updater artifacts" >&2
             ls -la artifacts >&2 || true
             exit 1
           fi
-          if [[ ${#linux_tgz[@]} -lt 1 || ${#linux_sig[@]} -lt 1 ]]; then
+          if [[ ${#linux_appimage[@]} -lt 1 || ${#linux_sig[@]} -lt 1 ]]; then
             echo "missing Linux updater artifacts" >&2
             ls -la artifacts >&2 || true
             exit 1
@@ -232,7 +231,7 @@ jobs:
             --arg pub_date "$pub_date" \
             --arg win_url "$base/$(basename "${win_exe[0]}")" \
             --arg win_sig "$(cat "${win_sig[0]}")" \
-            --arg linux_url "$base/$(basename "${linux_tgz[0]}")" \
+            --arg linux_url "$base/$(basename "${linux_appimage[0]}")" \
             --arg linux_sig "$(cat "${linux_sig[0]}")" \
             '{
               version: $version,

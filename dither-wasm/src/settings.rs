@@ -7,6 +7,61 @@
 use crate::palette::PaletteLayer;
 use serde::{Deserialize, Serialize};
 
+fn default_opacity() -> f64 { 1.0 }
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct AlgorithmLayer {
+    pub id: String,
+    pub algorithm: String,
+    #[serde(default = "default_opacity")]
+    pub opacity: f64,
+    #[serde(default = "default_opacity_bool")]
+    pub enabled: bool,
+    #[serde(default)]
+    pub params: AlgorithmParams,
+}
+
+fn default_opacity_bool() -> bool { true }
+
+#[derive(Deserialize, Serialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct AlgorithmParams {
+    pub strength: Option<f64>,
+    pub serpentine: Option<bool>,
+    pub jitter: Option<f64>,
+    pub error_clamp: Option<f64>,
+    pub bayer_size: Option<f64>,
+    pub threshold: Option<f64>,
+    pub noise_amount: Option<f64>,
+    pub cell_size: Option<f64>,
+    pub screen_angle: Option<f64>,
+    pub noise_scale: Option<f64>,
+    pub riemersma_queue: Option<f64>,
+    pub riemersma_decay: Option<f64>,
+    pub dot_class_size: Option<f64>,
+    pub omino_direction: Option<String>,
+    pub omino_error_strength: Option<f64>,
+    pub omino_across: Option<f64>,
+    pub omino_aside: Option<f64>,
+    pub omino_phase: Option<f64>,
+    pub omino_color_count: Option<f64>,
+    pub jpeg_damage: Option<f64>,
+}
+
+impl AlgorithmParams {
+    pub fn apply(&self, settings: &mut Settings) {
+        macro_rules! copy {
+            ($($field:ident),* $(,)?) => { $(if let Some(value) = self.$field { settings.$field = value; })* };
+        }
+        copy!(strength, serpentine, jitter, error_clamp, bayer_size, threshold,
+            noise_amount, cell_size, screen_angle, noise_scale, riemersma_queue,
+            riemersma_decay, dot_class_size, omino_error_strength, omino_across,
+            omino_aside, omino_phase, omino_color_count, jpeg_damage);
+        if let Some(value) = &self.omino_direction { settings.omino_direction = value.clone(); }
+    }
+}
+
 fn default_layers() -> Vec<PaletteLayer> {
     vec![
         PaletteLayer {
@@ -31,6 +86,8 @@ fn default_layers() -> Vec<PaletteLayer> {
 pub struct Settings {
     #[serde(default)]
     pub algorithm: String,
+    #[serde(default)]
+    pub algorithm_layers: Vec<AlgorithmLayer>,
     #[serde(default = "default_layers")]
     pub layers: Vec<PaletteLayer>,
     #[serde(default)]
@@ -126,6 +183,7 @@ impl Settings {
     pub fn with_defaults() -> Self {
         Self {
             algorithm: "floyd-steinberg".into(),
+            algorithm_layers: Vec::new(),
             layers: default_layers(),
             match_mode: "oklab".into(),
             tonal_bias: 0.5,

@@ -642,7 +642,7 @@ fn omino_pass(c: &mut Ctx) {
 /* Entry point                                                         */
 /* ------------------------------------------------------------------ */
 
-pub fn dither(data: &[u8], width: usize, height: usize, s: &Settings) -> Vec<u8> {
+fn dither_single(data: &[u8], width: usize, height: usize, s: &Settings) -> Vec<u8> {
     let px = width * height;
     let mut out = vec![0u8; px * 4];
     let alpha: Vec<u8> = data.chunks_exact(4).map(|q| q[3]).collect();
@@ -738,4 +738,52 @@ pub fn dither(data: &[u8], width: usize, height: usize, s: &Settings) -> Vec<u8>
     }
 
     out
+}
+
+/// Run enabled passes from top to bottom. A later pass consumes the blended
+/// pixels from the preceding pass; grading and filters apply only once.
+pub fn dither(data: &[u8], width: usize, height: usize, s: &Settings) -> Vec<u8> {
+    if s.algorithm_layers.is_empty() {
+        return dither_single(data, width, height, s);
+    }
+
+    let mut current = data.to_vec();
+    let defaults = Settings::with_defaults();
+    let mut first = true;
+    for layer in &s.algorithm_layers {
+        if !layer.enabled { continue; }
+        let opacity = layer.opacity.clamp(0.0, 1.0);
+        if opacity == 0.0 { continue; }
+
+        let mut pass_settings = s.clone();
+        layer.params.apply(&mut pass_settings);
+        if !first {
+            pass_settings.invert = defaults.invert;
+            pass_settings.grayscale = defaults.grayscale;
+            pass_settings.brightness = defaults.brightness;
+            pass_settings.contrast = defaults.contrast;
+            pass_settings.gamma = defaults.gamma;
+            pass_settings.exposure = defaults.exposure;
+            pass_settings.saturation = defaults.saturation;
+            pass_settings.hue_shift = defaults.hue_shift;
+            pass_settings.temperature = defaults.temperature;
+            pass_settings.tint = defaults.tint;
+            pass_settings.blur = defaults.blur;
+            pass_settings.sharpen = defaults.sharpen;
+        }
+        pass_settings.algorithm = layer.algorithm.clone();
+        let rendered = dither_single(&current, width, height, &pass_settings);
+        if opacity == 1.0 {
+            current = rendered;
+        } else {
+            for (dst, target) in current.chunks_exact_mut(4).zip(rendered.chunks_exact(4)) {
+                for channel in 0..3 {
+                    dst[channel] = to_u8clamp(f64::from(dst[channel]) * (1.0 - opacity)
+                        + f64::from(target[channel]) * opacity);
+                }
+            }
+        }
+        first = false;
+    }
+    current
 }

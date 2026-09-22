@@ -52,8 +52,11 @@ const COARSE_PIXELS = 240_000;
 /** Below this the full pass is quick enough that staging it would only flicker. */
 const SINGLE_PASS_PIXELS = 420_000;
 
-function watchdogMs(px: number): number {
-  return Math.max(8000, (px / 1e6) * 4000);
+function watchdogMs(px: number, settings: Settings): number {
+  const passes = settings.algorithmLayers.length
+    ? Math.max(1, settings.algorithmLayers.filter((layer) => layer.enabled && layer.opacity > 0).length)
+    : 1;
+  return Math.max(8000, (px / 1e6) * 4000) * passes;
 }
 
 const coarseDownscales = new WeakMap<ImageData, Map<string, ImageData>>();
@@ -510,7 +513,7 @@ export function useDither(
     }
 
     clearWatchdog();
-    timerRef.current = window.setTimeout(watchdogStrike, watchdogMs(job.pixels));
+    timerRef.current = window.setTimeout(watchdogStrike, watchdogMs(job.pixels, job.settings));
   };
 
   /** Source or settings changed: restart from the coarse pass. */

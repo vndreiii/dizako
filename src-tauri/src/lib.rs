@@ -1,5 +1,10 @@
 use tauri::Manager;
 
+#[tauri::command]
+fn supports_autoupdate() -> bool {
+    cfg!(windows) || (cfg!(target_os = "linux") && std::env::var_os("APPIMAGE").is_some())
+}
+
 /// WebKitGTK handles trackpad/touch pinch with a private GtkGestureZoom before
 /// any page script runs, so JS `preventDefault` cannot stop UI page-zoom on
 /// Linux. Strip WebKit's handlers, clamp `zoom-level`, and forward the pinch
@@ -88,6 +93,7 @@ pub fn run() {
     }
 
     builder
+        .invoke_handler(tauri::generate_handler![supports_autoupdate])
         .setup(|app| {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.with_webview(|webview| {

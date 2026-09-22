@@ -1,16 +1,17 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import { useI18n } from "../i18n";
 import {
   ALGORITHMS,
   DEFAULT_SETTINGS,
+  makeAlgorithmLayer,
   type AlgorithmFamily,
   type AlgorithmId,
   type OminoDirection,
   type ParamKey,
   type Settings,
 } from "../dither/types";
-import { Button, Segmented, Slider, Switch } from "./primitives";
-import { IconReset } from "./Icons";
+import { BareSlider, Button, IconButton, Segmented, Slider, Switch } from "./primitives";
+import { IconAdd, IconArrowDown, IconArrowUp, IconDelete, IconHidden, IconReset, IconVisible } from "./Icons";
 
 interface Props {
   settings: Settings;
@@ -54,8 +55,51 @@ const RESET_KEYS: Record<ParamKey, Array<keyof Settings>> = {
 
 function AlgorithmPanelImpl({ settings, patch }: Props) {
   const { t } = useI18n();
-  const meta = ALGORITHMS.find((a) => a.id === settings.algorithm) ?? ALGORITHMS[0];
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const stack = settings.algorithmLayers.length
+    ? settings.algorithmLayers
+    : [{ id: "legacy", algorithm: settings.algorithm, enabled: true, opacity: 1 }];
+  const selected = stack.find((layer) => layer.id === selectedId) ?? stack[stack.length - 1];
+  const meta = ALGORITHMS.find((a) => a.id === selected.algorithm) ?? ALGORITHMS[0];
   const has = (p: ParamKey) => meta.params.includes(p);
+  const controlSettings = { ...settings, ...selected.params };
+  const patchParams = (changes: Partial<Settings>) => {
+    if (!settings.algorithmLayers.length) {
+      patch(changes);
+      return;
+    }
+    patch({ algorithmLayers: stack.map((layer) => layer.id === selected.id
+      ? { ...layer, params: { ...layer.params, ...changes } }
+      : layer) });
+  };
+
+  const replaceStack = (algorithm: AlgorithmId) => {
+    const layer = makeAlgorithmLayer(algorithm);
+    patch({ algorithm, algorithmLayers: [layer] });
+    setSelectedId(layer.id);
+  };
+  const append = (algorithm: AlgorithmId) => {
+    const layer = makeAlgorithmLayer(algorithm);
+    patch({ algorithm, algorithmLayers: [...stack, layer] });
+    setSelectedId(layer.id);
+  };
+  const updateStack = (id: string, change: Partial<(typeof stack)[number]>) =>
+    patch({ algorithmLayers: stack.map((layer) => layer.id === id ? { ...layer, ...change } : layer) });
+  const move = (id: string, direction: -1 | 1) => {
+    const from = stack.findIndex((layer) => layer.id === id);
+    const to = from + direction;
+    if (to < 0 || to >= stack.length) return;
+    const next = [...stack];
+    [next[from], next[to]] = [next[to], next[from]];
+    patch({ algorithmLayers: next });
+  };
+  const remove = (id: string) => {
+    if (stack.length <= 1) return;
+    const next = stack.filter((layer) => layer.id !== id);
+    const nextSelected = selected.id === id ? next[next.length - 1] : selected;
+    patch({ algorithmLayers: next, algorithm: nextSelected.algorithm });
+    setSelectedId(nextSelected.id);
+  };
 
   const resetParams = () => {
     const p: Partial<Settings> = {};
@@ -64,11 +108,11 @@ function AlgorithmPanelImpl({ settings, patch }: Props) {
         (p as Record<string, unknown>)[k] = DEFAULT_SETTINGS[k];
       }
     }
-    patch(p);
+    patchParams(p);
   };
 
   return (
-    <div className="panel">
+    <div className="panel panel--dock">
       <header className="panel__header">
         <h2 className="panel__title">{t("algorithm.title")}</h2>
         <p className="panel__subtitle">
@@ -82,15 +126,19 @@ function AlgorithmPanelImpl({ settings, patch }: Props) {
             <h3 className="panel__section-title">{t(`family.${g}`)}</h3>
             <div className="algo-grid">
               {ALGORITHMS.filter((a) => a.family === g).map((a) => (
-                <button
-                  key={a.id}
-                  className={`algo-card ${a.id === settings.algorithm ? "is-selected" : ""}`}
-                  aria-pressed={a.id === settings.algorithm}
-                  onClick={() => patch({ algorithm: a.id as AlgorithmId })}
-                >
-                  <span className="algo-card__name">{a.name}</span>
-                  <span className="algo-card__blurb">{t(`algo.${a.id}.blurb`)}</span>
-                </button>
+                <div className="algo-choice" key={a.id}>
+                  <button
+                    className={`algo-card ${a.id === selected.algorithm ? "is-selected" : ""}`}
+                    aria-label={t("algorithm.useOnly").replace("{name}", a.name)}
+                    onClick={() => replaceStack(a.id)}
+                  >
+                    <span className="algo-card__name">{a.name}</span>
+                    <span className="algo-card__blurb">{t(`algo.${a.id}.blurb`)}</span>
+                  </button>
+                  <IconButton label={t("algorithm.append").replace("{name}", a.name)} onClick={() => append(a.id)}>
+                    <IconAdd />
+                  </IconButton>
+                </div>
               ))}
             </div>
           </section>
@@ -109,35 +157,35 @@ function AlgorithmPanelImpl({ settings, patch }: Props) {
           {has("strength") && (
             <Slider
               label={t("param.strength")}
-              value={Math.round(settings.strength * 100)}
+              value={Math.round(controlSettings.strength * 100)}
               min={0}
               max={200}
-              display={`${Math.round(settings.strength * 100)}%`}
-              onChange={(v) => patch({ strength: v / 100 })}
+              display={`${Math.round(controlSettings.strength * 100)}%`}
+              onChange={(v) => patchParams({ strength: v / 100 })}
             />
           )}
 
           {has("errorClamp") && (
             <Slider
               label={t("param.errorClamp")}
-              value={settings.errorClamp}
+              value={controlSettings.errorClamp}
               min={0}
               max={255}
               display={
-                settings.errorClamp === 0 ? t("common.off") : String(settings.errorClamp)
+                controlSettings.errorClamp === 0 ? t("common.off") : String(controlSettings.errorClamp)
               }
-              onChange={(v) => patch({ errorClamp: v })}
+              onChange={(v) => patchParams({ errorClamp: v })}
             />
           )}
 
           {has("jitter") && (
             <Slider
               label={t("param.jitter")}
-              value={Math.round(settings.jitter * 100)}
+              value={Math.round(controlSettings.jitter * 100)}
               min={0}
               max={100}
-              display={`${Math.round(settings.jitter * 100)}%`}
-              onChange={(v) => patch({ jitter: v / 100 })}
+              display={`${Math.round(controlSettings.jitter * 100)}%`}
+              onChange={(v) => patchParams({ jitter: v / 100 })}
             />
           )}
 
@@ -146,8 +194,8 @@ function AlgorithmPanelImpl({ settings, patch }: Props) {
               <span className="panel__field-label">{t("param.matrixSize")}</span>
               <Segmented
                 ariaLabel={t("param.bayerSizeAria")}
-                value={String(settings.bayerSize)}
-                onChange={(v) => patch({ bayerSize: Number(v) })}
+                value={String(controlSettings.bayerSize)}
+                onChange={(v) => patchParams({ bayerSize: Number(v) })}
                 options={[
                   { value: "2", label: "2×2" },
                   { value: "4", label: "4×4" },
@@ -161,76 +209,76 @@ function AlgorithmPanelImpl({ settings, patch }: Props) {
           {has("cellSize") && (
             <Slider
               label={t("param.cellSize")}
-              value={settings.cellSize}
+              value={controlSettings.cellSize}
               min={2}
               max={32}
-              display={`${settings.cellSize} px`}
-              onChange={(v) => patch({ cellSize: v })}
+              display={`${controlSettings.cellSize} px`}
+              onChange={(v) => patchParams({ cellSize: v })}
             />
           )}
 
           {has("screenAngle") && (
             <Slider
               label={t("param.screenAngle")}
-              value={settings.screenAngle}
+              value={controlSettings.screenAngle}
               min={0}
               max={90}
-              display={`${settings.screenAngle}°`}
-              onChange={(v) => patch({ screenAngle: v })}
+              display={`${controlSettings.screenAngle}°`}
+              onChange={(v) => patchParams({ screenAngle: v })}
             />
           )}
 
           {has("noiseScale") && (
             <Slider
               label={t("param.noiseScale")}
-              value={Math.round(settings.noiseScale * 10)}
+              value={Math.round(controlSettings.noiseScale * 10)}
               min={5}
               max={80}
-              display={`${settings.noiseScale.toFixed(1)}×`}
-              onChange={(v) => patch({ noiseScale: v / 10 })}
+              display={`${controlSettings.noiseScale.toFixed(1)}×`}
+              onChange={(v) => patchParams({ noiseScale: v / 10 })}
             />
           )}
 
           {has("threshold") && (
             <Slider
               label={t("param.threshold")}
-              value={settings.threshold}
+              value={controlSettings.threshold}
               min={0}
               max={255}
-              onChange={(v) => patch({ threshold: v })}
+              onChange={(v) => patchParams({ threshold: v })}
             />
           )}
 
           {has("noiseAmount") && (
             <Slider
               label={t("param.noiseAmount")}
-              value={Math.round(settings.noiseAmount * 100)}
+              value={Math.round(controlSettings.noiseAmount * 100)}
               min={0}
               max={200}
-              display={`${Math.round(settings.noiseAmount * 100)}%`}
-              onChange={(v) => patch({ noiseAmount: v / 100 })}
+              display={`${Math.round(controlSettings.noiseAmount * 100)}%`}
+              onChange={(v) => patchParams({ noiseAmount: v / 100 })}
             />
           )}
 
           {has("riemersmaQueue") && (
             <Slider
               label={t("param.queueLength")}
-              value={settings.riemersmaQueue}
+              value={controlSettings.riemersmaQueue}
               min={2}
               max={64}
-              display={`${settings.riemersmaQueue} px`}
-              onChange={(v) => patch({ riemersmaQueue: v })}
+              display={`${controlSettings.riemersmaQueue} px`}
+              onChange={(v) => patchParams({ riemersmaQueue: v })}
             />
           )}
 
           {has("riemersmaDecay") && (
             <Slider
               label={t("param.queueDecay")}
-              value={Math.round(settings.riemersmaDecay * 100)}
+              value={Math.round(controlSettings.riemersmaDecay * 100)}
               min={5}
               max={99}
-              display={settings.riemersmaDecay.toFixed(2)}
-              onChange={(v) => patch({ riemersmaDecay: v / 100 })}
+              display={controlSettings.riemersmaDecay.toFixed(2)}
+              onChange={(v) => patchParams({ riemersmaDecay: v / 100 })}
             />
           )}
 
@@ -239,8 +287,8 @@ function AlgorithmPanelImpl({ settings, patch }: Props) {
               <span className="panel__field-label">{t("param.classMatrix")}</span>
               <Segmented
                 ariaLabel={t("param.classMatrixAria")}
-                value={String(settings.dotClassSize)}
-                onChange={(v) => patch({ dotClassSize: Number(v) })}
+                value={String(controlSettings.dotClassSize)}
+                onChange={(v) => patchParams({ dotClassSize: Number(v) })}
                 options={[
                   { value: "4", label: "4×4" },
                   { value: "8", label: "8×8" },
@@ -256,52 +304,52 @@ function AlgorithmPanelImpl({ settings, patch }: Props) {
                 <span className="panel__field-label">{t("param.marchDirection")}</span>
                 <Segmented
                   ariaLabel={t("param.marchDirection")}
-                  value={settings.ominoDirection}
-                  onChange={(v) => patch({ ominoDirection: v as OminoDirection })}
+                  value={controlSettings.ominoDirection}
+                  onChange={(v) => patchParams({ ominoDirection: v as OminoDirection })}
                   options={DIRECTIONS.map((d) => ({ value: d.value, label: t(d.key) }))}
                 />
               </div>
               <Slider
                 label={t("param.errorStrength")}
-                value={Math.round(settings.ominoErrorStrength * 100)}
+                value={Math.round(controlSettings.ominoErrorStrength * 100)}
                 min={0}
                 max={400}
-                display={`${Math.round(settings.ominoErrorStrength * 100)}%`}
-                onChange={(v) => patch({ ominoErrorStrength: v / 100 })}
+                display={`${Math.round(controlSettings.ominoErrorStrength * 100)}%`}
+                onChange={(v) => patchParams({ ominoErrorStrength: v / 100 })}
               />
               <Slider
                 label={t("param.errorAcross")}
-                value={Math.round(settings.ominoAcross * 100)}
+                value={Math.round(controlSettings.ominoAcross * 100)}
                 min={0}
                 max={150}
-                display={`${Math.round(settings.ominoAcross * 100)}%`}
-                onChange={(v) => patch({ ominoAcross: v / 100 })}
+                display={`${Math.round(controlSettings.ominoAcross * 100)}%`}
+                onChange={(v) => patchParams({ ominoAcross: v / 100 })}
               />
               <Slider
                 label={t("param.errorAside")}
-                value={Math.round(settings.ominoAside * 100)}
+                value={Math.round(controlSettings.ominoAside * 100)}
                 min={0}
                 max={150}
-                display={`${Math.round(settings.ominoAside * 100)}%`}
-                onChange={(v) => patch({ ominoAside: v / 100 })}
+                display={`${Math.round(controlSettings.ominoAside * 100)}%`}
+                onChange={(v) => patchParams({ ominoAside: v / 100 })}
               />
               <Slider
                 label={t("param.initialPhase")}
-                value={settings.ominoPhase}
+                value={controlSettings.ominoPhase}
                 min={0}
                 max={360}
-                display={`${settings.ominoPhase}°`}
-                onChange={(v) => patch({ ominoPhase: v })}
+                display={`${controlSettings.ominoPhase}°`}
+                onChange={(v) => patchParams({ ominoPhase: v })}
               />
               <Slider
                 label={t("param.colourCount")}
-                value={settings.ominoColorCount}
+                value={controlSettings.ominoColorCount}
                 min={1}
                 max={16}
                 display={t("param.colourCountOf")
-                  .replace("{n}", String(settings.ominoColorCount))
+                  .replace("{n}", String(controlSettings.ominoColorCount))
                   .replace("{total}", String(settings.layers.length))}
-                onChange={(v) => patch({ ominoColorCount: v })}
+                onChange={(v) => patchParams({ ominoColorCount: v })}
               />
               <p className="panel__note">{t("omino.note")}</p>
             </>
@@ -310,24 +358,58 @@ function AlgorithmPanelImpl({ settings, patch }: Props) {
           {has("jpegDamage") && (
             <Slider
               label={t("param.jpegDamage")}
-              value={Math.round((Math.log10(Math.max(settings.jpegDamage, 0.01)) + 2) * 100)}
+              value={Math.round((Math.log10(Math.max(controlSettings.jpegDamage, 0.01)) + 2) * 100)}
               min={0}
               max={800}
-              display={settings.jpegDamage < 1 ? settings.jpegDamage.toFixed(2) : `${Math.round(settings.jpegDamage).toLocaleString()}×`}
-              onChange={(v) => patch({ jpegDamage: Math.pow(10, v / 100 - 2) })}
+              display={controlSettings.jpegDamage < 1 ? controlSettings.jpegDamage.toFixed(2) : `${Math.round(controlSettings.jpegDamage).toLocaleString()}×`}
+              onChange={(v) => patchParams({ jpegDamage: Math.pow(10, v / 100 - 2) })}
             />
           )}
 
           {has("serpentine") && (
             <Switch
               label={t("param.serpentine")}
-              checked={settings.serpentine}
-              onChange={(v) => patch({ serpentine: v })}
+              checked={controlSettings.serpentine}
+              onChange={(v) => patchParams({ serpentine: v })}
             />
           )}
 
           <p className="panel__note">{t(`algo.${meta.id}.blurb`)}</p>
         </section>
+      </div>
+
+      <div className="layerdock algorithm-dock">
+        <div className="layerdock__head">
+          <h3 className="layerdock__title">{t("algorithm.stack")}</h3>
+          <span className="layerdock__count">{stack.length}</span>
+        </div>
+        <p className="panel__note">{t("algorithm.stackHint")}</p>
+        <ol className="layerdock__list">
+          {stack.map((layer, index) => {
+            const name = ALGORITHMS.find((a) => a.id === layer.algorithm)?.name ?? layer.algorithm;
+            return (
+              <li key={layer.id} className={`layer algorithm-layer ${layer.enabled ? "" : "is-off"} ${selected.id === layer.id ? "is-selected" : ""}`}>
+                <span className="algorithm-layer__index">{index + 1}</span>
+                <div className="layer__body">
+                  <button className="algorithm-layer__name" onClick={() => { setSelectedId(layer.id); patch({ algorithm: layer.algorithm }); }}>
+                    {name}
+                  </button>
+                  <div className="layer__line">
+                    <span className="layer__hex">{t("algorithm.opacity")}</span>
+                    <span className="layer__weight">{Math.round(layer.opacity * 100)}%</span>
+                  </div>
+                  <BareSlider ariaLabel={t("algorithm.opacityFor").replace("{name}", name)} value={Math.round(layer.opacity * 100)} min={0} max={100} onChange={(v) => updateStack(layer.id, { opacity: v / 100 })} />
+                </div>
+                <div className="layer__ops">
+                  <IconButton label={t("algorithm.moveEarlier")} disabled={index === 0} onClick={() => move(layer.id, -1)}><IconArrowUp /></IconButton>
+                  <IconButton label={t("algorithm.moveLater")} disabled={index === stack.length - 1} onClick={() => move(layer.id, 1)}><IconArrowDown /></IconButton>
+                  <IconButton label={layer.enabled ? t("algorithm.disable") : t("algorithm.enable")} onClick={() => updateStack(layer.id, { enabled: !layer.enabled })}>{layer.enabled ? <IconVisible /> : <IconHidden />}</IconButton>
+                  <IconButton label={t("algorithm.remove")} disabled={stack.length <= 1} onClick={() => remove(layer.id)}><IconDelete /></IconButton>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
       </div>
     </div>
   );

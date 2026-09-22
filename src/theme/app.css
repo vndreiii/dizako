@@ -363,6 +363,32 @@
   flex-direction: column;
   gap: var(--m3-sp-2);
 }
+.algo-choice {
+  display: flex;
+  align-items: center;
+  gap: var(--m3-sp-2);
+}
+.algo-choice .algo-card { flex: 1; min-width: 0; }
+.algorithm-dock { max-height: 48%; }
+.algorithm-dock .panel__note { margin: 0; }
+.algorithm-layer.is-selected { border-color: var(--md-sys-color-primary); }
+.algorithm-layer__index {
+  flex: none;
+  width: 24px;
+  text-align: center;
+  font: var(--m3-label-lg);
+  color: var(--md-sys-color-primary);
+}
+.algorithm-layer__name {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--md-sys-color-on-surface);
+  font: var(--m3-label-lg);
+  text-align: left;
+  cursor: pointer;
+}
+.algorithm-layer__name:focus-visible { outline: 2px solid var(--md-sys-color-primary); }
 
 .algo-card {
   display: flex;
@@ -813,6 +839,8 @@
   .sidebar {
     width: 300px;
   }
+  .algorithm-layer { flex-wrap: wrap; }
+  .algorithm-layer .layer__ops { width: 100%; justify-content: flex-end; }
   .seed-row {
     display: none;
   }
@@ -1362,53 +1390,7 @@
   font-size: 11px;
   color: var(--md-sys-color-on-surface-variant);
 }
-.layer__width {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  /* A 4px track with a 12px thumb was a hairline to aim at. The track is the
-     hit area on every platform, so it has to be worth hitting. */
-  height: 16px;
-  background: transparent;
-  cursor: pointer;
-  margin: 0;
-}
-.layer__width::-webkit-slider-runnable-track {
-  height: 6px;
-  border-radius: 3px;
-  background: var(--md-sys-color-surface-container-highest);
-}
-.layer__width::-moz-range-track {
-  height: 6px;
-  border-radius: 3px;
-  background: var(--md-sys-color-surface-container-highest);
-}
-.layer__width::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
-  margin-top: -5px;
-  border-radius: 50%;
-  background: var(--md-sys-color-primary);
-  border: 2px solid var(--md-sys-color-surface-container);
-  transition: transform var(--m3-dur-short4) var(--m3-spring-default);
-}
-.layer__width::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--md-sys-color-primary);
-  border: 2px solid var(--md-sys-color-surface-container);
-}
-.layer__width:hover::-webkit-slider-thumb,
-.layer__width:active::-webkit-slider-thumb {
-  transform: scale(1.15);
-}
-.layer__width:focus-visible {
-  outline: 2px solid var(--md-sys-color-primary);
-  outline-offset: 3px;
-  border-radius: var(--m3-shape-sm);
-}
+.layer__width { min-width: 0; }
 
 .layer__weight {
   font: var(--m3-label-md);
@@ -1423,11 +1405,11 @@
   display: flex;
   gap: 0;
 }
-.layer__ops .m3-icon-button {
+.layer__ops .m3-iconbtn {
   width: 30px;
   height: 30px;
 }
-.layer__ops .m3-icon-button svg {
+.layer__ops .m3-iconbtn svg {
   width: 16px;
   height: 16px;
 }
@@ -1486,10 +1468,6 @@
   font: var(--m3-body-sm);
   color: var(--md-sys-color-primary);
   word-break: break-all;
-}  display: flex;
-  justify-content: flex-end;
-  gap: var(--m3-sp-3);
-  margin-top: var(--m3-sp-5);
 }
 
 .picker {

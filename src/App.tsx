@@ -158,8 +158,7 @@ export default function App() {
   const historyFrameRef = useRef<HTMLDivElement>(null);
   const snack = useSnackbar();
 
-  // Windows / macOS: pull GitHub Releases updates on launch (unsigned OS builds
-  // still get SmartScreen/Gatekeeper; Tauri minisign only authenticates the payload).
+  // Windows and Linux AppImage: pull signed GitHub Releases updates on launch.
   useEffect(() => {
     void checkAndInstallUpdates((msg) => snack(msg));
   }, [snack]);
@@ -720,7 +719,7 @@ export default function App() {
           </button>
         </nav>
 
-        <aside className={`sidebar ${tab === "palette" ? "sidebar--wide" : ""}`}>
+        <aside className={`sidebar ${tab === "palette" || tab === "algorithm" ? "sidebar--wide" : ""}`}>
           {tab === "algorithm" && <AlgorithmPanel settings={settings} patch={patch} />}
           {tab === "palette" && (
             <PalettePanel settings={settings} patch={patch} source={source} />

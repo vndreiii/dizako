@@ -1,5 +1,5 @@
 /**
- * Auto-update from GitHub Releases (Linux + Windows only).
+ * Auto-update from GitHub Releases (Windows and Linux AppImage only).
  *
  * Uses Tauri minisign (free) — not Authenticode / Apple notarization.
  * SmartScreen / Gatekeeper warnings on first install are expected without
@@ -7,21 +7,18 @@
  */
 import { check } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
-
-function supportsUpdater(): boolean {
-  // Set by `@tauri-apps/cli` during `tauri build` / `tauri dev`.
-  const platform = import.meta.env.TAURI_ENV_PLATFORM as string | undefined;
-  return platform === "windows" || platform === "linux";
-}
+import { invoke, isTauri } from "@tauri-apps/api/core";
 
 /** Check GitHub latest.json; if newer, download, install, and relaunch. */
 export async function checkAndInstallUpdates(
   onStatus?: (msg: string) => void,
 ): Promise<void> {
-  if (!supportsUpdater()) return;
-  if (!("__TAURI_INTERNALS__" in window)) return;
+  if (!isTauri()) return;
 
   try {
+    // The runtime knows whether this Linux process came from an AppImage.
+    // A build-time platform flag cannot distinguish it from a deb/rpm install.
+    if (!(await invoke<boolean>("supports_autoupdate"))) return;
     const update = await check();
     if (!update) return;
 

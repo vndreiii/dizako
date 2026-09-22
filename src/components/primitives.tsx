@@ -203,7 +203,10 @@ export function Slider({
 }: SliderProps) {
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [active, setActive] = useState(false);
   useWheelAdjust(inputRef, value, min, max, step, onChange, disabled);
+  const pct = Math.max(0, Math.min(1, (value - min) / (max - min || 1)));
+  const ticks = (max - min) / step;
   return (
     <div className={`m3-slider ${disabled ? "is-disabled" : ""}`}>
       <div className="m3-slider__head">
@@ -212,19 +215,31 @@ export function Slider({
         </label>
         <span className="m3-slider__value">{display ?? value}</span>
       </div>
-      <input
-        id={id}
-        ref={inputRef}
-        type="range"
-        className="m3-slider__input"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        disabled={disabled}
-        onChange={(e) => onChange(Number(e.target.value))}
-        style={{ ["--m3-slider-pctf" as string]: `${(value - min) / (max - min)}` }}
-      />
+      <div className="m3-slider__control" style={{ ["--m3-slider-pct" as string]: `${pct * 100}%` }}>
+        <input
+          id={id}
+          ref={inputRef}
+          type="range"
+          className="m3-slider__input"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          disabled={disabled}
+          aria-valuetext={display}
+          onPointerDown={() => setActive(true)}
+          onPointerUp={() => setActive(false)}
+          onPointerCancel={() => setActive(false)}
+          onBlur={() => setActive(false)}
+          onChange={(e) => onChange(Number(e.target.value))}
+        />
+        {ticks > 1 && ticks <= 12 && Number.isInteger(ticks) && (
+          <span className="m3-slider__ticks" aria-hidden="true">
+            {Array.from({ length: ticks - 1 }, (_, i) => <span key={i} style={{ left: `${((i + 1) / ticks) * 100}%`, background: (i + 1) / ticks <= pct ? "var(--md-sys-color-on-primary)" : undefined }} />)}
+          </span>
+        )}
+        {active && <span className="m3-slider__indicator" aria-hidden="true" style={{ left: `${pct * 100}%` }}>{display ?? value}</span>}
+      </div>
     </div>
   );
 }
@@ -252,20 +267,28 @@ export function BareSlider({
   onChange: (v: number) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [active, setActive] = useState(false);
   useWheelAdjust(inputRef, value, min, max, step, onChange, false);
+  const pct = Math.max(0, Math.min(1, (value - min) / (max - min || 1)));
   return (
-    <input
-      ref={inputRef}
-      type="range"
-      aria-label={ariaLabel}
-      min={min}
-      max={max}
-      step={step}
-      value={value}
-      onChange={(e) => onChange(Number(e.target.value))}
-      className={`m3-slider__input ${className}`}
-      style={{ ["--m3-slider-pctf" as string]: `${(value - min) / (max - min)}` }}
-    />
+    <div className="m3-slider__control m3-slider__control--bare" style={{ ["--m3-slider-pct" as string]: `${pct * 100}%` }}>
+      <input
+        ref={inputRef}
+        type="range"
+        aria-label={ariaLabel}
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onPointerDown={() => setActive(true)}
+        onPointerUp={() => setActive(false)}
+        onPointerCancel={() => setActive(false)}
+        onBlur={() => setActive(false)}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className={`m3-slider__input ${className}`}
+      />
+      {active && <span className="m3-slider__indicator" aria-hidden="true" style={{ left: `${pct * 100}%` }}>{value}</span>}
+    </div>
   );
 }
 
