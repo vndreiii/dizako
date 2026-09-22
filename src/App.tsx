@@ -4,7 +4,7 @@ import { AlgorithmPanel } from "./components/AlgorithmPanel";
 import { PalettePanel } from "./components/PalettePanel";
 import { PreviewCanvas } from "./components/PreviewCanvas";
 import { useI18n } from "./i18n";
-import { Button, useSnackbar } from "./components/primitives";
+import { Button, useSnackbar, useSnackbarPrompt } from "./components/primitives";
 import {
   IconDownload,
   IconFavorite,
@@ -22,7 +22,8 @@ import { DonateDialog } from "./components/DonateDialog";
 import { WheelStepContext } from "./components/primitives";
 import { WindowControls } from "./components/WindowControls";
 import { openDonatePage } from "./donate";
-import { checkAndInstallUpdates } from "./updater";
+import { checkForUpdates, installUpdate, LATER_MS, rememberUpdateChoice, updatePromptDelay } from "./updater";
+import type { Update } from "@tauri-apps/plugin-updater";
 import { useDither } from "./hooks/useDither";
 import type { Rect } from "./dither/region";
 import { savePng } from "./hooks/saveImage";
@@ -160,11 +161,71 @@ export default function App() {
   const inputRef = useRef<HTMLInputElement>(null);
   const historyFrameRef = useRef<HTMLDivElement>(null);
   const snack = useSnackbar();
+  const setUpdatePrompt = useSnackbarPrompt();
 
-  // Windows and Linux AppImage: pull signed GitHub Releases updates on launch.
+  // Ask before downloading a signed update. Later is offered again after 24h;
+  // Dismiss hides only this version, so a newer release can still be offered.
   useEffect(() => {
-    void checkAndInstallUpdates((msg) => snack(msg));
-  }, [snack]);
+    let cancelled = false;
+    let timer: number | undefined;
+    let offered: Update | null = null;
+
+    const check = async () => {
+      try {
+        const update = await checkForUpdates();
+        if (!update) return;
+        if (cancelled) {
+          void update.close();
+          return;
+        }
+        const delay = updatePromptDelay(update.version);
+        if (delay !== 0) {
+          void update.close();
+          if (delay !== null) timer = window.setTimeout(() => void check(), delay);
+          return;
+        }
+
+        offered = update;
+        const choose = (choice: "later" | "dismiss") => {
+          rememberUpdateChoice(update.version, choice);
+          setUpdatePrompt(null);
+          offered = null;
+          void update.close();
+          if (choice === "later") timer = window.setTimeout(() => void check(), LATER_MS);
+        };
+        setUpdatePrompt({
+          text: t("update.available").replace("{version}", update.version),
+          actions: [
+            {
+              label: t("update.install"),
+              onClick: () => {
+                setUpdatePrompt(null);
+                offered = null;
+                void installUpdate(update, (status) => snack(t(`update.${status}`))).catch((err) => {
+                  console.warn("[dizako] update install failed", err);
+                  snack(t("update.failed"), "error");
+                  void update.close();
+                  if (!cancelled) timer = window.setTimeout(() => void check(), 60_000);
+                });
+              },
+            },
+            { label: t("update.later"), onClick: () => choose("later") },
+            { label: t("update.dismiss"), onClick: () => choose("dismiss") },
+          ],
+        });
+      } catch (err) {
+        console.warn("[dizako] update check failed", err);
+      }
+    };
+
+    void check();
+    return () => {
+      cancelled = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+      setUpdatePrompt(null);
+      if (offered) void offered.close();
+    };
+  }, [setUpdatePrompt, snack, t]);
 
   // In dynamic mode the accent follows the image; falls back to the chosen
   // preset until one is loaded.
