@@ -438,6 +438,9 @@ export function PreviewCanvas({
     if (splitDragRef.current) return;
     touchedRef.current = true;
     dragRef.current = { x: e.clientX, y: e.clientY, px: panRef.current.x, py: panRef.current.y };
+    if (viewRef.current) {
+      viewRef.current.style.willChange = "transform";
+    }
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
@@ -448,13 +451,33 @@ export function PreviewCanvas({
     }
     const d = dragRef.current;
     if (!d) return;
-    scheduleGesture(() => {
-      panRef.current = { x: d.px + (e.clientX - d.x), y: d.py + (e.clientY - d.y) };
-    });
+    const dx = e.clientX - d.x;
+    const dy = e.clientY - d.y;
+    panRef.current = { x: d.px + dx, y: d.py + dy };
+
+    // Move the already-painted viewport surface on the compositor while the
+    // pointer is down. Re-rasterising a stage-sized canvas for every mouse
+    // event is needlessly expensive, especially under WebKitGTK.
+    if (viewRef.current) {
+      viewRef.current.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
+    }
   };
 
-  const endDrag = () => {
-    dragRef.current = null;
+  const endDrag = (e: React.PointerEvent) => {
+    const drag = dragRef.current;
+    if (drag) {
+      const next = {
+        x: drag.px + (e.clientX - drag.x),
+        y: drag.py + (e.clientY - drag.y),
+      };
+      panRef.current = next;
+      dragRef.current = null;
+      if (viewRef.current) {
+        viewRef.current.style.transform = "";
+        viewRef.current.style.willChange = "auto";
+      }
+      setPan(next);
+    }
     splitDragRef.current = false;
   };
 
@@ -485,7 +508,6 @@ export function PreviewCanvas({
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
         onLostPointerCapture={endDrag}
-        onPointerLeave={endDrag}
         // Panning is a pointer gesture; without this WebKit also starts its own
         // image drag and the picture appears to be torn out of the window.
         onDragStart={(e) => e.preventDefault()}
