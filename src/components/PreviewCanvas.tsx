@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { IconButton } from "./primitives";
 import { IconCompare, IconFit, IconTimer, IconZoomIn, IconZoomOut } from "./Icons";
 import type { Rect } from "../dither/region";
 import type { Layer } from "../hooks/useDither";
+import { createDrawableCache, drawVisible } from "./previewDrawing";
 import { useI18n } from "../i18n";
 
 interface Props {
@@ -31,37 +32,6 @@ interface Props {
 const MIN_ZOOM = 0.05;
 const MAX_ZOOM = 32;
 
-/**
- * Copies an ImageData into an offscreen canvas we can `drawImage` from.
- *
- * These buffers are deliberately kept out of the document. An in-document
- * canvas at the image's natural size becomes a compositing layer of that size -
- * a 16 MP image is a ~64 MB surface, and WebKit simply fails to paint it,
- * leaving the stage blank while every other layer renders fine.
- *
- * Only the untouched source goes through here: dither results arrive as
- * `ImageBitmap`s from the worker and are drawn directly.
- */
-function toBuffer(
-  data: ImageData | null,
-  ref: React.MutableRefObject<HTMLCanvasElement | null>,
-) {
-  if (!data) {
-    ref.current = null;
-    return;
-  }
-  let c = ref.current;
-  if (!c) {
-    c = document.createElement("canvas");
-    ref.current = c;
-  }
-  if (c.width !== data.width || c.height !== data.height) {
-    c.width = data.width;
-    c.height = data.height;
-  }
-  c.getContext("2d")!.putImageData(data, 0, 0);
-}
-
 /** Full image size in source pixels, taken from whichever layer we have.
  *  A layer whose dimensions disagree with the original is stale output from
  *  a previous image; it must never be stretched over the new one. */
@@ -88,20 +58,10 @@ export function PreviewCanvas({
   const { t } = useI18n();
   const stageRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLCanvasElement>(null);
-  const originalBuf = useRef<HTMLCanvasElement | null>(null);
-  // Scratch uploads for the rare main-thread-fallback ImageData results.
-  const coarseBuf = useRef<HTMLCanvasElement | null>(null);
-  const fineBuf = useRef<HTMLCanvasElement | null>(null);
-
-  /** Bitmaps draw directly; raw planes go through an offscreen canvas once. */
-  function asDrawable(
-    layer: Layer,
-    slot: React.MutableRefObject<HTMLCanvasElement | null>,
-  ): CanvasImageSource {
-    if (layer instanceof ImageBitmap) return layer;
-    toBuffer(layer, slot);
-    return slot.current!;
-  }
+  const originalDrawable = useRef(createDrawableCache());
+  const coarseDrawable = useRef(createDrawableCache());
+  const fineDrawable = useRef(createDrawableCache());
+  const viewportTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -138,11 +98,14 @@ export function PreviewCanvas({
       const run = pendingGesture.current;
       pendingGesture.current = [];
       run.forEach((apply) => apply());
+      setZoom(zoomRef.current);
+      setPan(panRef.current);
     });
   }, []);
   useEffect(
     () => () => {
       if (gestureFrame.current !== undefined) cancelAnimationFrame(gestureFrame.current);
+      clearTimeout(viewportTimer.current);
     },
     [],
   );
@@ -221,36 +184,30 @@ export function PreviewCanvas({
     g.imageSmoothingEnabled = zoom < 1;
     g.imageSmoothingQuality = "high";
 
-    // A blurred shadow is one of the slowest 2D-canvas operations in WebKitGTK
-    // and panning repaints continuously, so it is skipped mid-drag.
-    g.save();
-    if (!dragRef.current && !splitDragRef.current) {
-      g.shadowColor = "rgba(0, 0, 0, 0.45)";
-      g.shadowBlur = 18;
-      g.shadowOffsetY = 4;
-    }
-    g.drawImage(asDrawable(coarse, coarseBuf), x, y, w, h);
-    g.restore();
+    // Blurred canvas shadows rasterize the entire scaled image in WebKit.
+    // Draw only the visible source rectangle, using already uploaded surfaces.
+    const paint = (image: CanvasImageSource, dx: number, dy: number, dw: number, dh: number) =>
+      drawVisible(g, image as CanvasImageSource & { width: number; height: number }, dx, dy, dw, dh, cw, ch);
+    paint(coarseDrawable.current(coarse), x, y, w, h);
 
     // The sharp pass goes over the top, aligned to the region it covers. Until
     // it lands, the coarse layer showing through is what makes a slider drag
     // feel immediate.
     if (fine) {
-      const sharp = asDrawable(fine, fineBuf);
+      const sharp = fineDrawable.current(fine);
       if (region) {
-        g.drawImage(sharp, x + region.x * zoom, y + region.y * zoom, region.width * zoom, region.height * zoom);
+        paint(sharp, x + region.x * zoom, y + region.y * zoom, region.width * zoom, region.height * zoom);
       } else {
-        g.drawImage(sharp, x, y, w, h);
+        paint(sharp, x, y, w, h);
       }
     }
 
-    const orig = originalBuf.current;
-    if (compare && orig) {
+    if (compare && original) {
       g.save();
       g.beginPath();
       g.rect(0, 0, cw * split, ch);
       g.clip();
-      g.drawImage(orig, x, y, w, h);
+      paint(originalDrawable.current(original), x, y, w, h);
       g.restore();
     }
 
@@ -259,8 +216,8 @@ export function PreviewCanvas({
     if (onViewport) {
       const vx = Math.max(0, -x / zoom);
       const vy = Math.max(0, -y / zoom);
-      const vw = Math.min(size.width - vx, cw / zoom);
-      const vh = Math.min(size.height - vy, ch / zoom);
+      const vw = Math.min(size.width, (cw - x) / zoom) - vx;
+      const vh = Math.min(size.height, (ch - y) / zoom) - vy;
       const next: Rect | null =
         vw <= 0 || vh <= 0 ? null : { x: vx, y: vy, width: vw, height: vh };
       // Quantise before comparing: sub-pixel drift during a drag would
@@ -270,10 +227,13 @@ export function PreviewCanvas({
         : "";
       if (key !== reportedRef.current) {
         reportedRef.current = key;
-        onViewport(next);
+        // Refinement is useful after navigation settles. Reporting every frame
+        // otherwise re-renders the entire algorithm stack while dragging.
+        clearTimeout(viewportTimer.current);
+        viewportTimer.current = setTimeout(() => onViewport(next), 160);
       }
     }
-  }, [zoom, pan, compare, split, region, sourceSize, baseIsStale, coarse, fine, onViewport]);
+  }, [zoom, pan, compare, split, region, sourceSize, baseIsStale, original, coarse, fine, onViewport]);
 
   const fit = useCallback(() => {
     const stage = stageRef.current;
@@ -284,14 +244,22 @@ export function PreviewCanvas({
     const ch = stage.clientHeight;
     if (cw === 0 || ch === 0) return;
     const scale = Math.min((cw - pad) / size.width, (ch - pad) / size.height, 1);
-    setZoom(Math.max(MIN_ZOOM, scale));
-    setPan({ x: 0, y: 0 });
+    zoomRef.current = Math.max(MIN_ZOOM, scale);
+    panRef.current = { x: 0, y: 0 };
+    setZoom(zoomRef.current);
+    setPan(panRef.current);
   }, [sourceSize]);
 
-  useEffect(() => {
-    toBuffer(original, originalBuf);
+  useLayoutEffect(() => {
     draw();
-  }, [original, draw]);
+  }, [draw]);
+
+  // Keep one observer for the lifetime of the stage. Re-observing on each
+  // gesture delivers another initial resize and doubles the paint work.
+  const resizeActions = useRef({ draw, fit });
+  useLayoutEffect(() => {
+    resizeActions.current = { draw, fit };
+  }, [draw, fit]);
 
   // Re-fit when a different image is loaded (dimensions change), but not on
   // every dither pass - that would fight the user's zoom while they tweak.
@@ -318,12 +286,12 @@ export function PreviewCanvas({
     const stage = stageRef.current;
     if (!stage || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(() => {
-      if (touchedRef.current) draw();
-      else fit();
+      if (touchedRef.current) resizeActions.current.draw();
+      else resizeActions.current.fit();
     });
     ro.observe(stage);
     return () => ro.disconnect();
-  }, [draw, fit]);
+  }, []);
 
   const hasImage = Boolean(coarse);
   useEffect(() => {
@@ -364,8 +332,6 @@ export function PreviewCanvas({
         x: nx - (cw - size.width * next) / 2,
         y: ny - (ch - size.height * next) / 2,
       };
-      setZoom(next);
-      setPan(panRef.current);
     },
     [sourceSize],
   );
@@ -406,7 +372,6 @@ export function PreviewCanvas({
           const p = panRef.current;
           const next = { x: p.x - dx, y: p.y - dy };
           panRef.current = next;
-          setPan(next);
         });
         return;
       }
@@ -472,7 +437,7 @@ export function PreviewCanvas({
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
     if (splitDragRef.current) return;
     touchedRef.current = true;
-    dragRef.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y };
+    dragRef.current = { x: e.clientX, y: e.clientY, px: panRef.current.x, py: panRef.current.y };
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
@@ -483,7 +448,9 @@ export function PreviewCanvas({
     }
     const d = dragRef.current;
     if (!d) return;
-    scheduleGesture(() => setPan({ x: d.px + (e.clientX - d.x), y: d.py + (e.clientY - d.y) }));
+    scheduleGesture(() => {
+      panRef.current = { x: d.px + (e.clientX - d.x), y: d.py + (e.clientY - d.y) };
+    });
   };
 
   const endDrag = () => {
@@ -499,7 +466,7 @@ export function PreviewCanvas({
       return;
     }
     const r = stage.getBoundingClientRect();
-    zoomAt(r.left + r.width / 2, r.top + r.height / 2, f);
+    scheduleGesture(() => zoomAt(r.left + r.width / 2, r.top + r.height / 2, f));
   };
 
   const size = sourceSize();
@@ -516,6 +483,8 @@ export function PreviewCanvas({
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onLostPointerCapture={endDrag}
         onPointerLeave={endDrag}
         // Panning is a pointer gesture; without this WebKit also starts its own
         // image drag and the picture appears to be torn out of the window.
@@ -592,7 +561,9 @@ export function PreviewCanvas({
                 setIsZoomFocused(false);
                 const parsed = parseInt(zoomInput.replace(/[^0-9]/g, ''), 10);
                 if (!isNaN(parsed)) {
-                  setZoom(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, parsed / 100)));
+                  touchedRef.current = true;
+                  zoomRef.current = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, parsed / 100));
+                  setZoom(zoomRef.current);
                 }
               }}
               onChange={(e) => setZoomInput(e.target.value)}

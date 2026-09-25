@@ -4,7 +4,7 @@ import type {
   WorkerResponse,
 } from "../dither/worker";
 import { loadWasmEngine } from "../dither/engine";
-import { cropImage, regionFor, sameRect, type Rect } from "../dither/region";
+import { cropImage, regionFor, coversRect, type Rect } from "../dither/region";
 import type { Settings } from "../dither/types";
 
 /** A finished pass: a ready-to-draw bitmap from the worker, or raw pixels
@@ -556,7 +556,12 @@ export function useDither(
   useEffect(() => {
     if (!source || busy) return;
     const next = regionFor(viewport, source.width, source.height, settings);
-    if (sameRect(next, region)) return;
+    // A finished full-image pass already covers every zoom level. Re-running
+    // the whole algorithm stack just to navigate that result wastes work.
+    if (fine && coversRect(region, next)) return;
+    const running = inflightRef.current?.job;
+    if (running?.stage === "fine" && running.sourceTag === source &&
+      running.settings === settings && coversRect(running.region, next)) return;
 
     const t = window.setTimeout(() => {
       const job = fineJobFor(source, settings, viewport);
@@ -567,7 +572,7 @@ export function useDither(
     }, 160);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewport, source, busy]);
+  }, [viewport, source, settings, busy, fine, region]);
 
   /**
    * Full-resolution export through the same pipeline, off the main thread.

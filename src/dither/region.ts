@@ -73,6 +73,16 @@ export function sameRect(a: Rect | null, b: Rect | null): boolean {
   return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 }
 
+/** Null represents the whole image. A cached fine pass remains valid while
+ * it contains the newly requested region (including its diffusion margin). */
+export function coversRect(available: Rect | null, requested: Rect | null): boolean {
+  if (!available) return true;
+  if (!requested) return false;
+  return available.x <= requested.x && available.y <= requested.y &&
+    available.x + available.width >= requested.x + requested.width &&
+    available.y + available.height >= requested.y + requested.height;
+}
+
 /** Copies a sub-rectangle out of an ImageData without touching a canvas. */
 export function cropImage(src: ImageData, r: Rect): ImageData {
   const out = new Uint8ClampedArray(r.width * r.height * 4);

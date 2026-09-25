@@ -145,7 +145,8 @@ async function handleRender(req: RenderRequest) {
   const out = new ImageData(new Uint8ClampedArray(bytes), dims.w, dims.h);
 
   const payload = await makePayload(out);
-  post({ type: "result", id: req.id, stage: req.stage, ms: performance.now() - t0, ...payload });
+  const transfer = payload.bitmap ? [payload.bitmap] : payload.buffer ? [payload.buffer] : [];
+  post({ type: "result", id: req.id, stage: req.stage, ms: performance.now() - t0, ...payload }, transfer);
 }
 
 async function handleExport(req: ExportRequest) {
