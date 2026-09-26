@@ -55,7 +55,8 @@ export interface AlgorithmLayer {
     "threshold" | "noiseAmount" | "cellSize" | "screenAngle" | "noiseScale" |
     "riemersmaQueue" | "riemersmaDecay" | "dotClassSize" | "ominoDirection" |
     "ominoErrorStrength" | "ominoAcross" | "ominoAside" | "ominoPhase" |
-    "ominoColorCount" | "jpegDamage"
+    "ominoColorCount" | "jpegCellSize" | "jpegDamage" | "jpegErrorRate" |
+    "jpegErrorDensity" | "jpegErrorAmplitude" | "jpegErrorCoherence"
   >>;
 }
 
@@ -89,7 +90,12 @@ export type ParamKey =
   | "riemersmaDecay"
   | "dotClassSize"
   | "omino"
-  | "jpegDamage";
+  | "jpegCellSize"
+  | "jpegDamage"
+  | "jpegErrorRate"
+  | "jpegErrorDensity"
+  | "jpegErrorAmplitude"
+  | "jpegErrorCoherence";
 
 /**
  * One colour in the palette stack.
@@ -179,7 +185,16 @@ export interface Settings {
   ominoPhase: number;
   /** How many of the palette layers take part, 1..12. */
   ominoColorCount: number;
+  jpegCellSize: number;
   jpegDamage: number;
+  /** Average error bursts per JPEG cell. */
+  jpegErrorRate: number;
+  /** Fraction of cells that receive one or more error bursts. */
+  jpegErrorDensity: number;
+  /** Strength of channel-data loss, 0..4. */
+  jpegErrorAmplitude: number;
+  /** Groups damaged cells together in larger clusters, 0..1. */
+  jpegErrorCoherence: number;
 
   // --- tone ---
   invert: boolean;
@@ -254,7 +269,12 @@ export const DEFAULT_SETTINGS: Settings = {
   ominoAside: 0.25,
   ominoPhase: 0,
   ominoColorCount: 6,
+  jpegCellSize: 8,
   jpegDamage: 0.01,
+  jpegErrorRate: 0,
+  jpegErrorDensity: 0.75,
+  jpegErrorAmplitude: 1,
+  jpegErrorCoherence: 0,
 
   invert: false,
   grayscale: false,
@@ -486,7 +506,14 @@ export const ALGORITHMS: AlgorithmMeta[] = [
     id: "jpeg-sort",
     name: "JPEG sort",
     family: "experimental",
-    blurb: "Repeated JPEG generation loss, from a whisper of damage to total mush.",
-    params: ["jpegDamage"],
+    blurb: "JPEG cell compression with repeatable data-loss glitches.",
+    params: [
+      "jpegCellSize",
+      "jpegDamage",
+      "jpegErrorRate",
+      "jpegErrorDensity",
+      "jpegErrorAmplitude",
+      "jpegErrorCoherence",
+    ],
   },
 ];

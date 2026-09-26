@@ -46,7 +46,12 @@ pub struct AlgorithmParams {
     pub omino_aside: Option<f64>,
     pub omino_phase: Option<f64>,
     pub omino_color_count: Option<f64>,
+    pub jpeg_cell_size: Option<f64>,
     pub jpeg_damage: Option<f64>,
+    pub jpeg_error_rate: Option<f64>,
+    pub jpeg_error_density: Option<f64>,
+    pub jpeg_error_amplitude: Option<f64>,
+    pub jpeg_error_coherence: Option<f64>,
 }
 
 impl AlgorithmParams {
@@ -57,7 +62,8 @@ impl AlgorithmParams {
         copy!(strength, serpentine, jitter, error_clamp, bayer_size, threshold,
             noise_amount, cell_size, screen_angle, noise_scale, riemersma_queue,
             riemersma_decay, dot_class_size, omino_error_strength, omino_across,
-            omino_aside, omino_phase, omino_color_count, jpeg_damage);
+            omino_aside, omino_phase, omino_color_count, jpeg_cell_size, jpeg_damage,
+            jpeg_error_rate, jpeg_error_density, jpeg_error_amplitude, jpeg_error_coherence);
         if let Some(value) = &self.omino_direction { settings.omino_direction = value.clone(); }
     }
 }
@@ -144,8 +150,18 @@ pub struct Settings {
     pub omino_phase: f64,
     #[serde(default)]
     pub omino_color_count: f64,
+    #[serde(default = "default_jpeg_cell_size")]
+    pub jpeg_cell_size: f64,
     #[serde(default)]
     pub jpeg_damage: f64,
+    #[serde(default)]
+    pub jpeg_error_rate: f64,
+    #[serde(default = "default_jpeg_error_density")]
+    pub jpeg_error_density: f64,
+    #[serde(default = "default_jpeg_error_amplitude")]
+    pub jpeg_error_amplitude: f64,
+    #[serde(default)]
+    pub jpeg_error_coherence: f64,
 
     // --- tone ---
     #[serde(default)]
@@ -178,6 +194,10 @@ pub struct Settings {
     pub pixel_scale: f64,
 }
 
+fn default_jpeg_cell_size() -> f64 { 8.0 }
+fn default_jpeg_error_density() -> f64 { 0.75 }
+fn default_jpeg_error_amplitude() -> f64 { 1.0 }
+
 impl Settings {
     /// Numeric defaults equal the TS `DEFAULT_SETTINGS`.
     pub fn with_defaults() -> Self {
@@ -206,7 +226,12 @@ impl Settings {
             omino_aside: 0.25,
             omino_phase: 0.0,
             omino_color_count: 6.0,
+            jpeg_cell_size: 8.0,
             jpeg_damage: 0.01,
+            jpeg_error_rate: 0.0,
+            jpeg_error_density: 0.75,
+            jpeg_error_amplitude: 1.0,
+            jpeg_error_coherence: 0.0,
             invert: false,
             grayscale: false,
             brightness: 0.0,

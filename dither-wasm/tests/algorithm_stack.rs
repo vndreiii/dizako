@@ -51,3 +51,37 @@ fn pass_controls_override_global_controls() {
     assert_ne!(low, high);
     assert_eq!(settings.threshold, 128.0);
 }
+
+#[test]
+fn jpeg_error_controls_apply_repeatable_pixel_data_loss() {
+    let pixels: Vec<u8> = (0..32).flat_map(|y| (0..32).flat_map(move |x| {
+        [((x * 8) as u8), ((y * 8) as u8), (((x + y) * 4) as u8), 255]
+    })).collect();
+    let mut settings = Settings::with_defaults();
+    settings.algorithm = "jpeg-sort".into();
+    settings.jpeg_damage = 0.0;
+    settings.jpeg_error_rate = 0.0;
+    let clean = dither(&pixels, 32, 32, &settings);
+    settings.jpeg_error_rate = 3.0;
+    settings.jpeg_error_density = 1.0;
+    settings.jpeg_error_amplitude = 4.0;
+    let damaged = dither(&pixels, 32, 32, &settings);
+    assert_ne!(damaged, clean, "JPEG errors must alter rendered pixel data");
+    assert_eq!(damaged, dither(&pixels, 32, 32, &settings), "damage must be repeatable");
+    settings.jpeg_error_density = 0.0;
+    assert_eq!(dither(&pixels, 32, 32, &settings), clean, "zero density disables damage");
+}
+
+#[test]
+fn jpeg_cell_size_can_be_overridden_per_algorithm_layer() {
+    let pixels: Vec<u8> = (0..32).flat_map(|y| (0..32).flat_map(move |x| {
+        [((x * 8) as u8), ((y * 8) as u8), 128, 255]
+    })).collect();
+    let mut settings = Settings::with_defaults();
+    settings.algorithm_layers = vec![layer("jpeg", "jpeg-sort", 1.0)];
+    settings.algorithm_layers[0].params.jpeg_cell_size = Some(2.0);
+    let small = dither(&pixels, 32, 32, &settings);
+    settings.algorithm_layers[0].params.jpeg_cell_size = Some(24.0);
+    let large = dither(&pixels, 32, 32, &settings);
+    assert_ne!(small, large);
+}

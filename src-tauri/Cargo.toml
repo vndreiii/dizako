@@ -1,6 +1,6 @@
 [package]
 name = "dizako"
-version = "2.3.4"
+version = "2.3.5"
 description = "A Material 3 Expressive dithering studio"
 authors = ["vndreiii"]
 edition = "2021"

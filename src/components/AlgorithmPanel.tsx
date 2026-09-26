@@ -50,7 +50,12 @@ const RESET_KEYS: Record<ParamKey, Array<keyof Settings>> = {
     "ominoPhase",
     "ominoColorCount",
   ],
+  jpegCellSize: ["jpegCellSize"],
   jpegDamage: ["jpegDamage"],
+  jpegErrorRate: ["jpegErrorRate"],
+  jpegErrorDensity: ["jpegErrorDensity"],
+  jpegErrorAmplitude: ["jpegErrorAmplitude"],
+  jpegErrorCoherence: ["jpegErrorCoherence"],
 };
 
 function AlgorithmPanelImpl({ settings, patch }: Props) {
@@ -355,15 +360,57 @@ function AlgorithmPanelImpl({ settings, patch }: Props) {
             </>
           )}
 
-          {has("jpegDamage") && (
-            <Slider
-              label={t("param.jpegDamage")}
-              value={Math.round((Math.log10(Math.max(controlSettings.jpegDamage, 0.01)) + 2) * 100)}
-              min={0}
-              max={800}
-              display={controlSettings.jpegDamage < 1 ? controlSettings.jpegDamage.toFixed(2) : `${Math.round(controlSettings.jpegDamage).toLocaleString()}×`}
-              onChange={(v) => patchParams({ jpegDamage: Math.pow(10, v / 100 - 2) })}
-            />
+          {has("jpegCellSize") && (
+            <>
+              <Slider
+                label={t("param.jpegCellSize")}
+                value={controlSettings.jpegCellSize}
+                min={2}
+                max={128}
+                display={`${controlSettings.jpegCellSize}px`}
+                onChange={(v) => patchParams({ jpegCellSize: v })}
+              />
+              <Slider
+                label={t("param.jpegDamage")}
+                value={Math.round((Math.log10(Math.max(controlSettings.jpegDamage, 0.01)) + 2) * 100)}
+                min={0}
+                max={800}
+                display={controlSettings.jpegDamage < 1 ? controlSettings.jpegDamage.toFixed(2) : `${Math.round(controlSettings.jpegDamage).toLocaleString()}×`}
+                onChange={(v) => patchParams({ jpegDamage: Math.pow(10, v / 100 - 2) })}
+              />
+              <Slider
+                label={t("param.jpegErrorRate")}
+                value={Math.round(controlSettings.jpegErrorRate * 10)}
+                min={0}
+                max={80}
+                display={`${(controlSettings.jpegErrorRate).toFixed(1)} / cell`}
+                onChange={(v) => patchParams({ jpegErrorRate: v / 10 })}
+              />
+              <Slider
+                label={t("param.jpegErrorDensity")}
+                value={Math.round(controlSettings.jpegErrorDensity * 100)}
+                min={0}
+                max={100}
+                display={`${Math.round(controlSettings.jpegErrorDensity * 100)}%`}
+                onChange={(v) => patchParams({ jpegErrorDensity: v / 100 })}
+              />
+              <Slider
+                label={t("param.jpegErrorAmplitude")}
+                value={Math.round(controlSettings.jpegErrorAmplitude * 100)}
+                min={0}
+                max={400}
+                display={`${Math.round(controlSettings.jpegErrorAmplitude * 100)}%`}
+                onChange={(v) => patchParams({ jpegErrorAmplitude: v / 100 })}
+              />
+              <Slider
+                label={t("param.jpegErrorCoherence")}
+                value={Math.round(controlSettings.jpegErrorCoherence * 100)}
+                min={0}
+                max={100}
+                display={`${Math.round(controlSettings.jpegErrorCoherence * 100)}%`}
+                onChange={(v) => patchParams({ jpegErrorCoherence: v / 100 })}
+              />
+            </>
           )}
 
           {has("serpentine") && (

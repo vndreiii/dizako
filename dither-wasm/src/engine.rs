@@ -173,15 +173,11 @@ fn ordered_pass(c: &mut Ctx, mask: impl Fn(usize, usize) -> f64) {
     }
 }
 
-/// A deterministic, lightweight simulation of repeated JPEG saves. It keeps
-/// the characteristic 8x8 block quantisation and chroma smearing while making
-/// the control logarithmic: 0.01 is almost invisible, 1_000 and above become
-/// progressively destructive without actually encoding hundreds of thousands
-/// of JPEG files.
+/// Block quantisation followed by deterministic channel-data loss bursts.
 fn jpeg_sort_pass(c: &mut Ctx) {
     let (w, h) = (c.w, c.h);
     let log = (1.0 + c.s.jpeg_damage.max(0.0)).log10();
-    let block = (8.0 + log * 4.0).round().clamp(8.0, 32.0) as usize;
+    let block = c.s.jpeg_cell_size.round().clamp(2.0, 128.0) as usize;
     let quant = (1.0 + log * 8.0).max(1.0);
     let retention = 1.0 / (1.0 + log * 0.7);
     let bw = (w + block - 1) / block;
@@ -216,7 +212,54 @@ fn jpeg_sort_pass(c: &mut Ctx) {
             put(c, y * w + x, (c.match_fn)(c.p, rgb[0], rgb[1], rgb[2]));
         }
     }
+
+    let density = c.s.jpeg_error_density.clamp(0.0, 1.0);
+    let rate = c.s.jpeg_error_rate.clamp(0.0, 8.0);
+    let amplitude = c.s.jpeg_error_amplitude.clamp(0.0, 4.0);
+    let coherence = c.s.jpeg_error_coherence.clamp(0.0, 1.0);
+    if density <= 0.0 || rate <= 0.0 || amplitude <= 0.0 { return; }
+    let cluster = 1 + (coherence * 15.0).round() as usize;
+    let rw = block.min(w);
+    for cy in 0..bh {
+        for cx in 0..bw {
+            let cell_hash = jpeg_hash((cx / cluster) as u32, (cy / cluster) as u32, 0);
+            if jpeg_unit(cell_hash) >= density { continue; }
+            let whole = rate.floor() as usize;
+            let extra = usize::from(jpeg_unit(jpeg_hash(cx as u32, cy as u32, 1)) < rate.fract());
+            for event in 0..whole + extra {
+                let hash = jpeg_hash(cx as u32, cy as u32, event as u32 + 2);
+                let x0 = cx * block;
+                let y0 = cy * block;
+                let cell_w = (x0 + block).min(w) - x0;
+                let cell_h = (y0 + block).min(h) - y0;
+                let y = y0 + (hash as usize % cell_h);
+                let start = x0 + ((hash >> 8) as usize % cell_w);
+                let max_span = ((amplitude * rw as f64).round() as usize).clamp(1, rw);
+                let span = 1 + ((hash >> 16) as usize % max_span);
+                let channels = 1 + ((hash >> 24) as usize % 3);
+                let source_x = start.saturating_sub(1);
+                for x in start..(start + span).min(x0 + cell_w) {
+                    let dst = (y * w + x) * 4;
+                    let src = (y * w + source_x) * 4;
+                    for ch in 0..channels { c.out[dst + ch] = c.out[src + ch]; }
+                }
+            }
+        }
+    }
 }
+
+#[inline]
+fn jpeg_hash(x: u32, y: u32, seed: u32) -> u32 {
+    let mut value = x.wrapping_mul(0x9E37_79B9) ^ y.wrapping_mul(0x85EB_CA6B) ^ seed.wrapping_mul(0xC2B2_AE35);
+    value ^= value >> 16;
+    value = value.wrapping_mul(0x7FEB_352D);
+    value ^= value >> 15;
+    value = value.wrapping_mul(0x846C_A68B);
+    value ^ (value >> 16)
+}
+
+#[inline]
+fn jpeg_unit(value: u32) -> f64 { f64::from(value) / f64::from(u32::MAX) }
 
 fn threshold_pass(c: &mut Ctx, noise: f64) {
     let (w, h) = (c.w, c.h);
