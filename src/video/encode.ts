@@ -274,6 +274,10 @@ export async function captureToVideo(frames: Blob[], options: CaptureOptions): P
     } catch {
       // Already torn down; nothing to salvage.
     }
+    // Nobody awaits `finished` on this path, and the stop above can still make
+    // it settle either way; swallow it so a cancellation is not also reported
+    // as an unhandled rejection.
+    finished.catch(() => {});
     throw err;
   } finally {
     for (const index of [...decoded.keys()]) release(index);

@@ -90,6 +90,10 @@ export function VideoExportDialog({
   const tooBig = working > MEMORY_HARD_LIMIT;
   const heavy = !tooBig && working > MEMORY_WARN_LIMIT;
   const running = progress !== null;
+  // Starting a job in a format this host cannot write would only produce an
+  // error dialog a second later; the reason is already on screen under the
+  // picker, so withhold the button instead.
+  const blocked = tooBig || !selected.available;
 
   const start = () =>
     onStart({
@@ -238,7 +242,7 @@ export function VideoExportDialog({
               <Button variant="outlined" onClick={onClose}>
                 {t("videoExport.close")}
               </Button>
-              <Button variant="filled" icon={<IconFilmExport />} disabled={tooBig} onClick={start}>
+              <Button variant="filled" icon={<IconFilmExport />} disabled={blocked} onClick={start}>
                 {t("videoExport.start")}
               </Button>
             </footer>
