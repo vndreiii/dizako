@@ -118,15 +118,27 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
   const [dialogs, setDialogs] = useState<PendingDialog[]>([]);
   const seq = useRef(0);
   const timers = useRef(new Map<number, number>());
+  /** key → toast id, so a keyed repeat refreshes the row it already owns. */
+  const keyed = useRef(new Map<string, number>());
 
-  const dismiss = useCallback((id: number) => {
+  const forget = useCallback((id: number) => {
     const timer = timers.current.get(id);
     if (timer !== undefined) {
       window.clearTimeout(timer);
       timers.current.delete(id);
     }
-    setToasts((q) => q.filter((m) => m.id !== id));
+    for (const [key, value] of keyed.current) {
+      if (value === id) keyed.current.delete(key);
+    }
   }, []);
+
+  const dismiss = useCallback(
+    (id: number) => {
+      forget(id);
+      setToasts((q) => q.filter((m) => m.id !== id));
+    },
+    [forget],
+  );
 
   const arm = useCallback(
     (id: number, duration: number) => {
@@ -136,41 +148,52 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
       timers.current.set(
         id,
         window.setTimeout(() => {
-          timers.current.delete(id);
+          forget(id);
           setToasts((q) => q.filter((m) => m.id !== id));
         }, duration),
       );
     },
-    [],
+    [forget],
   );
 
   const toast = useCallback(
     (text: string, options: ToastOptions = {}): number => {
       const tone = options.tone ?? "neutral";
       const duration = options.duration ?? (tone === "error" ? ERROR_DURATION : DEFAULT_DURATION);
-      let id = -1;
+
+      // The id is resolved here rather than inside the state updater. React
+      // only runs an updater eagerly while the queue is empty, so deriving the
+      // id in there worked for a lone toast and silently produced -1 for the
+      // next one - whose dismissal timer then matched nothing and left it on
+      // screen for good.
+      const existing = options.key ? keyed.current.get(options.key) : undefined;
+      const id = existing ?? seq.current++;
+      if (options.key) keyed.current.set(options.key, id);
+
       setToasts((q) => {
         // A keyed repeat refreshes the existing line and bumps its counter, so
         // a failure that recurs per frame stays one row.
-        if (options.key) {
-          const found = q.find((m) => m.key === options.key);
-          if (found) {
-            id = found.id;
-            return q.map((m) =>
-              m.id === found.id ? { ...m, ...options, text, tone, count: m.count + 1 } : m,
-            );
-          }
+        const found = q.find((m) => m.id === id);
+        if (found) {
+          return q.map((m) => (m.id === id ? { ...m, ...options, text, tone, count: m.count + 1 } : m));
         }
-        id = seq.current++;
         const next = [...q, { ...options, id, text, tone, count: 1 }];
-        return next.length > MAX_VISIBLE ? next.slice(next.length - MAX_VISIBLE) : next;
+        // Dropping the oldest keeps the host from becoming a wall nobody reads.
+        // Releasing its timer is deferred so the updater itself stays pure -
+        // React may run it more than once, and cleanup is not something to do
+        // twice mid-render.
+        if (next.length > MAX_VISIBLE) {
+          const dropped = next.slice(0, next.length - MAX_VISIBLE).map((m) => m.id);
+          queueMicrotask(() => dropped.forEach(forget));
+          return next.slice(next.length - MAX_VISIBLE);
+        }
+        return next;
       });
-      // Arming after the state update keeps the timer keyed to the real id,
-      // including the refreshed-repeat case.
-      queueMicrotask(() => arm(id, duration));
+
+      arm(id, duration);
       return id;
     },
-    [arm],
+    [arm, forget],
   );
 
   const dialog = useCallback((request: DialogRequest): Promise<string> => {
