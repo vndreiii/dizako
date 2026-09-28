@@ -36,3 +36,7 @@ TRANSLATIONS_TODO_FILL.json
 # Build artifacts
 release-win/
 
+
+# Local-only planning notes and scratch build dirs
+FUTURE_IDEAS.md
+cli/

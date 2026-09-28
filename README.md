@@ -4,9 +4,9 @@
 
 # Dizako
 
-**A dithering studio.** Load an image, pick from 29 algorithms and 130
-palettes, and decide which colours land in the shadows and which in the
-highlights.
+**A dithering studio.** Load an image *or a video*, pick from 30 algorithms
+and 130 palettes, and decide which colours land in the shadows and which in
+the highlights.
 
 Built with Tauri, React, and Material 3. Everything runs locally. No uploads,
 no tracking.
@@ -43,9 +43,9 @@ no tracking.
 
 ## What it does
 
-Open an image, choose an algorithm and a palette, tune until it looks right,
-then export a PNG. Sliders re-render live. A compare wipe shows original vs
-dithered.
+Open an image or a video, choose an algorithm and a palette, tune until it
+looks right, then export. Sliders re-render live. A compare wipe shows original
+against dithered.
 
 | Area | Includes |
 | --- | --- |
@@ -54,6 +54,34 @@ dithered.
 | **Threshold / experimental** | Hard threshold, random noise, Riemersma, dot diffusion, Omino-like |
 | **Palette layers** | Colours stacked by tonal position, so you choose what goes where |
 | **Image controls** | Exposure, contrast, gamma, saturation, hue, blur, sharpen (before dither) |
+| **Video** | Scrub, play and dither footage frame by frame; export MP4, WebM or a PNG sequence |
+
+## Video
+
+Drop in an MP4, MOV, WebM or MKV and the whole studio applies to it. The
+transport under the canvas scrubs and plays; playback dithers every displayed
+frame live at preview resolution and snaps back to full detail the moment you
+stop. The two handles on the scrub track set the export range.
+
+Export renders in two phases. Every frame in range is dithered through a pool
+of workers - one per core, so a clip renders several times faster than a single
+pass could - and kept as a lossless PNG. The frames are then pushed into the
+system's own encoder on a fixed clock, so the result runs at exactly the source
+frame rate rather than at whatever speed the render managed.
+
+| Format | Notes |
+| --- | --- |
+| **MP4** | H.264 via the host encoder. The most portable result; offered when the system supports it |
+| **WebM** | VP8/VP9. Open codecs, slightly larger files |
+| **PNG frames** | One lossless PNG per frame in a folder. Always available, and the right input for ffmpeg or a compositor |
+
+Which of the three you get is decided by what the machine can actually do, not
+assumed - the export dialog lists what is available, says why anything is not,
+and shows the frame count, working-set size and estimated file size before you
+commit to the job. Exported video is silent; audio is not carried through.
+
+Limits: 20 minutes and 4 MP per frame. Longer or larger sources are refused
+with an explanation rather than attempted and abandoned.
 
 ## Building
 
@@ -121,6 +149,23 @@ pnpm tauri build          # bundle into src-tauri/target/release/bundle
 ```
 
 Frontend only: `pnpm dev` / `pnpm build`.
+
+### Tests
+
+```bash
+pnpm test                 # golden parity: the wasm engine against the committed manifest
+pnpm lint
+```
+
+`tools/smoke.py` drives the running dev server through a real browser - image
+import, video import, playback, canvas navigation, a full video export, and the
+error dialog - and checks the canvas actually painted. It needs Playwright and a
+Chromium binary and is not part of CI:
+
+```bash
+pnpm dev &
+python tools/smoke.py http://localhost:1420/
+```
 
 > **Building the AppImage by hand?** Set `NO_STRIP=1`. `bundle.targets` is `"all"`, so a bare `pnpm tauri build` on Linux will try the AppImage, and linuxdeploy ships an old `strip` that chokes on the `.relr.dyn` sections in current system libraries. Without it the bundle fails with an unhelpful `failed to run linuxdeploy`. `./build-all.sh` already sets this for you.
 

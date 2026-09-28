@@ -27,10 +27,14 @@ interface Props {
   error?: string | null;
   /** Reports the visible part of the image, in source pixels. */
   onViewport?: (r: Rect | null) => void;
+  /** Extra chrome docked under the stage, e.g. the video transport. */
+  footer?: React.ReactNode;
 }
 
 const MIN_ZOOM = 0.05;
 const MAX_ZOOM = 32;
+/** The zoom readout is React state; this is how often it may re-render. */
+const HUD_SYNC_MS = 120;
 
 /** Full image size in source pixels, taken from whichever layer we have.
  *  A layer whose dimensions disagree with the original is stale output from
@@ -54,17 +58,34 @@ export function PreviewCanvas({
   backendLabel = "worker",
   error = null,
   onViewport,
+  footer,
 }: Props) {
   const { t } = useI18n();
   const stageRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLCanvasElement>(null);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const originalDrawable = useRef(createDrawableCache());
   const coarseDrawable = useRef(createDrawableCache());
   const fineDrawable = useRef(createDrawableCache());
   const viewportTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
+  /**
+   * The view transform lives in refs, not in state.
+   *
+   * A wheel or pinch produces events faster than the display refreshes. When
+   * each one went through `setState` the sequence per frame was
+   * event → commit → effect → paint, several times over, and React's
+   * reconciliation was costing more than the drawing. Now the transform is
+   * mutated directly and one rAF paints the result; React only ever learns the
+   * zoom level so it can print it, on a timer. Navigation stops being a render
+   * concern at all, which is what makes it feel attached to the finger.
+   */
+  const zoomRef = useRef(1);
+  const panRef = useRef({ x: 0, y: 0 });
+  const [hudZoom, setHudZoom] = useState(1);
+  const hudTimer = useRef<number | undefined>(undefined);
+  const paintFrame = useRef<number | undefined>(undefined);
+
   const [compare, setCompare] = useState(false);
   const [split, setSplit] = useState(0.5);
   const [zoomInput, setZoomInput] = useState("");
@@ -74,47 +95,24 @@ export function PreviewCanvas({
   /** Until the user zooms or pans, the view keeps re-fitting as the stage resizes. */
   const touchedRef = useRef(false);
   const reportedRef = useRef<string>("");
-  const zoomRef = useRef(zoom);
-  const panRef = useRef(pan);
   const hasImageRef = useRef(false);
-  useEffect(() => {
-    zoomRef.current = zoom;
-    panRef.current = pan;
-  }, [zoom, pan]);
 
   /**
-   * Pointer and wheel events land faster than frames; applying them directly
-   * makes React commit several times per frame on high-frequency mice. The
-   * one rAF applies them in order. Pinch and wheel deltas are incremental, so
-   * dropping intermediate events loses most of a fast gesture.
+   * Everything `paint` reads, bound at render time.
+   *
+   * Keeping the scene in a ref is what lets `paint` be a stable function: it
+   * never needs re-creating when a new pass lands, so no listener and no rAF
+   * callback ever holds a stale closure.
    */
-  const pendingGesture = useRef<Array<() => void>>([]);
-  const gestureFrame = useRef<number | undefined>(undefined);
-  const scheduleGesture = useCallback((apply: () => void) => {
-    pendingGesture.current.push(apply);
-    if (gestureFrame.current !== undefined) return;
-    gestureFrame.current = requestAnimationFrame(() => {
-      gestureFrame.current = undefined;
-      const run = pendingGesture.current;
-      pendingGesture.current = [];
-      run.forEach((apply) => apply());
-      setZoom(zoomRef.current);
-      setPan(panRef.current);
-    });
-  }, []);
-  useEffect(
-    () => () => {
-      if (gestureFrame.current !== undefined) cancelAnimationFrame(gestureFrame.current);
-      clearTimeout(viewportTimer.current);
-    },
-    [],
-  );
+  const scene = useRef({ original, coarse, coarseScale, fine, region, compare, split, onViewport });
+  // eslint-disable-next-line react-hooks/refs -- intentional render-time binding
+  scene.current = { original, coarse, coarseScale, fine, region, compare, split, onViewport };
 
-  /** Full image size in source pixels, taken from whichever layer we have. */
   const sourceSize = useCallback(() => {
-    if (original) return { width: original.width, height: original.height };
-    return layerSize(coarse, coarseScale);
-  }, [original, coarse, coarseScale]);
+    const s = scene.current;
+    if (s.original) return { width: s.original.width, height: s.original.height };
+    return layerSize(s.coarse, s.coarseScale);
+  }, []);
 
   /**
    * True when the base layer belongs to a different image than `original`.
@@ -127,25 +125,30 @@ export function PreviewCanvas({
    * so they are exempt; cross-image ghosts cannot reach them anyway because
    * the hook tags results with their source.
    */
-  const baseIsStale = useCallback(
-    (layer: Layer | null) => {
-      if (!layer || !original) return false;
-      if (coarseScale === 1) {
-        return layer.width !== original.width || layer.height !== original.height;
-      }
-      const ew = Math.round(original.width / coarseScale);
-      const eh = Math.round(original.height / coarseScale);
-      return Math.abs(layer.width - ew) > 1 || Math.abs(layer.height - eh) > 1;
-    },
-    [original, coarseScale],
-  );
+  const baseIsStale = useCallback((layer: Layer | null) => {
+    const { original: src, coarseScale: cs } = scene.current;
+    if (!layer || !src) return false;
+    if (cs === 1) return layer.width !== src.width || layer.height !== src.height;
+    const ew = Math.round(src.width / cs);
+    const eh = Math.round(src.height / cs);
+    return Math.abs(layer.width - ew) > 1 || Math.abs(layer.height - eh) > 1;
+  }, []);
+
+  /** Mirrors the ref-held zoom into state at most every HUD_SYNC_MS. */
+  const syncHud = useCallback(() => {
+    if (hudTimer.current !== undefined) return;
+    hudTimer.current = window.setTimeout(() => {
+      hudTimer.current = undefined;
+      setHudZoom(zoomRef.current);
+    }, HUD_SYNC_MS);
+  }, []);
 
   /**
    * Paints the visible region only. The canvas is always exactly the size of
    * the stage, so zoom and pan are just draw parameters - no oversized element
    * and no oversized compositing layer, at any zoom level.
    */
-  const draw = useCallback(() => {
+  const paint = useCallback(() => {
     const view = viewRef.current;
     const stage = stageRef.current;
     if (!view || !stage) return;
@@ -160,19 +163,35 @@ export function PreviewCanvas({
     if (view.width !== bw || view.height !== bh) {
       view.width = bw;
       view.height = bh;
+      // Resizing the backing store resets context state, so the cached context
+      // has to be re-configured rather than merely reused.
+      ctxRef.current = null;
     }
-    view.style.width = `${cw}px`;
-    view.style.height = `${ch}px`;
+    // Style size is set once per size change; assigning it every frame forced a
+    // style recalculation on the stage for no visible benefit.
+    if (view.style.width !== `${cw}px`) view.style.width = `${cw}px`;
+    if (view.style.height !== `${ch}px`) view.style.height = `${ch}px`;
 
-    const g = view.getContext("2d");
+    let g = ctxRef.current;
+    if (!g) {
+      // `desynchronized` lets WebKit skip a compositor round-trip per frame,
+      // which is exactly the latency a pan gesture is judged on.
+      g = view.getContext("2d", { alpha: true, desynchronized: true }) as CanvasRenderingContext2D | null;
+      ctxRef.current = g;
+    }
     if (!g) return;
+
+    const s = scene.current;
+    const zoom = zoomRef.current;
+    const pan = panRef.current;
+
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, cw, ch);
 
     const size = sourceSize();
     // A base layer from the previous image would render stretched into this
     // one's aspect ratio; drop stale layers instead of drawing them.
-    if (!size || !coarse || baseIsStale(coarse)) return;
+    if (!size || !s.coarse || baseIsStale(s.coarse)) return;
 
     const w = size.width * zoom;
     const h = size.height * zoom;
@@ -186,40 +205,39 @@ export function PreviewCanvas({
 
     // Blurred canvas shadows rasterize the entire scaled image in WebKit.
     // Draw only the visible source rectangle, using already uploaded surfaces.
-    const paint = (image: CanvasImageSource, dx: number, dy: number, dw: number, dh: number) =>
-      drawVisible(g, image as CanvasImageSource & { width: number; height: number }, dx, dy, dw, dh, cw, ch);
-    paint(coarseDrawable.current(coarse), x, y, w, h);
+    const draw = (image: CanvasImageSource, dx: number, dy: number, dw: number, dh: number) =>
+      drawVisible(g!, image as CanvasImageSource & { width: number; height: number }, dx, dy, dw, dh, cw, ch);
+    draw(coarseDrawable.current(s.coarse), x, y, w, h);
 
     // The sharp pass goes over the top, aligned to the region it covers. Until
     // it lands, the coarse layer showing through is what makes a slider drag
     // feel immediate.
-    if (fine) {
-      const sharp = fineDrawable.current(fine);
-      if (region) {
-        paint(sharp, x + region.x * zoom, y + region.y * zoom, region.width * zoom, region.height * zoom);
+    if (s.fine) {
+      const sharp = fineDrawable.current(s.fine);
+      if (s.region) {
+        draw(sharp, x + s.region.x * zoom, y + s.region.y * zoom, s.region.width * zoom, s.region.height * zoom);
       } else {
-        paint(sharp, x, y, w, h);
+        draw(sharp, x, y, w, h);
       }
     }
 
-    if (compare && original) {
+    if (s.compare && s.original) {
       g.save();
       g.beginPath();
-      g.rect(0, 0, cw * split, ch);
+      g.rect(0, 0, cw * s.split, ch);
       g.clip();
-      paint(originalDrawable.current(original), x, y, w, h);
+      draw(originalDrawable.current(s.original), x, y, w, h);
       g.restore();
     }
 
     // Tell the hook which source pixels are actually on screen, so the next
     // full-resolution pass can skip everything that is not.
-    if (onViewport) {
+    if (s.onViewport) {
       const vx = Math.max(0, -x / zoom);
       const vy = Math.max(0, -y / zoom);
       const vw = Math.min(size.width, (cw - x) / zoom) - vx;
       const vh = Math.min(size.height, (ch - y) / zoom) - vy;
-      const next: Rect | null =
-        vw <= 0 || vh <= 0 ? null : { x: vx, y: vy, width: vw, height: vh };
+      const next: Rect | null = vw <= 0 || vh <= 0 ? null : { x: vx, y: vy, width: vw, height: vh };
       // Quantise before comparing: sub-pixel drift during a drag would
       // otherwise fire a new render on every frame.
       const key = next
@@ -230,10 +248,48 @@ export function PreviewCanvas({
         // Refinement is useful after navigation settles. Reporting every frame
         // otherwise re-renders the entire algorithm stack while dragging.
         clearTimeout(viewportTimer.current);
-        viewportTimer.current = setTimeout(() => onViewport(next), 160);
+        const report = s.onViewport;
+        viewportTimer.current = setTimeout(() => report(next), 160);
       }
     }
-  }, [zoom, pan, compare, split, region, sourceSize, baseIsStale, original, coarse, fine, onViewport]);
+
+    syncHud();
+  }, [baseIsStale, sourceSize, syncHud]);
+
+  /** Coalesces every transform change into one paint per displayed frame. */
+  const schedulePaint = useCallback(() => {
+    if (paintFrame.current !== undefined) return;
+    paintFrame.current = requestAnimationFrame(() => {
+      paintFrame.current = undefined;
+      paint();
+    });
+  }, [paint]);
+
+  useEffect(
+    () => () => {
+      // Clearing the handles as well as the timers is not tidiness: a cancelled
+      // frame whose handle is left set makes `schedulePaint` believe a paint is
+      // still pending, and the canvas never updates again. React 19's
+      // mount/unmount/remount in development reaches this path on every launch.
+      if (paintFrame.current !== undefined) {
+        cancelAnimationFrame(paintFrame.current);
+        paintFrame.current = undefined;
+      }
+      if (hudTimer.current !== undefined) {
+        clearTimeout(hudTimer.current);
+        hudTimer.current = undefined;
+      }
+      clearTimeout(viewportTimer.current);
+      viewportTimer.current = undefined;
+    },
+    [],
+  );
+
+  // New pixels, a new compare split, a new region: all of them are just a
+  // repaint of the same scene.
+  useLayoutEffect(() => {
+    schedulePaint();
+  }, [schedulePaint, original, coarse, coarseScale, fine, region, compare, split]);
 
   const fit = useCallback(() => {
     const stage = stageRef.current;
@@ -246,20 +302,19 @@ export function PreviewCanvas({
     const scale = Math.min((cw - pad) / size.width, (ch - pad) / size.height, 1);
     zoomRef.current = Math.max(MIN_ZOOM, scale);
     panRef.current = { x: 0, y: 0 };
-    setZoom(zoomRef.current);
-    setPan(panRef.current);
-  }, [sourceSize]);
+    setHudZoom(zoomRef.current);
+    schedulePaint();
+  }, [schedulePaint, sourceSize]);
 
-  useLayoutEffect(() => {
-    draw();
-  }, [draw]);
-
-  // Keep one observer for the lifetime of the stage. Re-observing on each
-  // gesture delivers another initial resize and doubles the paint work.
-  const resizeActions = useRef({ draw, fit });
-  useLayoutEffect(() => {
-    resizeActions.current = { draw, fit };
-  }, [draw, fit]);
+  const setZoomTo = useCallback(
+    (next: number) => {
+      touchedRef.current = true;
+      zoomRef.current = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, next));
+      setHudZoom(zoomRef.current);
+      schedulePaint();
+    },
+    [schedulePaint],
+  );
 
   // Re-fit when a different image is loaded (dimensions change), but not on
   // every dither pass - that would fight the user's zoom while they tweak.
@@ -274,6 +329,8 @@ export function PreviewCanvas({
     const key = `${Math.round(size.width)}x${Math.round(size.height)}`;
     if (key !== dimsRef.current) {
       dimsRef.current = key;
+      // A clip changes frames constantly at one size; only a genuinely new
+      // geometry should take the view back off the user.
       touchedRef.current = false;
       fit();
     }
@@ -282,11 +339,15 @@ export function PreviewCanvas({
   // The stage has no size on the first paint, so an early fit computes a
   // nonsense zoom. Watching it means the fit lands once layout is real, and
   // keeps the image framed across window resizes until the user takes over.
+  const resizeActions = useRef({ paint, fit });
+  useLayoutEffect(() => {
+    resizeActions.current = { paint, fit };
+  }, [paint, fit]);
   useEffect(() => {
     const stage = stageRef.current;
     if (!stage || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(() => {
-      if (touchedRef.current) resizeActions.current.draw();
+      if (touchedRef.current) resizeActions.current.paint();
       else resizeActions.current.fit();
     });
     ro.observe(stage);
@@ -332,8 +393,19 @@ export function PreviewCanvas({
         x: nx - (cw - size.width * next) / 2,
         y: ny - (ch - size.height * next) / 2,
       };
+      schedulePaint();
     },
-    [sourceSize],
+    [schedulePaint, sourceSize],
+  );
+
+  const panBy = useCallback(
+    (dx: number, dy: number) => {
+      touchedRef.current = true;
+      const p = panRef.current;
+      panRef.current = { x: p.x - dx, y: p.y - dy };
+      schedulePaint();
+    },
+    [schedulePaint],
   );
 
   /**
@@ -367,23 +439,17 @@ export function PreviewCanvas({
       // saved preference; ctrl/meta wheel is a touchpad pinch and always zooms.
       if (!pinch && (wheelBehavior === "pan" || (Math.abs(dx) > Math.abs(dy) && dx !== 0))) {
         if (e.deltaX === 0 && e.deltaY === 0) return;
-        touchedRef.current = true;
-        scheduleGesture(() => {
-          const p = panRef.current;
-          const next = { x: p.x - dx, y: p.y - dy };
-          panRef.current = next;
-        });
+        panBy(dx, dy);
         return;
       }
 
       if (dy === 0 && !pinch) return;
-      const factor = Math.exp(-dy * (pinch ? 0.01 : 0.0015));
-      scheduleGesture(() => zoomAt(e.clientX, e.clientY, factor));
+      zoomAt(e.clientX, e.clientY, Math.exp(-dy * (pinch ? 0.01 : 0.0015)));
     };
 
     stage.addEventListener("wheel", onWheel, { passive: false });
     return () => stage.removeEventListener("wheel", onWheel);
-  }, [scheduleGesture, wheelBehavior, zoomAt]);
+  }, [panBy, wheelBehavior, zoomAt]);
 
   /** Safari/WebKit exposes some trackpad pinches as GestureEvents, not wheels. */
   useEffect(() => {
@@ -402,9 +468,7 @@ export function PreviewCanvas({
       const factor = scale / previousScale;
       previousScale = scale;
       const rect = stage.getBoundingClientRect();
-      const x = gesture.clientX ?? rect.left + rect.width / 2;
-      const y = gesture.clientY ?? rect.top + rect.height / 2;
-      scheduleGesture(() => zoomAt(x, y, factor));
+      zoomAt(gesture.clientX ?? rect.left + rect.width / 2, gesture.clientY ?? rect.top + rect.height / 2, factor);
     };
     stage.addEventListener("gesturestart", onStart, { passive: false });
     stage.addEventListener("gesturechange", onChange, { passive: false });
@@ -412,7 +476,7 @@ export function PreviewCanvas({
       stage.removeEventListener("gesturestart", onStart);
       stage.removeEventListener("gesturechange", onChange);
     };
-  }, [scheduleGesture, zoomAt]);
+  }, [zoomAt]);
 
   /**
    * Native Linux pinch (WebKitGTK GestureZoom) is forwarded from Rust as
@@ -426,11 +490,94 @@ export function PreviewCanvas({
       const stage = stageRef.current;
       if (!stage) return;
       const r = stage.getBoundingClientRect();
-      scheduleGesture(() => zoomAt(r.left + r.width / 2, r.top + r.height / 2, factor));
+      zoomAt(r.left + r.width / 2, r.top + r.height / 2, factor);
     };
     window.addEventListener("dizako-pinch", onPinch);
     return () => window.removeEventListener("dizako-pinch", onPinch);
-  }, [scheduleGesture, zoomAt]);
+  }, [zoomAt]);
+
+  /**
+   * Canvas keyboard navigation.
+   *
+   * Every other image tool maps arrows to pan and 0/1 to fit and 1:1; reaching
+   * for them and getting nothing is the kind of small absence that makes an app
+   * feel unfinished.
+   *
+   * Bound on the window rather than the stage, because focus is almost never on
+   * the stage in practice - pressing a HUD button moves it to that button, and
+   * a shortcut that stops working after you click Zoom is worse than no
+   * shortcut. The guards below hand the keys back to the two things that
+   * legitimately want them: text fields and sliders.
+   */
+  const handleNavKey = useCallback(
+    (e: KeyboardEvent) => {
+      const nudge = e.shiftKey ? 200 : 60;
+      switch (e.key) {
+        case "ArrowLeft":
+          e.preventDefault();
+          panBy(-nudge, 0);
+          return;
+        case "ArrowRight":
+          e.preventDefault();
+          panBy(nudge, 0);
+          return;
+        case "ArrowUp":
+          e.preventDefault();
+          panBy(0, -nudge);
+          return;
+        case "ArrowDown":
+          e.preventDefault();
+          panBy(0, nudge);
+          return;
+        case "0":
+          e.preventDefault();
+          fit();
+          return;
+        case "1":
+          e.preventDefault();
+          setZoomTo(1);
+          return;
+        case "+":
+        case "=":
+          e.preventDefault();
+          setZoomTo(zoomRef.current * 1.4);
+          return;
+        case "-":
+        case "_":
+          e.preventDefault();
+          setZoomTo(zoomRef.current / 1.4);
+          return;
+        default:
+      }
+    },
+    [fit, panBy, setZoomTo],
+  );
+
+  // Read through a ref so the window listener never holds a stale copy.
+  const navRef = useRef(handleNavKey);
+  useLayoutEffect(() => {
+    navRef.current = handleNavKey;
+  }, [handleNavKey]);
+
+  useEffect(() => {
+    const ownsKeys = () => {
+      const el = document.activeElement as HTMLElement | null;
+      if (!el) return false;
+      const tag = el.tagName.toLowerCase();
+      // A text field and a range slider both move by arrow key; a button, or
+      // the document body, has no claim on them.
+      return el.isContentEditable || tag === "input" || tag === "textarea" || tag === "select";
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (!hasImageRef.current || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (ownsKeys()) return;
+      // A modal owns the keyboard while it is up.
+      if (document.querySelector(".m3-dialog-scrim, .sheet-scrim")) return;
+      navRef.current(e);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (!hasImage) return;
@@ -438,15 +585,13 @@ export function PreviewCanvas({
     if (splitDragRef.current) return;
     touchedRef.current = true;
     dragRef.current = { x: e.clientX, y: e.clientY, px: panRef.current.x, py: panRef.current.y };
-    if (viewRef.current) {
-      viewRef.current.style.willChange = "transform";
-    }
+    if (viewRef.current) viewRef.current.style.willChange = "transform";
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
     if (splitDragRef.current && stageRef.current) {
       const r = stageRef.current.getBoundingClientRect();
-      scheduleGesture(() => setSplit(Math.min(1, Math.max(0, (e.clientX - r.left) / r.width))));
+      setSplit(Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)));
       return;
     }
     const d = dragRef.current;
@@ -458,25 +603,21 @@ export function PreviewCanvas({
     // Move the already-painted viewport surface on the compositor while the
     // pointer is down. Re-rasterising a stage-sized canvas for every mouse
     // event is needlessly expensive, especially under WebKitGTK.
-    if (viewRef.current) {
-      viewRef.current.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
-    }
+    if (viewRef.current) viewRef.current.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
   };
 
   const endDrag = (e: React.PointerEvent) => {
     const drag = dragRef.current;
     if (drag) {
-      const next = {
-        x: drag.px + (e.clientX - drag.x),
-        y: drag.py + (e.clientY - drag.y),
-      };
-      panRef.current = next;
+      panRef.current = { x: drag.px + (e.clientX - drag.x), y: drag.py + (e.clientY - drag.y) };
       dragRef.current = null;
       if (viewRef.current) {
         viewRef.current.style.transform = "";
         viewRef.current.style.willChange = "auto";
       }
-      setPan(next);
+      // The compositor transform got us here; one real paint puts the pixels
+      // where the transform was pretending they already were.
+      schedulePaint();
     }
     splitDragRef.current = false;
   };
@@ -484,15 +625,17 @@ export function PreviewCanvas({
   const zoomBy = (f: number) => {
     const stage = stageRef.current;
     if (!stage) {
-      touchedRef.current = true;
-      setZoom((z) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z * f)));
+      setZoomTo(zoomRef.current * f);
       return;
     }
     const r = stage.getBoundingClientRect();
-    scheduleGesture(() => zoomAt(r.left + r.width / 2, r.top + r.height / 2, f));
+    zoomAt(r.left + r.width / 2, r.top + r.height / 2, f);
   };
 
-  const size = sourceSize();
+  // Derived straight from props rather than through `sourceSize()`, which
+  // reads the render-time scene ref - correct inside `paint`, wrong in a render
+  // body.
+  const size = original ? { width: original.width, height: original.height } : layerSize(coarse, coarseScale);
   // The first pass on a large image can take seconds. Until it lands there is
   // no result to draw and the HUD is hidden, so without this the stage is
   // indistinguishable from a broken load.
@@ -500,6 +643,11 @@ export function PreviewCanvas({
 
   return (
     <div className="preview">
+      {/* The frame is the positioning context for the HUD and the engine chip.
+          They must sit outside the stage - the stage owns pan gestures, and a
+          button inside it would start a drag on mousedown - but inside
+          something that ends above the docked transport. */}
+      <div className="preview__frame">
       <div
         ref={stageRef}
         className={`preview__stage ${hasImage ? "" : "is-empty"}`}
@@ -508,6 +656,11 @@ export function PreviewCanvas({
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
         onLostPointerCapture={endDrag}
+        onDoubleClick={(e) => {
+          if (!hasImageRef.current) return;
+          // Alt inverts it, matching every other canvas app.
+          zoomAt(e.clientX, e.clientY, e.altKey ? 1 / 2 : 2);
+        }}
         // Panning is a pointer gesture; without this WebKit also starts its own
         // image drag and the picture appears to be torn out of the window.
         onDragStart={(e) => e.preventDefault()}
@@ -551,11 +704,7 @@ export function PreviewCanvas({
       {hasImage && (
         <div
           className={`preview__engine ${degraded ? "is-degraded" : ""}`}
-          title={
-            degraded
-              ? "Preferred render pipeline unavailable - running on a slower rung"
-              : "Render engine"
-          }
+          title={degraded ? t("hud.degradedHint") : t("hud.engineHint")}
         >
           {backendLabel}
         </div>
@@ -574,19 +723,15 @@ export function PreviewCanvas({
               type="text"
               className="preview__zoom"
               title={t("hud.zoomPercent")}
-              value={isZoomFocused ? zoomInput : Math.round(zoom * 100) + "%"}
+              value={isZoomFocused ? zoomInput : Math.round(hudZoom * 100) + "%"}
               onFocus={() => {
-                setZoomInput(Math.round(zoom * 100).toString());
+                setZoomInput(Math.round(zoomRef.current * 100).toString());
                 setIsZoomFocused(true);
               }}
               onBlur={() => {
                 setIsZoomFocused(false);
-                const parsed = parseInt(zoomInput.replace(/[^0-9]/g, ''), 10);
-                if (!isNaN(parsed)) {
-                  touchedRef.current = true;
-                  zoomRef.current = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, parsed / 100));
-                  setZoom(zoomRef.current);
-                }
+                const parsed = parseInt(zoomInput.replace(/[^0-9]/g, ""), 10);
+                if (!isNaN(parsed)) setZoomTo(parsed / 100);
               }}
               onChange={(e) => setZoomInput(e.target.value)}
               onKeyDown={(e) => {
@@ -598,11 +743,7 @@ export function PreviewCanvas({
             </IconButton>
           </div>
           <div className="preview__hud-group">
-            <IconButton
-              label={t("hud.compare")}
-              selected={compare}
-              onClick={() => setCompare((c) => !c)}
-            >
+            <IconButton label={t("hud.compare")} selected={compare} onClick={() => setCompare((c) => !c)}>
               <IconCompare />
             </IconButton>
           </div>
@@ -619,6 +760,10 @@ export function PreviewCanvas({
           </div>
         </div>
       )}
+
+      </div>
+
+      {footer}
     </div>
   );
 }

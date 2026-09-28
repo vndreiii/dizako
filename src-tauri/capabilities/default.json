@@ -25,6 +25,9 @@
     "core:window:allow-is-maximized",
     "core:window:allow-start-dragging",
     "log:default",
-    "opener:default"
+    "opener:default",
+    "fs:allow-mkdir",
+    "dialog:allow-open",
+    "dialog:allow-save"
   ]
 }

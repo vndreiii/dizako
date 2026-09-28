@@ -476,7 +476,7 @@
   height: 16px;
 }
 
-/* ---------------- Snackbar ---------------- */
+/* ---------------- Snackbar / toasts ---------------- */
 
 /* Anchored bottom-left rather than centred: the preview HUD owns the bottom
    centre of the stage, and a centred snackbar would land on top of it. */
@@ -489,32 +489,67 @@
   gap: var(--m3-sp-2);
   z-index: 100;
   pointer-events: none;
+  max-width: min(620px, calc(100vw - var(--m3-sp-12)));
 }
 .m3-snackbar {
+  display: flex;
+  align-items: center;
+  gap: var(--m3-sp-3);
   min-width: 280px;
-  max-width: 560px;
-  padding: var(--m3-sp-4) var(--m3-sp-5);
+  padding: var(--m3-sp-3) var(--m3-sp-3) var(--m3-sp-3) var(--m3-sp-5);
   border-radius: var(--m3-shape-md);
   background: var(--md-sys-color-inverse-surface);
   color: var(--md-sys-color-inverse-on-surface);
   font: var(--m3-body-md);
   box-shadow: var(--m3-elev-3);
+  /* Actions and the dismiss affordance are the reason a toast is reachable at
+     all; the host stays click-through so the app underneath is not blocked. */
+  pointer-events: auto;
   animation: m3-snack-in var(--m3-dur-med3) var(--m3-spring-default);
+}
+.m3-snackbar__text {
+  flex: 1;
+  min-width: 0;
+  /* Long paths and codec strings must wrap rather than stretch the toast off
+     the edge of the window. */
+  overflow-wrap: anywhere;
+}
+.m3-snackbar__count {
+  margin-left: var(--m3-sp-2);
+  padding: 0 var(--m3-sp-2);
+  border-radius: var(--m3-shape-full);
+  background: color-mix(in srgb, currentColor 20%, transparent);
+  font: var(--m3-label-sm);
+}
+.m3-snackbar__glyph {
+  display: inline-flex;
+  flex: none;
+}
+.m3-snackbar__glyph svg {
+  width: 20px;
+  height: 20px;
+}
+.m3-snackbar--success {
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+.m3-snackbar--warning {
+  background: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-on-tertiary-container);
 }
 .m3-snackbar--error {
   background: var(--md-sys-color-error-container);
   color: var(--md-sys-color-on-error-container);
 }
 .m3-snackbar--prompt {
-  display: flex;
   flex-wrap: wrap;
-  align-items: center;
   gap: var(--m3-sp-3) var(--m3-sp-5);
-  pointer-events: auto;
 }
 .m3-snackbar__actions {
   display: flex;
+  flex: none;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--m3-sp-1);
   margin-left: auto;
 }
@@ -522,14 +557,32 @@
   border: 0;
   border-radius: var(--m3-shape-sm);
   background: transparent;
-  color: var(--md-sys-color-inverse-primary);
+  color: inherit;
   padding: var(--m3-sp-2);
   font: var(--m3-label-lg);
   cursor: pointer;
 }
+.m3-snackbar--neutral .m3-snackbar__actions button {
+  color: var(--md-sys-color-inverse-primary);
+}
 .m3-snackbar__actions button:hover,
 .m3-snackbar__actions button:focus-visible {
-  background: color-mix(in srgb, currentColor 12%, transparent);
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+.m3-snackbar__dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--m3-sp-1) !important;
+  opacity: 0.7;
+}
+.m3-snackbar__dismiss svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+.m3-snackbar__dismiss:hover {
+  opacity: 1;
 }
 @keyframes m3-snack-in {
   from {
@@ -540,4 +593,205 @@
     opacity: 1;
     transform: translateX(0) scale(1);
   }
+}
+
+/* ---------------- Dialog ---------------- */
+
+.m3-dialog-layer[data-stacked] {
+  /* An older dialog stays visible behind the newest one but must not take the
+     pointer; two live modals is never what the user meant. */
+  pointer-events: none;
+  filter: saturate(0.6);
+}
+.m3-dialog-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: var(--m3-sp-6);
+  background: color-mix(in srgb, var(--md-sys-color-scrim) 55%, transparent);
+  backdrop-filter: blur(3px);
+  animation: m3-dialog-scrim-in var(--m3-dur-short4) var(--m3-ease-standard);
+}
+.m3-dialog {
+  width: min(560px, 100%);
+  max-height: calc(100vh - var(--m3-sp-12));
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--m3-sp-4);
+  padding: var(--m3-sp-6);
+  border-radius: var(--m3-shape-xl);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  box-shadow: var(--m3-elev-5);
+  animation: m3-dialog-in var(--m3-dur-med3) var(--m3-spring-default);
+}
+.m3-dialog:focus {
+  outline: none;
+}
+.m3-dialog__icon {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: var(--m3-sp-3);
+  border-radius: var(--m3-shape-full);
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+.m3-dialog--warning .m3-dialog__icon {
+  background: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-on-tertiary-container);
+}
+.m3-dialog--error .m3-dialog__icon {
+  background: var(--md-sys-color-error-container);
+  color: var(--md-sys-color-on-error-container);
+}
+.m3-dialog__icon svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+.m3-dialog__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--m3-sp-3);
+}
+.m3-dialog__title {
+  margin: 0;
+  flex: 1;
+  font: var(--m3-headline-sm);
+}
+.m3-dialog--error .m3-dialog__title {
+  color: var(--md-sys-color-error);
+}
+.m3-dialog__close {
+  flex: none;
+  display: inline-flex;
+  padding: var(--m3-sp-2);
+  border: 0;
+  border-radius: var(--m3-shape-full);
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+}
+.m3-dialog__close:hover {
+  background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
+}
+.m3-dialog__close svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+.m3-dialog__body {
+  font: var(--m3-body-lg);
+  color: var(--md-sys-color-on-surface-variant);
+  overflow-wrap: anywhere;
+}
+.m3-dialog__detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m3-sp-2);
+  align-items: flex-start;
+}
+.m3-dialog__disclosure {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--md-sys-color-primary);
+  font: var(--m3-label-lg);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.m3-dialog__pre {
+  margin: 0;
+  width: 100%;
+  max-height: 220px;
+  overflow: auto;
+  padding: var(--m3-sp-3);
+  border-radius: var(--m3-shape-sm);
+  background: var(--md-sys-color-surface-container-lowest);
+  color: var(--md-sys-color-on-surface-variant);
+  font: 400 12px/18px var(--m3-font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  /* Diagnostics exist to be pasted into a report. */
+  user-select: text;
+}
+.m3-dialog__foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--m3-sp-2);
+}
+@keyframes m3-dialog-scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes m3-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ---------------- Crash fallback ---------------- */
+
+/* Standalone on purpose: this renders when the component tree is gone, so it
+   may not rely on anything the app normally provides. */
+.crash {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--md-sys-color-background, #14131a);
+  color: var(--md-sys-color-on-background, #e6e1e9);
+}
+.crash__card {
+  width: min(620px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px;
+  border-radius: 28px;
+  background: var(--md-sys-color-surface-container-high, #211f26);
+  box-shadow: var(--m3-elev-5);
+}
+.crash__title {
+  margin: 0;
+  font: var(--m3-headline-sm);
+}
+.crash__body {
+  margin: 0;
+  font: var(--m3-body-md);
+  color: var(--md-sys-color-on-surface-variant, #cac4d0);
+}
+.crash__pre {
+  margin: 0;
+  max-height: 200px;
+  overflow: auto;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.28);
+  font: 400 12px/18px var(--m3-font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.crash__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
 }

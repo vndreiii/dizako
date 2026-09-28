@@ -34,6 +34,18 @@ export interface DitherResult {
   error: string | null;
 }
 
+export interface DitherOptions {
+  /**
+   * Skip the full-resolution follow-up pass.
+   *
+   * Set while a clip is playing. Every displayed frame is a new source, so a
+   * fine pass queued for frame N is stale before it finishes and only competes
+   * with frame N+1 for the worker. The coarse pass alone is what keeps playback
+   * moving; the sharp pass returns the moment the playhead stops.
+   */
+  skipFine?: boolean;
+}
+
 export interface ExportHandle {
   /** Renders the whole resident source at native resolution and encodes PNG.
    *  Resolves `"cancelled"` when a newer export supersedes this one or the
@@ -139,7 +151,9 @@ export function useDither(
   source: ImageData | null,
   settings: Settings,
   viewport: Rect | null,
+  options: DitherOptions = {},
 ): DitherResult & ExportHandle {
+  const skipFine = options.skipFine === true;
   const workerRef = useRef<Worker | null>(null);
   const brokenRef = useRef(false);
   const readyRef = useRef(false);
@@ -184,9 +198,9 @@ export function useDither(
   // The latest-ref pattern: callbacks below must read current props without
   // re-subscribing effects on every render.
   // eslint-disable-next-line react-hooks/refs -- assignment happens during render by design
-  const latest = useRef({ source, settings, viewport });
+  const latest = useRef({ source, settings, viewport, skipFine });
   // eslint-disable-next-line react-hooks/refs -- see above
-  latest.current = { source, settings, viewport };
+  latest.current = { source, settings, viewport, skipFine };
 
   function clearWatchdog() {
     if (timerRef.current !== undefined) {
@@ -205,6 +219,7 @@ export function useDither(
 
   /** Builds the full-resolution follow-up for whatever is on screen. */
   function fineJobFor(src: ImageData, cfg: Settings, view: Rect | null): Job | null {
+    if (latest.current.skipFine) return null;
     const r = regionFor(view, src.width, src.height, cfg);
     // A fine pass over the whole image is only worth queuing when the coarse
     // one actually lost detail.
@@ -533,12 +548,20 @@ export function useDither(
       layerSourceRef.current = null;
       return;
     }
-    if (layerSourceRef.current !== source) {
+    // Only a *geometry* change makes the on-screen layers unusable: drawing a
+    // previous frame at a new aspect ratio is the "stretched old picture" bug,
+    // while a same-size predecessor is a perfectly good thing to leave up for
+    // the few milliseconds until its replacement lands. That distinction is
+    // what lets video play without blanking the stage between every frame.
+    const previous = layerSourceRef.current;
+    if (previous !== source) {
       layerSourceRef.current = source;
-      setCoarse(null);
-      setFine(null);
-      setRegion(null);
-      setCoarseScale(1);
+      if (!previous || previous.width !== source.width || previous.height !== source.height) {
+        setCoarse(null);
+        setFine(null);
+        setRegion(null);
+        setCoarseScale(1);
+      }
     }
     syncPlanes(source);
     const { job } = coarseJobFor(source, settings);
@@ -554,7 +577,7 @@ export function useDither(
    * worth rendering sharply - so re-run the fine pass alone.
    */
   useEffect(() => {
-    if (!source || busy) return;
+    if (!source || busy || skipFine) return;
     const next = regionFor(viewport, source.width, source.height, settings);
     // A finished full-image pass already covers every zoom level. Re-running
     // the whole algorithm stack just to navigate that result wastes work.
@@ -572,7 +595,7 @@ export function useDither(
     }, 160);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewport, source, settings, busy, fine, region]);
+  }, [viewport, source, settings, busy, fine, region, skipFine]);
 
   /**
    * Full-resolution export through the same pipeline, off the main thread.

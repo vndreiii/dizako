@@ -48,7 +48,29 @@ export interface ExportRequest {
   settings: Settings;
 }
 
-export type WorkerRequest = SourceInit | CoarseInit | RenderRequest | ExportRequest;
+/**
+ * Stateless one-shot render, used by the video export pool.
+ *
+ * Unlike `render`, the plane travels *with* the request and replaces whatever
+ * the engine was holding. That is the right trade for video: every frame is a
+ * different image, so residency buys nothing, and shipping the plane in lets a
+ * pool of workers dither different frames of the same clip in parallel.
+ *
+ * It must therefore never be sent to the worker that serves the preview - it
+ * would evict the resident source out from under it.
+ */
+export interface FrameRequest {
+  type: "renderFrame";
+  id: number;
+  buffer: ArrayBuffer;
+  width: number;
+  height: number;
+  settings: Settings;
+  /** `png` encodes in the worker; `pixels` transfers RGBA back for the caller. */
+  encode: "png" | "pixels";
+}
+
+export type WorkerRequest = SourceInit | CoarseInit | RenderRequest | ExportRequest | FrameRequest;
 
 export interface ReadyResponse {
   type: "ready";
@@ -97,8 +119,21 @@ export interface ExportPixelsResponse {
   height: number;
 }
 
+export interface FrameResponse {
+  type: "frame";
+  id: number;
+  ms: number;
+  /** Present when `encode: "png"` and this host has OffscreenCanvas. */
+  blob?: Blob;
+  /** Fallback delivery: raw RGBA for the caller to encode. */
+  buffer?: ArrayBuffer;
+  width?: number;
+  height?: number;
+}
+
 export type WorkerResponse =
   | ReadyResponse
+  | FrameResponse
   | ResultResponse
   | ProgressResponse
   | ExportedResponse
@@ -179,6 +214,51 @@ async function handleExport(req: ExportRequest) {
   });
 }
 
+async function handleFrame(req: FrameRequest) {
+  const t0 = performance.now();
+  if (!wasm) {
+    post({ type: "error", id: req.id, message: "wasm engine unavailable in worker" });
+    return;
+  }
+  const plane = new Uint8ClampedArray(req.buffer);
+  if (plane.length !== req.width * req.height * 4) {
+    post({
+      type: "error",
+      id: req.id,
+      message: `frame ${req.id}: ${plane.length} bytes for ${req.width}x${req.height}`,
+    });
+    return;
+  }
+  wasm.engine.set_source(plane, req.width, req.height);
+  // A one-shot render has no coarse companion; clearing it keeps a stale plane
+  // from a previous job out of the stack.
+  wasm.engine.set_coarse(new Uint8ClampedArray(0), 0, 0);
+  const len = wasm.engine.render("fine", null, req.settings);
+  const out = new ImageData(new Uint8ClampedArray(wasm.view(len)), req.width, req.height);
+
+  if (req.encode === "png" && typeof OffscreenCanvas !== "undefined") {
+    const canvas = new OffscreenCanvas(out.width, out.height);
+    const g = canvas.getContext("2d");
+    if (g) {
+      g.putImageData(out, 0, 0);
+      const blob = await canvas.convertToBlob({ type: "image/png" });
+      post({ type: "frame", id: req.id, ms: performance.now() - t0, blob });
+      return;
+    }
+  }
+  post(
+    {
+      type: "frame",
+      id: req.id,
+      ms: performance.now() - t0,
+      buffer: out.data.buffer as ArrayBuffer,
+      width: out.width,
+      height: out.height,
+    },
+    [out.data.buffer as ArrayBuffer],
+  );
+}
+
 /** Rasterises finished pixels into whatever this host can transfer cheapest. */
 function makePayload(
   out: ImageData,
@@ -228,6 +308,9 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
       break;
     case "export":
       await handleExport(req);
+      break;
+    case "renderFrame":
+      await handleFrame(req);
       break;
   }
 };

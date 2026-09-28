@@ -1,6 +1,5 @@
 import {
   createContext,
-  useCallback,
   useContext,
   useEffect,
   useId,
@@ -357,65 +356,5 @@ export function Segmented<T extends string>({ options, value, onChange, ariaLabe
         </button>
       ))}
     </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Snackbar                                                            */
-/* ------------------------------------------------------------------ */
-
-interface SnackbarMessage {
-  id: number;
-  text: string;
-  tone: "neutral" | "error";
-}
-
-interface SnackbarPrompt {
-  text: string;
-  actions: Array<{ label: string; onClick: () => void }>;
-}
-
-const SnackbarContext = createContext<(text: string, tone?: "neutral" | "error") => void>(() => {});
-const SnackbarPromptContext = createContext<(prompt: SnackbarPrompt | null) => void>(() => {});
-
-export const useSnackbar = () => useContext(SnackbarContext);
-export const useSnackbarPrompt = () => useContext(SnackbarPromptContext);
-
-export function SnackbarProvider({ children }: { children: ReactNode }) {
-  const [queue, setQueue] = useState<SnackbarMessage[]>([]);
-  const [prompt, setPrompt] = useState<SnackbarPrompt | null>(null);
-  const seq = useRef(0);
-
-  const push = useCallback((text: string, tone: "neutral" | "error" = "neutral") => {
-    const id = seq.current++;
-    setQueue((q) => [...q, { id, text, tone }]);
-    window.setTimeout(() => setQueue((q) => q.filter((m) => m.id !== id)), 4000);
-  }, []);
-
-  return (
-    <SnackbarContext.Provider value={push}>
-      <SnackbarPromptContext.Provider value={setPrompt}>
-        {children}
-        <div className="m3-snackbar-host" role="status" aria-live="polite">
-          {queue.map((m) => (
-            <div key={m.id} className={`m3-snackbar m3-snackbar--${m.tone}`}>
-              {m.text}
-            </div>
-          ))}
-          {prompt && (
-            <div className="m3-snackbar m3-snackbar--prompt">
-              <span>{prompt.text}</span>
-              <div className="m3-snackbar__actions">
-                {prompt.actions.map((action) => (
-                  <button key={action.label} type="button" onClick={action.onClick}>
-                    {action.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </SnackbarPromptContext.Provider>
-    </SnackbarContext.Provider>
   );
 }

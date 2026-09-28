@@ -1678,3 +1678,261 @@
   mix-blend-mode: difference;
   letter-spacing: 0.3px;
 }
+
+/* ==================================================================
+   Video: transport, timeline and export
+   ================================================================== */
+
+/* The preview is a column now: stage on top, transport docked beneath. The
+   stage keeps `flex: 1` so the canvas still owns every spare pixel and the
+   transport never overlaps the picture the way a floating bar would. */
+.preview {
+  flex-direction: column;
+}
+
+.timeline {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--m3-sp-4);
+  padding: var(--m3-sp-3) var(--m3-sp-4);
+  background: var(--md-sys-color-surface-container);
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.timeline.is-locked {
+  /* An export is reading frames through this same playhead; moving it would
+     fight the exporter for the decoder. */
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.timeline__transport {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--m3-sp-1);
+}
+
+.timeline__transport .m3-iconbtn svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Generous hit height around a 4px rail: the visual is thin, the target is not. */
+.timeline__track {
+  position: relative;
+  flex: 1;
+  min-width: 120px;
+  height: 32px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.timeline__rail,
+.timeline__selection {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  border-radius: var(--m3-shape-full);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.timeline__rail {
+  left: 0;
+  right: 0;
+  background: color-mix(in srgb, var(--md-sys-color-on-surface) 16%, transparent);
+}
+
+.timeline__selection {
+  background: var(--md-sys-color-primary);
+  opacity: 0.85;
+}
+
+.timeline__playhead {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  margin-left: -1.5px;
+  border-radius: var(--m3-shape-full);
+  background: var(--md-sys-color-tertiary);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--md-sys-color-surface) 70%, transparent);
+  pointer-events: none;
+}
+
+.timeline__handle {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: var(--m3-shape-full);
+  background: var(--md-sys-color-primary);
+  border: 2px solid var(--md-sys-color-surface-container);
+  cursor: ew-resize;
+  transition: transform var(--m3-dur-short3) var(--m3-spring-fast);
+}
+
+.timeline__handle:hover {
+  transform: scale(1.25);
+}
+
+.timeline__meta {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--m3-sp-2);
+  font: var(--m3-label-md);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.timeline__time {
+  font: 500 12px/16px var(--m3-font-mono);
+  /* Tabular digits stop the whole row from twitching as the timecode counts. */
+  font-variant-numeric: tabular-nums;
+  color: var(--md-sys-color-on-surface);
+}
+
+.timeline__time--total {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.timeline__sep {
+  opacity: 0.5;
+}
+
+.timeline__chip {
+  padding: 2px var(--m3-sp-2);
+  border-radius: var(--m3-shape-full);
+  background: var(--md-sys-color-surface-container-highest);
+  white-space: nowrap;
+}
+
+/* ---------------- Export sheet ---------------- */
+
+.sheet--export {
+  width: min(580px, 100%);
+}
+
+.sheet__hint {
+  margin: var(--m3-sp-2) 0 0;
+  font: var(--m3-body-sm);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.sheet__hint--warn {
+  color: var(--md-sys-color-tertiary);
+}
+
+.sheet__hint--error {
+  color: var(--md-sys-color-error);
+}
+
+.export-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: var(--m3-sp-3);
+  margin: var(--m3-sp-4) 0 0;
+}
+
+.export-facts > div {
+  padding: var(--m3-sp-3);
+  border-radius: var(--m3-shape-md);
+  background: var(--md-sys-color-surface-container-highest);
+}
+
+.export-facts dt {
+  font: var(--m3-label-sm);
+  color: var(--md-sys-color-on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.export-facts dd {
+  margin: var(--m3-sp-1) 0 0;
+  font: var(--m3-title-md);
+  font-variant-numeric: tabular-nums;
+}
+
+.export-facts dd.is-warn {
+  color: var(--md-sys-color-tertiary);
+}
+
+.export-facts dd.is-error {
+  color: var(--md-sys-color-error);
+}
+
+.export-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m3-sp-3);
+}
+
+.export-progress__phase {
+  margin: 0;
+  font: var(--m3-title-md);
+}
+
+.export-progress__bar {
+  height: 8px;
+  border-radius: var(--m3-shape-full);
+  background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+  overflow: hidden;
+}
+
+.export-progress__bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--md-sys-color-primary);
+  transition: width var(--m3-dur-short4) var(--m3-ease-standard);
+}
+
+.export-progress__meta {
+  margin: 0;
+  font: var(--m3-body-md);
+  font-variant-numeric: tabular-nums;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.export-progress__note {
+  margin: 0;
+  font: var(--m3-body-sm);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+/* ==================================================================
+   Narrow windows
+   ==================================================================
+   The minimum window is 900x620, but the sidebar plus rail eats 400px of it,
+   so the HUD and the transport are the first things to run out of room. */
+
+@media (max-width: 1180px) {
+  .timeline {
+    flex-wrap: wrap;
+    gap: var(--m3-sp-2) var(--m3-sp-3);
+  }
+  .timeline__track {
+    order: 3;
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 1080px) {
+  .preview__hud {
+    flex-wrap: wrap;
+    max-width: calc(100% - var(--m3-sp-8));
+    justify-content: center;
+    border-radius: var(--m3-shape-xl);
+  }
+}
+
+/* Stage + overlays; ends above any docked footer such as the video transport. */
+.preview__frame {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}

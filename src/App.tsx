@@ -3,13 +3,17 @@ import { AdjustPanel } from "./components/AdjustPanel";
 import { AlgorithmPanel } from "./components/AlgorithmPanel";
 import { PalettePanel } from "./components/PalettePanel";
 import { PreviewCanvas } from "./components/PreviewCanvas";
+import { VideoTimeline } from "./components/VideoTimeline";
+import { VideoExportDialog, type VideoExportConfig } from "./components/VideoExportDialog";
 import { useI18n } from "./i18n";
-import { Button, useSnackbar, useSnackbarPrompt } from "./components/primitives";
+import { Button } from "./components/primitives";
+import { useGlobalFailureHandlers, useNotify } from "./components/notify";
 import {
   IconDownload,
   IconFavorite,
   IconGrid,
   IconImage,
+  IconMovie,
   IconPalette,
   IconSettings,
   IconTune,
@@ -25,10 +29,15 @@ import { openDonatePage } from "./donate";
 import { checkForUpdates, installUpdate, LATER_MS, rememberUpdateChoice, updatePromptDelay } from "./updater";
 import type { Update } from "@tauri-apps/plugin-updater";
 import { useDither } from "./hooks/useDither";
+import { useVideoClip } from "./hooks/useVideoClip";
 import type { Rect } from "./dither/region";
-import { savePng } from "./hooks/saveImage";
+import { savePng, savePngSequence, saveVideo } from "./hooks/saveImage";
 import { DEFAULT_SETTINGS, type Settings } from "./dither/types";
 import { loadSession, saveSession } from "./session";
+import { appError, isAppError } from "./errors";
+import { looksLikeVideo, VIDEO_EXTENSIONS } from "./video/clip";
+import { probeEncoders } from "./video/encode";
+import { exportVideo, type ExportPhaseProgress } from "./video/export";
 import {
   applyTheme,
   applyMatugenTheme,
@@ -65,6 +74,9 @@ const MAX_DIMENSION = 8192;
 const COALESCE_MS = 450;
 const HISTORY_LIMIT = 80;
 
+/** Everything the file picker and drop target will take. */
+const ACCEPT = `image/*,video/*,${VIDEO_EXTENSIONS.map((e) => `.${e}`).join(",")}`;
+
 function fitWithinLimits(w: number, h: number): number {
   let scale = 1;
   if (w * h > MAX_PIXELS) scale = Math.sqrt(MAX_PIXELS / (w * h));
@@ -80,7 +92,16 @@ export interface DecodeResult {
 }
 
 async function decode(file: File): Promise<DecodeResult> {
-  const bitmap = await createImageBitmap(file);
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch (err) {
+    throw appError("image/decode-failed", {
+      values: { name: file.name },
+      detail: `createImageBitmap rejected ${file.name} (${file.type || "unknown type"}, ${file.size} bytes): ${String(err)}`,
+      cause: err,
+    });
+  }
   const scale = fitWithinLimits(bitmap.width, bitmap.height);
   const w = Math.max(1, Math.floor(bitmap.width * scale));
   const h = Math.max(1, Math.floor(bitmap.height * scale));
@@ -91,7 +112,7 @@ async function decode(file: File): Promise<DecodeResult> {
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
   if (!ctx) {
     bitmap.close();
-    throw new Error("Could not acquire a 2D context");
+    throw appError("image/no-2d-context", { detail: `getContext("2d") returned null for ${w}×${h}` });
   }
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
@@ -111,14 +132,32 @@ async function decode(file: File): Promise<DecodeResult> {
       break;
     }
   }
-  if (!opaque) throw new Error("The decoded image was empty (canvas size limit)");
+  if (!opaque) {
+    throw appError("image/empty-after-decode", {
+      values: { name: file.name },
+      detail: `every pixel of the ${w}×${h} decode was fully transparent`,
+    });
+  }
 
   return { data, clampedFrom };
 }
 
 /** Box-downsample via canvas, used for the pixel-scale control. */
+const pixelScaleCache = new WeakMap<ImageData, Map<number, ImageData>>();
+
 function downscale(src: ImageData, factor: number): ImageData {
   if (factor <= 1) return src;
+  // Memoised per (plane, factor): without it every slider tick elsewhere in the
+  // app re-ran a multi-megapixel canvas round-trip that produces identical
+  // pixels every time.
+  let byFactor = pixelScaleCache.get(src);
+  if (!byFactor) {
+    byFactor = new Map();
+    pixelScaleCache.set(src, byFactor);
+  }
+  const hit = byFactor.get(factor);
+  if (hit) return hit;
+
   const w = Math.max(1, Math.round(src.width / factor));
   const h = Math.max(1, Math.round(src.height / factor));
 
@@ -134,7 +173,9 @@ function downscale(src: ImageData, factor: number): ImageData {
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   ctx.drawImage(from, 0, 0, w, h);
-  return ctx.getImageData(0, 0, w, h);
+  const out = ctx.getImageData(0, 0, w, h);
+  byFactor.set(factor, out);
+  return out;
 }
 
 /** Read once per launch; every key falls back to defaults when absent. */
@@ -142,9 +183,11 @@ const restoredSession = loadSession();
 
 export default function App() {
   const { t } = useI18n();
+  const notify = useNotify();
+  const installGlobalHandlers = useGlobalFailureHandlers();
   const [settings, setSettings] = useState<Settings>(restoredSession.settings ?? DEFAULT_SETTINGS);
   const [tab, setTab] = useState<Tab>("algorithm");
-  const [native, setNative] = useState<ImageData | null>(null);
+  const [still, setStill] = useState<ImageData | null>(null);
   const [fileName, setFileName] = useState("");
   const [mode, setMode] = useState<Mode>(() => restoredSession.appearance?.mode ?? (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"));
   const [seed, setSeed] = useState(restoredSession.appearance?.seed ?? DEFAULT_SEED);
@@ -160,8 +203,13 @@ export default function App() {
   const [decoding, setDecoding] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const historyFrameRef = useRef<HTMLDivElement>(null);
-  const snack = useSnackbar();
-  const setUpdatePrompt = useSnackbarPrompt();
+
+  // A single funnel for every failure, so a call site never has to decide
+  // between a toast, a dialog and a console line.
+  const fail = notify.fail;
+  const video = useVideoClip(fail);
+
+  useEffect(() => installGlobalHandlers(), [installGlobalHandlers]);
 
   // Ask before downloading a signed update. Later is offered again after 24h;
   // Dismiss hides only this version, so a newer release can still be offered.
@@ -188,22 +236,23 @@ export default function App() {
         offered = update;
         const choose = (choice: "later" | "dismiss") => {
           rememberUpdateChoice(update.version, choice);
-          setUpdatePrompt(null);
+          notify.prompt(null);
           offered = null;
           void update.close();
           if (choice === "later") timer = window.setTimeout(() => void check(), LATER_MS);
         };
-        setUpdatePrompt({
+        notify.prompt({
           text: t("update.available").replace("{version}", update.version),
           actions: [
             {
               label: t("update.install"),
               onClick: () => {
-                setUpdatePrompt(null);
+                notify.prompt(null);
                 offered = null;
-                void installUpdate(update, (status) => snack(t(`update.${status}`))).catch((err) => {
-                  console.warn("[dizako] update install failed", err);
-                  snack(t("update.failed"), "error");
+                void installUpdate(update, (status) => notify.toast(t(`update.${status}`))).catch((err) => {
+                  fail(appError("update/install-failed", { detail: String(err), cause: err }), {
+                    onRecover: () => void check(),
+                  });
                   void update.close();
                   if (!cancelled) timer = window.setTimeout(() => void check(), 60_000);
                 });
@@ -214,7 +263,9 @@ export default function App() {
           ],
         });
       } catch (err) {
-        console.warn("[dizako] update check failed", err);
+        // A failed check is not worth a dialog: the app works, it just does not
+        // know whether it is current.
+        fail(appError("update/check-failed", { detail: String(err), cause: err }), { as: "toast" });
       }
     };
 
@@ -222,42 +273,37 @@ export default function App() {
     return () => {
       cancelled = true;
       if (timer !== undefined) window.clearTimeout(timer);
-      setUpdatePrompt(null);
+      notify.prompt(null);
       if (offered) void offered.close();
     };
-  }, [setUpdatePrompt, snack, t]);
+  }, [notify, fail, t]);
 
   // In dynamic mode the accent follows the image; falls back to the chosen
   // preset until one is loaded.
   const activeSeed = themeSource === "dynamic" ? (dynamicSeed ?? seed) : seed;
   useEffect(() => {
-    if (themeSource === "matugen") {
-      Promise.all([
-        import("@tauri-apps/plugin-fs"),
-        import("@tauri-apps/api/path")
-      ]).then(([{ readTextFile }, { BaseDirectory }]) => {
-        readTextFile("colors.json", { baseDir: BaseDirectory.AppConfig })
-          .then((text) => {
-            try {
-              const colors = JSON.parse(text);
-              applyMatugenTheme(colors, mode);
-            } catch (e) {
-              console.error("Invalid matugen colors.json", e);
-              applyTheme({ seed: activeSeed, mode });
-            }
-          })
-          .catch((err) => {
-            console.error("Could not read matugen colors.json", err);
-            applyTheme({ seed: activeSeed, mode });
-          });
-      }).catch((err) => {
-        console.error("Tauri APIs not available", err);
-        applyTheme({ seed: activeSeed, mode });
-      });
-    } else {
+    if (themeSource !== "matugen") {
       applyTheme({ seed: activeSeed, mode });
+      return;
     }
-  }, [themeSource, activeSeed, mode]);
+    Promise.all([import("@tauri-apps/plugin-fs"), import("@tauri-apps/api/path")])
+      .then(async ([{ readTextFile }, { BaseDirectory }]) => {
+        const text = await readTextFile("colors.json", { baseDir: BaseDirectory.AppConfig });
+        try {
+          applyMatugenTheme(JSON.parse(text), mode);
+        } catch (err) {
+          applyTheme({ seed: activeSeed, mode });
+          throw appError("theme/matugen-invalid", { detail: String(err), cause: err });
+        }
+      })
+      .catch((err) => {
+        applyTheme({ seed: activeSeed, mode });
+        fail(isAppError(err) ? err : appError("theme/matugen-unreadable", { detail: String(err), cause: err }), {
+          as: "toast",
+          onRecover: () => setSettingsOpen(true),
+        });
+      });
+  }, [themeSource, activeSeed, mode, fail]);
 
   /**
    * Undo history for the settings object.
@@ -305,6 +351,15 @@ export default function App() {
     });
   }, []);
 
+  /**
+   * The pixels currently being dithered.
+   *
+   * A still and a video frame are the same thing to everything downstream, so
+   * the whole pipeline - algorithms, palette, adjustments, undo, PNG export -
+   * works on video without a second code path.
+   */
+  const native = video.clip ? video.frameImage : still;
+
   // The scaled source is what actually feeds the dither pass.
   const source = useMemo(
     () => (native ? downscale(native, settings.pixelScale) : null),
@@ -325,60 +380,263 @@ export default function App() {
     exporting,
     error,
     requestExport,
-  } = useDither(source, settings, viewport);
+  } = useDither(source, settings, viewport, { skipFine: video.playing });
   const hasResult = Boolean(coarse);
 
-  const load = useCallback(
+  /**
+   * The plane the palette panel's eyedropper reads.
+   *
+   * `source` is a different object on every displayed frame while a clip
+   * plays, and the eyedropper rasterises a strip from whatever it is handed -
+   * sixty times a second, for a control nobody is using mid-playback. Withheld
+   * during playback, the panel drops out of the per-frame render path entirely
+   * and the picker comes back the moment the playhead stops.
+   */
+  const pickerSource = video.playing ? null : source;
+
+  // Memoised so `AdjustPanel`'s memo boundary actually holds: a fresh object
+  // literal per render would defeat it on every frame of playback.
+  const sourceSize = useMemo(
+    () => (native ? { width: native.width, height: native.height } : null),
+    [native],
+  );
+
+  // The engine failing outright is not something the HUD caption can carry on
+  // its own - it means nothing will ever render - so it is also raised once.
+  const reportedEngineError = useRef<string | null>(null);
+  useEffect(() => {
+    if (!error || reportedEngineError.current === error) return;
+    reportedEngineError.current = error;
+    fail(appError("engine/unavailable", { detail: error }));
+  }, [error, fail]);
+
+  // Demotion still renders, just slower; a toast is the right weight for it.
+  const reportedDemotion = useRef(false);
+  useEffect(() => {
+    if (!degraded || reportedDemotion.current) return;
+    reportedDemotion.current = true;
+    fail(appError("engine/worker-demoted", { detail: `backend is now "${backendLabel}"` }), { as: "toast" });
+  }, [degraded, backendLabel, fail]);
+
+  const loadStill = useCallback(
     async (file: File) => {
       setDecoding(true);
       try {
         const { data, clampedFrom } = await decode(file);
-        setNative(data);
+        video.close();
+        setStill(data);
         setFileName(file.name);
         setDynamicSeed(seedFromImageData(data));
         if (clampedFrom) {
-          snack(
+          notify.toast(
             t("app.loadedReduced")
               .replace("{name}", file.name)
               .replace("{fw}", String(clampedFrom.width))
               .replace("{fh}", String(clampedFrom.height))
               .replace("{w}", String(data.width))
               .replace("{h}", String(data.height)),
+            { tone: "warning" },
           );
         } else {
-          snack(t("app.loaded").replace("{name}", file.name).replace("{w}", String(data.width)).replace("{h}", String(data.height)));
+          notify.toast(
+            t("app.loaded").replace("{name}", file.name).replace("{w}", String(data.width)).replace("{h}", String(data.height)),
+            { tone: "success" },
+          );
         }
       } catch (err) {
-        snack(t("app.loadFailed").replace("{name}", file.name).replace("{error}", (err as Error).message), "error");
+        fail(err, { onRecover: () => inputRef.current?.click(), context: { file: file.name, type: file.type } });
       } finally {
         setDecoding(false);
       }
     },
-    [snack],
+    [fail, notify, t, video],
   );
+
+  const loadClip = useCallback(
+    async (file: File) => {
+      const ok = await video.open(file);
+      if (!ok) return;
+      setStill(null);
+      setFileName(file.name);
+      notify.toast(t("video.loaded").replace("{name}", file.name), { tone: "success" });
+    },
+    [notify, t, video],
+  );
+
+  /** Routes a dropped or picked file to the still or the clip path. */
+  const load = useCallback(
+    async (file: File) => {
+      if (file.type.startsWith("image/") && !file.type.startsWith("image/gif")) {
+        await loadStill(file);
+        return;
+      }
+      if (looksLikeVideo(file)) {
+        await loadClip(file);
+        return;
+      }
+      // Some hosts report no type at all for a dragged file. An image decode is
+      // cheap and tells us definitively, so try it before refusing.
+      try {
+        await loadStill(file);
+      } catch {
+        fail(appError("image/not-an-image", { values: { name: file.name }, detail: `type "${file.type}"` }), {
+          onRecover: () => inputRef.current?.click(),
+        });
+      }
+    },
+    [fail, loadClip, loadStill],
+  );
+
+  // A clip's accent follows its first frame, computed once rather than per
+  // frame - the palette must not strobe while the video plays.
+  const seededClip = useRef<string | null>(null);
+  useEffect(() => {
+    if (!video.clip || !video.frameImage) return;
+    if (seededClip.current === video.clip.url) return;
+    seededClip.current = video.clip.url;
+    setDynamicSeed(seedFromImageData(video.frameImage));
+  }, [video.clip, video.frameImage]);
 
   /**
    * Export runs through the render worker at native resolution and encodes
    * there too, so the UI stays responsive for the whole job. The result is
    * the exact pixels a full-resolution preview of these settings would show.
    */
+  // Retry actions re-enter the very callback that raised the failure, which a
+  // closure cannot reference before it exists. A ref holding the newest one is
+  // read at click time, long after both are defined.
+  const retryExportPng = useRef<() => void>(() => {});
+  const retryVideoExport = useRef<(config: VideoExportConfig) => void>(() => {});
+
   const exportPng = useCallback(async () => {
     if (!source || exporting) return;
-    const result = await requestExport(settings);
+    let result: Awaited<ReturnType<typeof requestExport>>;
+    try {
+      result = await requestExport(settings);
+    } catch (err) {
+      fail(appError("export/render-failed", { detail: String(err), cause: err }), {
+        onRecover: () => retryExportPng.current(),
+      });
+      return;
+    }
     if (result === "cancelled") return;
     const base = fileName.replace(/\.[^.]+$/, "") || "dizako";
+    const suffix = video.clip ? `${settings.algorithm}-f${String(video.frame).padStart(5, "0")}` : settings.algorithm;
     try {
-      const saved = await savePng(result.blob, `${base}-${settings.algorithm}.png`);
-      if (saved === "saved") snack(t("app.exported"));
-    } catch {
-      snack(t("app.couldNotWrite"), "error");
+      const saved = await savePng(result.blob, `${base}-${suffix}.png`);
+      if (saved === "saved") notify.toast(t("app.exported"), { tone: "success" });
+    } catch (err) {
+      fail(isAppError(err) ? err : appError("export/write-failed", { detail: String(err), cause: err }), {
+        onRecover: () => retryExportPng.current(),
+      });
     }
-  }, [source, settings, fileName, snack, t, exporting, requestExport]);
+  }, [source, settings, fileName, notify, t, exporting, requestExport, fail, video.clip, video.frame]);
+
+  /* ---------------- video export ---------------- */
+
+  const encoders = useMemo(() => probeEncoders(), []);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [videoProgress, setVideoProgress] = useState<ExportPhaseProgress | null>(null);
+  const [frameErrors, setFrameErrors] = useState(0);
+  const cancelExport = useRef(false);
+
+  const runVideoExport = useCallback(
+    async (config: VideoExportConfig) => {
+      const clip = video.clip;
+      if (!clip) return;
+      video.pause();
+      cancelExport.current = false;
+      setFrameErrors(0);
+      setVideoProgress({ phase: "render", done: 0, total: 1, fraction: 0, etaS: null });
+
+      const base = fileName.replace(/\.[^.]+$/, "") || "dizako";
+      try {
+        const result = await exportVideo({
+          clip,
+          settings,
+          startFrame: config.startFrame,
+          endFrame: config.endFrame,
+          scale: config.scale,
+          container: config.container,
+          mimeType: config.mimeType,
+          bitrate: config.bitrate,
+          onProgress: setVideoProgress,
+          shouldCancel: () => cancelExport.current,
+          onFrameError: (index, err) => {
+            // Counted for the progress line and logged individually: a report
+            // that says "3 frames repeated" is only actionable with the reason.
+            console.warn(`[dizako] frame ${index} could not be rendered; repeating the previous one`, err);
+            setFrameErrors((n) => n + 1);
+          },
+        });
+
+        const outcome =
+          result.container === "png-sequence"
+            ? await savePngSequence(result.frames!, `${base}-${settings.algorithm}`, (done, total) =>
+                setVideoProgress({ phase: "mux", done, total, fraction: done / total, etaS: null }),
+              )
+            : await saveVideo(
+                result.blob!,
+                `${base}-${settings.algorithm}.${result.container === "mp4" ? "mp4" : "webm"}`,
+                result.container === "mp4" ? "mp4" : "webm",
+              );
+
+        if (outcome === "cancelled") {
+          notify.toast(t("video.saveCancelled"), { tone: "neutral" });
+        } else {
+          setExportOpen(false);
+          const summary = t("video.exported")
+            .replace("{frames}", String(result.frameCount))
+            .replace("{w}", String(result.width))
+            .replace("{h}", String(result.height))
+            .replace("{seconds}", (result.renderMs / 1000).toFixed(1));
+          if (result.substituted.length > 0) {
+            // Silently shipping repeated frames would be a lie about what the
+            // file contains, so the exact indices are on offer.
+            void notify.dialog({
+              title: t("video.exportedWithGaps"),
+              body: summary,
+              tone: "warning",
+              detail: `substituted frames (${result.substituted.length}):\n${result.substituted.join(", ")}`,
+            });
+          } else {
+            notify.toast(summary, { tone: "success", duration: 7000 });
+          }
+        }
+      } catch (err) {
+        if (isAppError(err) && err.code === "video/export-cancelled") {
+          notify.toast(t("video.cancelled"), { tone: "neutral" });
+        } else {
+          fail(err, {
+            onRecover: () => retryVideoExport.current(config),
+            context: {
+              container: config.container,
+              mimeType: config.mimeType ?? "n/a",
+              frames: config.endFrame - config.startFrame + 1,
+              scale: config.scale,
+            },
+          });
+        }
+      } finally {
+        setVideoProgress(null);
+      }
+    },
+    [video, fileName, settings, notify, t, fail],
+  );
+
+  // eslint-disable-next-line react-hooks/refs -- latest-ref binding for the retry actions
+  retryExportPng.current = () => void exportPng();
+  // eslint-disable-next-line react-hooks/refs -- see above
+  retryVideoExport.current = (config: VideoExportConfig) => void runVideoExport(config);
 
   // Persist everything that used to reset on launch.
   useEffect(() => {
-    saveSession(settings, { mode, themeSource, seed, wheelStep, wheelBehavior });
-  }, [settings, mode, themeSource, seed, wheelStep, wheelBehavior]);
+    try {
+      saveSession(settings, { mode, themeSource, seed, wheelStep, wheelBehavior });
+    } catch (err) {
+      fail(appError("session/save-failed", { detail: String(err), cause: err }), { as: "toast" });
+    }
+  }, [settings, mode, themeSource, seed, wheelStep, wheelBehavior, fail]);
 
   /**
    * App-level keyboard and pointer behaviour.
@@ -389,15 +647,25 @@ export default function App() {
    * blue, and a right click on the stage should not offer to reload or save an
    * image that is not a real element.
    */
+  const videoRef = useRef(video);
+  // eslint-disable-next-line react-hooks/refs -- latest-ref pattern for a window listener
+  videoRef.current = video;
   useEffect(() => {
-    const editable = (t: EventTarget | null) => {
-      const el = t as HTMLElement | null;
+    const editable = (target: EventTarget | null) => {
+      const el = target as HTMLElement | null;
       if (!el || !el.tagName) return false;
       const tag = el.tagName.toLowerCase();
       return tag === "input" || tag === "textarea" || el.isContentEditable;
     };
 
     const onKey = (e: KeyboardEvent) => {
+      // Space is the universal transport key; it only means "play" when a clip
+      // is open and the focus is not in a field.
+      if (e.key === " " && !editable(e.target) && videoRef.current.clip) {
+        e.preventDefault();
+        videoRef.current.toggle();
+        return;
+      }
       if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
       const k = e.key.toLowerCase();
       if (k === "z") {
@@ -417,7 +685,8 @@ export default function App() {
         // Ctrl+E exports; Ctrl+S is accepted as the muscle-memory alias.
         if (editable(e.target)) return;
         e.preventDefault();
-        void exportPng();
+        if (e.shiftKey && videoRef.current.clip) setExportOpen(true);
+        else void exportPng();
       } else if (k === "a") {
         // Inside a field, select-all is exactly right; anywhere else it selects
         // every label in the UI, which is only ever an accident.
@@ -602,9 +871,9 @@ export default function App() {
       }
 
       // Canvas owns two-finger pan/orbit and pinch-zoom; never treat those as
-      // edit-history back/forth.
-      const overPreview = (e.target as Element | null)?.closest?.(".preview__stage");
-      if (overPreview) return;
+      // edit-history back/forth. The timeline scrubs, so it is exempt too.
+      const target = e.target as Element | null;
+      if (target?.closest?.(".preview__stage") || target?.closest?.(".timeline")) return;
 
       const absX = Math.abs(e.deltaX);
       const absY = Math.abs(e.deltaY);
@@ -690,9 +959,13 @@ export default function App() {
     const drop = (e: DragEvent) => {
       e.preventDefault();
       setDragOver(false);
-      const file = e.dataTransfer?.files?.[0];
-      if (file?.type.startsWith("image/")) void load(file);
-      else if (file) snack(t("app.notImage"), "error");
+      const files = e.dataTransfer?.files;
+      const file = files?.[0];
+      if (!file) return;
+      if (files.length > 1) {
+        notify.toast(t("app.firstOfMany").replace("{name}", file.name), { tone: "warning" });
+      }
+      void load(file);
     };
     window.addEventListener("dragover", over);
     window.addEventListener("dragleave", leave);
@@ -702,7 +975,10 @@ export default function App() {
       window.removeEventListener("dragleave", leave);
       window.removeEventListener("drop", drop);
     };
-  }, [load, snack]);
+  }, [load, notify, t]);
+
+  const reading = decoding || video.opening;
+  const exportBusy = exporting || videoProgress !== null;
 
   return (
     <WheelStepContext.Provider value={wheelStep}>
@@ -733,11 +1009,21 @@ export default function App() {
           <Button
             variant="filled"
             icon={<IconDownload />}
-            disabled={!hasResult || exporting}
+            disabled={!hasResult || exportBusy}
             onClick={() => void exportPng()}
           >
-            {exporting ? t("topbar.exporting") : t("topbar.export")}
+            {exporting ? t("topbar.exporting") : video.clip ? t("topbar.exportFrame") : t("topbar.export")}
           </Button>
+          {video.clip && (
+            <Button
+              variant="tonal"
+              icon={<IconMovie />}
+              disabled={exportBusy}
+              onClick={() => setExportOpen(true)}
+            >
+              {t("topbar.exportVideo")}
+            </Button>
+          )}
           <Button
             variant="donate"
             icon={<IconFavorite />}
@@ -786,14 +1072,10 @@ export default function App() {
         <aside className={`sidebar ${tab === "palette" || tab === "algorithm" ? "sidebar--wide" : ""}`}>
           {tab === "algorithm" && <AlgorithmPanel settings={settings} patch={patch} />}
           {tab === "palette" && (
-            <PalettePanel settings={settings} patch={patch} source={source} />
+            <PalettePanel settings={settings} patch={patch} source={pickerSource} />
           )}
           {tab === "image" && (
-            <AdjustPanel
-              settings={settings}
-              patch={patch}
-              sourceSize={native ? { width: native.width, height: native.height } : null}
-            />
+            <AdjustPanel settings={settings} patch={patch} sourceSize={sourceSize} />
           )}
         </aside>
 
@@ -810,11 +1092,29 @@ export default function App() {
               refining={refining}
               ms={ms}
               degraded={degraded}
-              backendLabel={backendLabel}
+              backendLabel={video.coarseFrames ? `${backendLabel} · ${t("video.playbackQuality")}` : backendLabel}
               error={error}
               onViewport={setViewport}
+              footer={
+                video.clip ? (
+                  <VideoTimeline
+                    clip={video.clip}
+                    frame={video.frame}
+                    playing={video.playing}
+                    loop={video.loop}
+                    range={video.range}
+                    locked={videoProgress !== null}
+                    onFrame={video.goToFrame}
+                    onStep={video.step}
+                    onToggle={video.toggle}
+                    onLoop={video.setLoop}
+                    onRange={video.setRange}
+                    onExport={() => setExportOpen(true)}
+                  />
+                ) : null
+              }
             />
-          ) : decoding ? (
+          ) : reading ? (
             <div className="empty">
               <span className="preview__spinner" aria-hidden="true" />
               <h2 className="empty__title">{t("empty.readingTitle")}</h2>
@@ -828,7 +1128,7 @@ export default function App() {
               <h2 className="empty__title">{t("empty.dropTitle")}</h2>
               <p className="empty__body">{t("empty.dropBody")}</p>
               <Button variant="filled" icon={<IconUpload />} onClick={() => inputRef.current?.click()}>
-                Choose image
+                {t("empty.chooseBtn")}
               </Button>
             </div>
           )}
@@ -838,7 +1138,7 @@ export default function App() {
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept={ACCEPT}
         hidden
         onChange={(e) => {
           const f = e.target.files?.[0];
@@ -863,6 +1163,21 @@ export default function App() {
         dynamicSeed={dynamicSeed}
         hasImage={Boolean(native)}
       />
+
+      {exportOpen && video.clip && (
+        <VideoExportDialog
+          clip={video.clip}
+          encoders={encoders}
+          range={video.range}
+          progress={videoProgress}
+          frameErrors={frameErrors}
+          onStart={(config) => void runVideoExport(config)}
+          onCancel={() => {
+            cancelExport.current = true;
+          }}
+          onClose={() => setExportOpen(false)}
+        />
+      )}
 
       {donateOpen && <DonateDialog onClose={() => setDonateOpen(false)} />}
 

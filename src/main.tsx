@@ -7,7 +7,8 @@ import "./theme/tokens.css";
 import "./theme/components.css";
 import "./theme/app.css";
 import App from "./App";
-import { SnackbarProvider } from "./components/primitives";
+import { NotifyProvider } from "./components/notify";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { I18nProvider } from "./i18n";
 
 // Forward webview console to the Rust log (stdout) so `dizako` from a
@@ -16,12 +17,24 @@ if ("__TAURI_INTERNALS__" in window) {
   void import("@tauri-apps/plugin-log").then((m) => void m.attachConsole());
 }
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <I18nProvider>
-      <SnackbarProvider>
-        <App />
-      </SnackbarProvider>
-    </I18nProvider>
-  </StrictMode>,
-);
+const container = document.getElementById("root");
+if (!container) {
+  // The only way here is a corrupted bundle; a blank window with nothing in the
+  // console is the one outcome worth spending eight lines to avoid.
+  document.body.innerHTML =
+    '<div style="font:600 16px system-ui;padding:32px">Dizako could not start: the application root element is missing.</div>';
+} else {
+  createRoot(container).render(
+    <StrictMode>
+      <I18nProvider>
+        <NotifyProvider>
+          {/* Inside the notifier so a crash dialog can still be themed, but
+              self-contained so it does not depend on it. */}
+          <ErrorBoundary>
+            <App />
+          </ErrorBoundary>
+        </NotifyProvider>
+      </I18nProvider>
+    </StrictMode>,
+  );
+}
