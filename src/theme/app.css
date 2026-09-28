@@ -1936,3 +1936,175 @@
   min-height: 0;
   display: flex;
 }
+
+/* ==================================================================
+   Import skeleton
+   ==================================================================
+   Shaped like the interface it is about to become, so nothing jumps when the
+   picture arrives and the wait has visible structure. */
+
+.import-skeleton__stage {
+  display: grid;
+  place-items: center;
+}
+
+.import-skeleton__plate {
+  width: min(460px, 76%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--m3-sp-3);
+  padding: var(--m3-sp-8) var(--m3-sp-6);
+  border-radius: var(--m3-shape-xl);
+  background: color-mix(in srgb, var(--md-sys-color-surface-container-high) 88%, transparent);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  backdrop-filter: blur(8px);
+  text-align: center;
+}
+
+.import-skeleton__glyph {
+  display: inline-flex;
+  padding: var(--m3-sp-4);
+  border-radius: var(--m3-shape-full);
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  animation: import-pulse 1.8s var(--m3-ease-standard) infinite;
+}
+
+.import-skeleton__glyph svg {
+  width: 28px;
+  height: 28px;
+  fill: currentColor;
+}
+
+.import-skeleton__name {
+  margin: 0;
+  font: var(--m3-title-md);
+  /* A long filename must not stretch the plate. */
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.import-skeleton__stage-label {
+  margin: 0;
+  font: var(--m3-body-md);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.import-skeleton__bar {
+  width: 100%;
+  height: 6px;
+  margin-top: var(--m3-sp-2);
+  border-radius: var(--m3-shape-full);
+  background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+  overflow: hidden;
+}
+
+.import-skeleton__bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--md-sys-color-primary);
+  /* Eased rather than linear: stages land in jumps, and a hard step reads as
+     a glitch where a glide reads as progress. */
+  transition: width var(--m3-dur-med4) var(--m3-ease-emphasized);
+}
+
+.import-skeleton__steps {
+  display: flex;
+  gap: var(--m3-sp-4);
+  margin: var(--m3-sp-2) 0 0;
+  padding: 0;
+  list-style: none;
+  font: var(--m3-label-md);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.import-skeleton__steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m3-sp-2);
+  opacity: 0.45;
+  transition: opacity var(--m3-dur-short4) var(--m3-ease-standard);
+}
+
+.import-skeleton__steps li.is-active,
+.import-skeleton__steps li.is-done {
+  opacity: 1;
+}
+
+.import-skeleton__steps li.is-active {
+  color: var(--md-sys-color-primary);
+}
+
+.import-skeleton__pip {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  transition: transform var(--m3-dur-short4) var(--m3-spring-fast);
+}
+
+.import-skeleton__steps li.is-active .import-skeleton__pip {
+  transform: scale(1.5);
+}
+
+/* Inert stand-ins for the controls that are about to appear. */
+.import-skeleton__ghost {
+  display: inline-block;
+  height: 20px;
+  border-radius: var(--m3-shape-sm);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent) 25%,
+    color-mix(in srgb, var(--md-sys-color-on-surface) 16%, transparent) 50%,
+    color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent) 75%
+  );
+  background-size: 200% 100%;
+  animation: import-shimmer 1.6s linear infinite;
+}
+
+.import-skeleton__ghost--round {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--m3-shape-full);
+}
+
+.import-skeleton__hud,
+.import-skeleton__timeline {
+  pointer-events: none;
+}
+
+.import-skeleton__hud {
+  gap: var(--m3-sp-4);
+}
+
+/* A scanning highlight along the scrub track: the one moving part that says
+   the decoder is still working rather than stuck. */
+.import-skeleton__scan {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  width: 28%;
+  border-radius: var(--m3-shape-full);
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, transparent, var(--md-sys-color-primary), transparent);
+  animation: import-scan 1.9s var(--m3-ease-standard) infinite;
+}
+
+@keyframes import-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+@keyframes import-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+@keyframes import-scan {
+  from { left: -28%; }
+  to { left: 100%; }
+}

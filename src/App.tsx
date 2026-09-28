@@ -4,6 +4,7 @@ import { AlgorithmPanel } from "./components/AlgorithmPanel";
 import { PalettePanel } from "./components/PalettePanel";
 import { PreviewCanvas } from "./components/PreviewCanvas";
 import { VideoTimeline } from "./components/VideoTimeline";
+import { ImportSkeleton } from "./components/ImportSkeleton";
 import { VideoExportDialog, type VideoExportConfig } from "./components/VideoExportDialog";
 import { useI18n } from "./i18n";
 import { Button } from "./components/primitives";
@@ -201,6 +202,8 @@ export default function App() {
   const [donateOpen, setDonateOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [decoding, setDecoding] = useState(false);
+  /** Name of the clip currently being opened; `fileName` only lands on success. */
+  const [importName, setImportName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const historyFrameRef = useRef<HTMLDivElement>(null);
 
@@ -454,6 +457,7 @@ export default function App() {
 
   const loadClip = useCallback(
     async (file: File) => {
+      setImportName(file.name);
       const ok = await video.open(file);
       if (!ok) return;
       setStill(null);
@@ -1114,6 +1118,8 @@ export default function App() {
                 ) : null
               }
             />
+          ) : video.opening ? (
+            <ImportSkeleton fileName={importName} progress={video.importProgress} />
           ) : reading ? (
             <div className="empty">
               <span className="preview__spinner" aria-hidden="true" />

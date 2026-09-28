@@ -8,6 +8,7 @@ import {
   timeToFrame,
   type Clip,
   type FrameGrabber,
+  type ImportProgress,
 } from "../video/clip";
 import { appError } from "../errors";
 
@@ -32,6 +33,8 @@ export interface VideoClipApi {
   loop: boolean;
   /** A clip is being decoded and probed. */
   opening: boolean;
+  /** Which stage the current import is on, or null when nothing is opening. */
+  importProgress: ImportProgress | null;
   /** True while frames are read at playback resolution. */
   coarseFrames: boolean;
   open(file: File): Promise<boolean>;
@@ -71,6 +74,7 @@ export function useVideoClip(onError: (error: unknown) => void): VideoClipApi {
   const [playing, setPlaying] = useState(false);
   const [loop, setLoop] = useState(true);
   const [opening, setOpening] = useState(false);
+  const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
   const [coarseFrames, setCoarseFrames] = useState(false);
   const [range, setRange] = useState({ start: 0, end: 0 });
 
@@ -142,8 +146,9 @@ export function useVideoClip(onError: (error: unknown) => void): VideoClipApi {
   const open = useCallback(
     async (file: File): Promise<boolean> => {
       setOpening(true);
+      setImportProgress({ stage: "reading", fraction: 0.05 });
       try {
-        const next = await openClip(file);
+        const next = await openClip(file, setImportProgress);
         teardown();
         clipRef.current = next;
         fullGrabber.current = createFrameGrabber(next.frameWidth, next.frameHeight);
@@ -163,6 +168,7 @@ export function useVideoClip(onError: (error: unknown) => void): VideoClipApi {
         return false;
       } finally {
         setOpening(false);
+        setImportProgress(null);
       }
     },
     [readSharpFrame, teardown],
@@ -311,6 +317,7 @@ export function useVideoClip(onError: (error: unknown) => void): VideoClipApi {
       playing,
       loop,
       opening,
+      importProgress,
       coarseFrames,
       open,
       close,
@@ -324,7 +331,7 @@ export function useVideoClip(onError: (error: unknown) => void): VideoClipApi {
       setRange,
     }),
     [
-      clip, frame, frameImage, playing, loop, opening, coarseFrames,
+      clip, frame, frameImage, playing, loop, opening, importProgress, coarseFrames,
       open, close, goToFrame, step, play, pause, toggle, range,
     ],
   );

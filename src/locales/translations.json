@@ -377,7 +377,13 @@
     "videoExport.phaseMux": "Writing the video file",
     "videoExport.eta": "about {time} left",
     "videoExport.frameErrors": "{count} frames repeated",
-    "videoExport.keepOpen": "Keep this window open until the export finishes."
+    "videoExport.keepOpen": "Keep this window open until the export finishes.",
+    "import.title": "Opening video",
+    "import.reading": "Reading the file…",
+    "import.metadata": "Reading metadata",
+    "import.rate": "Measuring frame rate",
+    "import.frame": "Decoding the first frame",
+    "import.ready": "Ready"
   },
   "es": {
     "palette.layers": "Capas",
@@ -755,7 +761,15 @@
     "videoExport.phaseMux": "Escribiendo el archivo de vídeo",
     "videoExport.eta": "falta aproximadamente {time}",
     "videoExport.frameErrors": "{count} fotogramas repetidos",
-    "videoExport.keepOpen": "Mantén esta ventana abierta hasta que termine la exportación."
+    "videoExport.keepOpen": "Mantén esta ventana abierta hasta que termine la exportación.",
+    "palette.stackInfluenceHint": "Cuánto influye la posición de una capa en la pila sobre la simple coincidencia del color más cercano. En cero, el orden es decorativo: los mismos dos colores ocuparán los mismos píxeles sin importar cómo se apilen. Al aumentarlo, un color ubicado en la base dominará realmente las sombras.",
+    "palette.layersHint": "El panel muestra las luces en la parte superior, coincidiendo con la lectura de una curva de tonos.",
+    "import.title": "Abriendo video",
+    "import.reading": "Leyendo el archivo…",
+    "import.metadata": "Leyendo metadatos",
+    "import.rate": "Calculando la tasa de fotogramas",
+    "import.frame": "Decodificando el primer fotograma",
+    "import.ready": "Listo"
   },
   "fr": {
     "palette.layers": "Couches",
@@ -1133,7 +1147,15 @@
     "videoExport.phaseMux": "Écriture du fichier vidéo",
     "videoExport.eta": "environ {time} restants",
     "videoExport.frameErrors": "{count} images répétées",
-    "videoExport.keepOpen": "Laissez cette fenêtre ouverte jusqu'à la fin de l'exportation."
+    "videoExport.keepOpen": "Laissez cette fenêtre ouverte jusqu'à la fin de l'exportation.",
+    "palette.stackInfluenceHint": "Définit dans quelle mesure la position d'un calque dans la pile prime sur la simple correspondance avec la couleur la plus proche. À zéro, l'agencement est décoratif : les mêmes couleurs s'appliquent aux mêmes pixels, peu importe l'empilement. En augmentant cette valeur, une couleur placée en bas s'approprie véritablement les ombres.",
+    "palette.layersHint": "Le panneau liste les tons clairs en haut, comme pour la lecture d'une courbe des tonalités.",
+    "import.title": "Ouverture de la vidéo",
+    "import.reading": "Lecture du fichier…",
+    "import.metadata": "Lecture des métadonnées",
+    "import.rate": "Mesure de la fréquence d'images",
+    "import.frame": "Décodage de la première image",
+    "import.ready": "Prêt"
   },
   "ja": {
     "palette.layers": "レイヤー",
@@ -1511,7 +1533,15 @@
     "videoExport.phaseMux": "ビデオファイルを書き込み中",
     "videoExport.eta": "残り約 {time}",
     "videoExport.frameErrors": "{count} フレームが重複しました",
-    "videoExport.keepOpen": "エクスポートが完了するまでこのウィンドウを開いたままにしてください。"
+    "videoExport.keepOpen": "エクスポートが完了するまでこのウィンドウを開いたままにしてください。",
+    "palette.stackInfluenceHint": "レイヤーの重なり順が、単純な近似色マッチングよりもどの程度優先されるかを設定します。値が0の場合、順序は見た目のみとなり、どう重ねても同じ2色が同じピクセルに配置されます。値を上げると、一番下に配置された色が実際にシャドウ部分に適用されます。",
+    "palette.layersHint": "トーンカーブの読み方に合わせて、ドックではハイライトが一番上に表示されます。",
+    "import.title": "ビデオを開いています",
+    "import.reading": "ファイルを読み込んでいます…",
+    "import.metadata": "メタデータを読み込んでいます",
+    "import.rate": "フレームレートを計測しています",
+    "import.frame": "最初のフレームをデコードしています",
+    "import.ready": "準備完了"
   },
   "zh": {
     "palette.layers": "图层",
@@ -1889,7 +1919,15 @@
     "videoExport.phaseMux": "正在写入视频文件",
     "videoExport.eta": "剩余时间约 {time}",
     "videoExport.frameErrors": "{count} 帧重复",
-    "videoExport.keepOpen": "在导出完成之前，请保持此窗口打开。"
+    "videoExport.keepOpen": "在导出完成之前，请保持此窗口打开。",
+    "palette.stackInfluenceHint": "图层在堆栈中的位置优先于普通最近颜色匹配的程度。值为零时，排列顺序仅为装饰——无论如何堆叠，相同的两种颜色都会映射到相同的像素上。调高此值，位于底部的颜色将真正接管阴影区域。",
+    "palette.layersHint": "停靠栏将高光部分列在顶部，与色调曲线的读取习惯一致。",
+    "import.title": "正在打开视频",
+    "import.reading": "正在读取文件…",
+    "import.metadata": "正在读取元数据",
+    "import.rate": "正在测量帧率",
+    "import.frame": "正在解码首帧",
+    "import.ready": "就绪"
   },
   "bs": {
     "palette.layers": "Slojevi",
@@ -2267,7 +2305,15 @@
     "videoExport.phaseMux": "Zapisivanje video datoteke",
     "videoExport.eta": "još oko {time}",
     "videoExport.frameErrors": "Ponovljeno {count} kadrova",
-    "videoExport.keepOpen": "Zadržite ovaj prozor otvorenim dok se izvoz ne završi."
+    "videoExport.keepOpen": "Zadržite ovaj prozor otvorenim dok se izvoz ne završi.",
+    "palette.stackInfluenceHint": "Koliko pozicija sloja u stogu prevladava nad običnim podudaranjem najbliže boje. Na nuli je raspored dekorativan - iste dvije boje idu na iste piksele bez obzira na to kako ih složite. Povećajte vrijednost i boja smještena na dnu zapravo preuzima sjene.",
+    "palette.layersHint": "Panel prikazuje svijetle tonove na vrhu, što odgovara načinu čitanja tonske krivulje.",
+    "import.title": "Otvaranje videozapisa",
+    "import.reading": "Čitanje datoteke…",
+    "import.metadata": "Čitanje metapodataka",
+    "import.rate": "Mjerenje brzine kadrova",
+    "import.frame": "Dekodiranje prvog kadra",
+    "import.ready": "Spremno"
   },
   "sr": {
     "palette.layers": "Slojevi",
@@ -2645,7 +2691,15 @@
     "videoExport.phaseMux": "Upisivanje video datoteke",
     "videoExport.eta": "preostalo oko {time}",
     "videoExport.frameErrors": "Ponovljeno kadrova: {count}",
-    "videoExport.keepOpen": "Držite ovaj prozor otvorenim dok se izvoz ne završi."
+    "videoExport.keepOpen": "Držite ovaj prozor otvorenim dok se izvoz ne završi.",
+    "palette.stackInfluenceHint": "Koliko pozicija sloja u redosledu nadjačava obično uparivanje najbliže boje. Na nuli, raspored je dekorativan - iste dve boje se primenjuju na iste piksele bez obzira na to kako ih poređate. Povećajte vrednost i boja smeštena na dnu će zaista preuzeti senke.",
+    "palette.layersHint": "Panel prikazuje svetle tonove na vrhu, prateći način na koji se čita tonska kriva.",
+    "import.title": "Otvaranje videa",
+    "import.reading": "Čitanje datoteke…",
+    "import.metadata": "Čitanje metapodataka",
+    "import.rate": "Merenje brzine kadrova",
+    "import.frame": "Dekodiranje prvog kadra",
+    "import.ready": "Spremno"
   },
   "de": {
     "palette.layers": "Ebenen",
@@ -3023,7 +3077,15 @@
     "videoExport.phaseMux": "Videodatei wird geschrieben",
     "videoExport.eta": "noch etwa {time}",
     "videoExport.frameErrors": "{count} Frames wiederholt",
-    "videoExport.keepOpen": "Lassen Sie dieses Fenster geöffnet, bis der Export abgeschlossen ist."
+    "videoExport.keepOpen": "Lassen Sie dieses Fenster geöffnet, bis der Export abgeschlossen ist.",
+    "palette.stackInfluenceHint": "Wie stark die Position einer Ebene im Stapel die einfache Zuordnung zur nächstgelegenen Farbe überwiegt. Bei Null ist die Anordnung rein dekorativ – dieselben zwei Farben landen auf denselben Pixeln, unabhängig davon, wie sie gestapelt werden. Erhöhen Sie den Wert, damit eine ganz unten platzierte Farbe tatsächlich die Schatten beansprucht.",
+    "palette.layersHint": "Das Dock listet die Lichter ganz oben auf, entsprechend dem Verlauf einer Gradationskurve.",
+    "import.title": "Video wird geöffnet",
+    "import.reading": "Datei wird gelesen…",
+    "import.metadata": "Metadaten werden gelesen",
+    "import.rate": "Bildrate wird ermittelt",
+    "import.frame": "Erster Frame wird dekodiert",
+    "import.ready": "Bereit"
   },
   "it": {
     "palette.layers": "Livelli",
@@ -3401,7 +3463,15 @@
     "videoExport.phaseMux": "Scrittura del file video in corso",
     "videoExport.eta": "circa {time} rimanente",
     "videoExport.frameErrors": "{count} fotogrammi ripetuti",
-    "videoExport.keepOpen": "Tieni aperta questa finestra fino alla fine dell'esportazione."
+    "videoExport.keepOpen": "Tieni aperta questa finestra fino alla fine dell'esportazione.",
+    "palette.stackInfluenceHint": "Quanto la posizione di un livello prevale sulla semplice corrispondenza del colore più vicino. A zero, la disposizione è decorativa: gli stessi due colori finiscono sugli stessi pixel in qualsiasi ordine li si impili. Aumentando il valore, un colore posizionato in basso si applica effettivamente alle ombre.",
+    "palette.layersHint": "Il pannello elenca le alteluci in alto, rispecchiando la lettura di una curva di tono.",
+    "import.title": "Apertura video",
+    "import.reading": "Lettura del file…",
+    "import.metadata": "Lettura metadati",
+    "import.rate": "Misurazione frequenza fotogrammi",
+    "import.frame": "Decodifica del primo fotogramma",
+    "import.ready": "Pronto"
   },
   "pt": {
     "palette.layers": "Camadas",
@@ -3779,7 +3849,15 @@
     "videoExport.phaseMux": "Gravando o arquivo de vídeo",
     "videoExport.eta": "cerca de {time} restante",
     "videoExport.frameErrors": "{count} frames repetidos",
-    "videoExport.keepOpen": "Mantenha esta janela aberta até que a exportação termine."
+    "videoExport.keepOpen": "Mantenha esta janela aberta até que a exportação termine.",
+    "palette.stackInfluenceHint": "Determina o quanto a posição da camada na pilha prevalece sobre a correspondência de cor mais próxima. No valor zero, a ordem é decorativa: as mesmas cores ocuparão os mesmos pixels não importa como sejam empilhadas. Aumente o valor para que uma cor posicionada na base domine as sombras.",
+    "palette.layersHint": "O painel exibe os realces no topo, acompanhando a leitura de uma curva de tons.",
+    "import.title": "Abrindo vídeo",
+    "import.reading": "Lendo o arquivo…",
+    "import.metadata": "Lendo metadados",
+    "import.rate": "Calculando a taxa de quadros",
+    "import.frame": "Decodificando o primeiro quadro",
+    "import.ready": "Pronto"
   },
   "ru": {
     "palette.layers": "Слои",
@@ -4157,7 +4235,15 @@
     "videoExport.phaseMux": "Запись видеофайла",
     "videoExport.eta": "осталось около {time}",
     "videoExport.frameErrors": "Повторено {count} кадров",
-    "videoExport.keepOpen": "Не закрывайте это окно до завершения экспорта."
+    "videoExport.keepOpen": "Не закрывайте это окно до завершения экспорта.",
+    "palette.stackInfluenceHint": "Насколько положение слоя в стеке важнее обычного подбора ближайшего цвета. При нулевом значении порядок декоративный: одни и те же цвета ложатся на те же пиксели независимо от порядка слоев. Увеличьте значение, и цвет в самом низу стека действительно заполнит тени.",
+    "palette.layersHint": "Панель отображает светлые тона сверху, аналогично тоновой кривой.",
+    "import.title": "Открытие видео",
+    "import.reading": "Чтение файла…",
+    "import.metadata": "Чтение метаданных",
+    "import.rate": "Определение частоты кадров",
+    "import.frame": "Декодирование первого кадра",
+    "import.ready": "Готово"
   },
   "ko": {
     "palette.layers": "레이어",
@@ -4535,7 +4621,15 @@
     "videoExport.phaseMux": "비디오 파일 쓰는 중",
     "videoExport.eta": "약 {time} 남음",
     "videoExport.frameErrors": "반복된 프레임 {count}개",
-    "videoExport.keepOpen": "내보내기가 끝날 때까지 이 창을 열어 두세요."
+    "videoExport.keepOpen": "내보내기가 끝날 때까지 이 창을 열어 두세요.",
+    "palette.stackInfluenceHint": "스택 내 레이어의 위치가 단순한 근접 색상 매칭보다 우선하는 정도입니다. 값이 0이면 레이어 순서는 장식에 불과하여 어떻게 쌓든 두 색상이 동일한 픽셀에 적용됩니다. 값을 높이면 하단에 배치된 색상이 실제로 어두운 영역을 차지하게 됩니다.",
+    "palette.layersHint": "독(dock)은 톤 커브와 마찬가지로 하이라이트를 상단에 나열합니다.",
+    "import.title": "비디오 열기",
+    "import.reading": "파일 읽는 중…",
+    "import.metadata": "메타데이터 읽는 중",
+    "import.rate": "프레임 레이트 측정 중",
+    "import.frame": "첫 프레임 디코딩 중",
+    "import.ready": "준비 완료"
   },
   "ar": {
     "palette.layers": "الطبقات",
@@ -4912,7 +5006,16 @@
     "videoExport.phaseMux": "كتابة ملف الفيديو",
     "videoExport.eta": "متبقي حوالي {time}",
     "videoExport.frameErrors": "{count} إطارات مكررة",
-    "videoExport.keepOpen": "أبقِ هذه النافذة مفتوحة حتى ينتهي التصدير."
+    "videoExport.keepOpen": "أبقِ هذه النافذة مفتوحة حتى ينتهي التصدير.",
+    "palette.stackInfluenceHint": "يحدد مدى تأثير موقع الطبقة في المكدس مقارنة بالمطابقة العادية لأقرب لون. عند القيمة صفر، يكون الترتيب شكلياً فقط - حيث سيستقر نفس اللونين على نفس البكسلات بغض النظر عن ترتيبهما. عند زيادة القيمة، سيستحوذ اللون الموجود في الأسفل فعلياً على الظلال.",
+    "palette.layersHint": "تعرض لوحة الإرساء درجات الإضاءة الساطعة في الأعلى، بما يتطابق مع طريقة قراءة منحنى النغمات اللونية.",
+    "algo.sierra-two-row.blurb": "نسخة أخف من Sierra. تلطيخ أقل.",
+    "import.title": "فتح الفيديو",
+    "import.reading": "جاري قراءة الملف…",
+    "import.metadata": "قراءة البيانات الوصفية",
+    "import.rate": "قياس معدل الإطارات",
+    "import.frame": "فك تشفير الإطار الأول",
+    "import.ready": "جاهز"
   },
   "hi": {
     "palette.layers": "परतें",
@@ -5290,7 +5393,15 @@
     "videoExport.phaseMux": "वीडियो फ़ाइल लिखी जा रही है",
     "videoExport.eta": "लगभग {time} शेष",
     "videoExport.frameErrors": "{count} फ़्रेम दोहराए गए",
-    "videoExport.keepOpen": "एक्सपोर्ट समाप्त होने तक इस विंडो को खुला रखें।"
+    "videoExport.keepOpen": "एक्सपोर्ट समाप्त होने तक इस विंडो को खुला रखें।",
+    "palette.stackInfluenceHint": "स्टैक में किसी लेयर का स्थान सामान्य निकटतम-रंग मिलान पर कितना हावी होता है। शून्य पर यह क्रम केवल सजावटी होता है - आप इन्हें कैसे भी स्टैक करें, वही दो रंग समान पिक्सेल पर आते हैं। इसे बढ़ाने पर, सबसे नीचे स्थित रंग वास्तव में छाया (shadows) वाले हिस्से को कवर कर लेता है।",
+    "palette.layersHint": "डॉक में हाइलाइट्स सबसे ऊपर दिखाई देते हैं, जो टोन कर्व को पढ़ने के तरीके से मेल खाता है।",
+    "import.title": "वीडियो खोला जा रहा है",
+    "import.reading": "फ़ाइल पढ़ी जा रही है…",
+    "import.metadata": "मेटाडेटा पढ़ा जा रहा है",
+    "import.rate": "फ़्रेम रेट मापा जा रहा है",
+    "import.frame": "पहले फ़्रेम को डिकोड किया जा रहा है",
+    "import.ready": "तैयार"
   },
   "tr": {
     "palette.layers": "Katmanlar",
@@ -5668,7 +5779,15 @@
     "videoExport.phaseMux": "Video dosyası yazılıyor",
     "videoExport.eta": "yaklaşık {time} kaldı",
     "videoExport.frameErrors": "{count} kare tekrarlandı",
-    "videoExport.keepOpen": "Dışa aktarma tamamlanana kadar bu pencereyi açık tutun."
+    "videoExport.keepOpen": "Dışa aktarma tamamlanana kadar bu pencereyi açık tutun.",
+    "palette.stackInfluenceHint": "Bir katmanın yığındaki konumunun standart en yakın renk eşleştirmesine kıyasla ne kadar etkili olacağını belirler. Sıfır değerinde diziliş sadece dekoratiftir; nasıl sıralarsanız sıralayın aynı iki renk aynı piksellere uygulanır. Değeri artırdığınızda ise en altta bulunan renk gerçekten gölgelere hakim olur.",
+    "palette.layersHint": "Panel, tıpkı bir ton eğrisi gibi açık tonları en üstte listeler.",
+    "import.title": "Video açılıyor",
+    "import.reading": "Dosya okunuyor…",
+    "import.metadata": "Meta veri okunuyor",
+    "import.rate": "Kare hızı ölçülüyor",
+    "import.frame": "İlk karenin kodu çözülüyor",
+    "import.ready": "Hazır"
   },
   "pl": {
     "palette.layers": "Warstwy",
@@ -6046,7 +6165,15 @@
     "videoExport.phaseMux": "Zapisywanie pliku wideo",
     "videoExport.eta": "pozostało około {time}",
     "videoExport.frameErrors": "powtórzone klatki: {count}",
-    "videoExport.keepOpen": "Nie zamykaj tego okna, dopóki eksport się nie zakończy."
+    "videoExport.keepOpen": "Nie zamykaj tego okna, dopóki eksport się nie zakończy.",
+    "palette.stackInfluenceHint": "W jakim stopniu pozycja warstwy na stosie przeważa nad zwykłym dopasowaniem do najbliższego koloru. Przy wartości zero układ ma charakter wyłącznie wizualny – te same dwa kolory zawsze trafiają na te same piksele, bez względu na kolejność. Po zwiększeniu tej wartości, kolor znajdujący się na dole faktycznie wypełnia cienie.",
+    "palette.layersHint": "Panel wyświetla światła na samej górze, co odpowiada sposobowi odczytu krzywej tonalnej.",
+    "import.title": "Otwieranie wideo",
+    "import.reading": "Wczytywanie pliku…",
+    "import.metadata": "Odczytywanie metadanych",
+    "import.rate": "Określanie liczby klatek na sekundę",
+    "import.frame": "Dekodowanie pierwszej klatki",
+    "import.ready": "Gotowe"
   },
   "nl": {
     "palette.layers": "Lagen",
@@ -6424,7 +6551,15 @@
     "videoExport.phaseMux": "Videobestand wegschrijven",
     "videoExport.eta": "nog ongeveer {time}",
     "videoExport.frameErrors": "{count} frames herhaald",
-    "videoExport.keepOpen": "Houd dit venster open totdat de export is voltooid."
+    "videoExport.keepOpen": "Houd dit venster open totdat de export is voltooid.",
+    "palette.stackInfluenceHint": "Bepaalt in hoeverre de positie van een laag in de stapel zwaarder weegt dan het standaard matchen op de dichtstbijzijnde kleur. Op nul is de volgorde decoratief – dezelfde twee kleuren belanden op dezelfde pixels, ongeacht hoe je ze stapelt. Verhoog de waarde, en een kleur onderaan eist daadwerkelijk de schaduwen op.",
+    "palette.layersHint": "Het dock toont de hooglichten bovenaan, net als bij het lezen van een tooncurve.",
+    "import.title": "Video openen",
+    "import.reading": "Bestand inlezen…",
+    "import.metadata": "Metadata inlezen",
+    "import.rate": "Framerate meten",
+    "import.frame": "Eerste frame decoderen",
+    "import.ready": "Gereed"
   },
   "sv": {
     "palette.layers": "Lager",
@@ -6802,6 +6937,14 @@
     "videoExport.phaseMux": "Sparar videofilen",
     "videoExport.eta": "ungefär {time} kvar",
     "videoExport.frameErrors": "{count} upprepade bildrutor",
-    "videoExport.keepOpen": "Håll detta fönster öppet tills exporten är klar."
+    "videoExport.keepOpen": "Håll detta fönster öppet tills exporten är klar.",
+    "palette.stackInfluenceHint": "Hur mycket ett lagers placering i stapeln väger tyngre än vanlig färgmatchning. Vid noll är ordningen enbart dekorativ – samma två färger hamnar på samma pixlar oavsett hur du staplar dem. Öka värdet, så kommer en färg placerad i botten faktiskt att göra anspråk på skuggorna.",
+    "palette.layersHint": "Panelen listar högdagrar överst, vilket överensstämmer med hur en tonkurva läses av.",
+    "import.title": "Öppnar video",
+    "import.reading": "Läser filen…",
+    "import.metadata": "Läser metadata",
+    "import.rate": "Beräknar bildfrekvens",
+    "import.frame": "Avkodar första bildrutan",
+    "import.ready": "Klar"
   }
 }

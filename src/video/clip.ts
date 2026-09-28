@@ -24,6 +24,28 @@ export const MAX_DURATION_S = 20 * 60;
 const SEEK_TIMEOUT_MS = 8_000;
 const METADATA_TIMEOUT_MS = 15_000;
 
+/**
+ * Stages an import passes through, so the UI can say what it is waiting on.
+ *
+ * The whole sequence is a couple of seconds on a large clip, which is long
+ * enough that silence reads as a hang.
+ */
+export type ImportStage = "reading" | "metadata" | "rate" | "frame" | "ready";
+
+export interface ImportProgress {
+  stage: ImportStage;
+  /** 0..1, weighted by how long each stage actually takes. */
+  fraction: number;
+}
+
+const STAGE_FRACTION: Record<ImportStage, number> = {
+  reading: 0.05,
+  metadata: 0.25,
+  rate: 0.55,
+  frame: 0.85,
+  ready: 1,
+};
+
 export interface Clip {
   file: File;
   /** Blob URL owned by the clip; released by `closeClip`. */
@@ -127,19 +149,53 @@ async function measureFps(el: HTMLVideoElement): Promise<{ fps: number; assumed:
 }
 
 /** Loads a file into a seekable clip, or throws a `video/*` AppError. */
-export async function openClip(file: File): Promise<Clip> {
+export async function openClip(file: File, onProgress?: (p: ImportProgress) => void): Promise<Clip> {
+  const report = (stage: ImportStage) => onProgress?.({ stage, fraction: STAGE_FRACTION[stage] });
+  report("reading");
   if (file.size === 0) {
     throw appError("video/decode-failed", { detail: `${file.name} is zero bytes`, values: { name: file.name } });
   }
 
   const url = URL.createObjectURL(file);
   const el = document.createElement("video");
-  el.preload = "auto";
+  /**
+   * `metadata`, never `auto`, and this is load-bearing.
+   *
+   * WebKitGTK is the engine the desktop build runs on. Given a blob: URL and
+   * `preload="auto"` it pulls the whole clip into a buffering GStreamer
+   * pipeline that then cannot service a seek at all: the first
+   * `currentTime = x` fails with MEDIA_ERR_DECODE, or simply never fires
+   * `seeked` and trips the eight-second budget. Import died on its very first
+   * seek, every time, on every clip.
+   *
+   * With `metadata` the same blob URL seeks fine - frame zero, forwards and
+   * backwards, on 1080p and 4K alike. Chromium is happy either way, which is
+   * exactly why this is worth a comment: it looks like a pointless
+   * pessimisation until you run it on WebKit.
+   *
+   * There is no buffering cost to pay here either. The bytes are already in
+   * memory behind the blob; `auto` was only ever asking the engine to copy
+   * them into a second pipeline.
+   */
+  el.preload = "metadata";
   el.muted = true;
   el.playsInline = true;
-  // Required for `drawImage` to be allowed to read the frame back out; a blob
-  // URL is same-origin anyway, but WebKit is stricter than the spec here.
-  el.crossOrigin = "anonymous";
+  /**
+   * `crossOrigin` is deliberately NOT set, and that is also load-bearing.
+   *
+   * It used to be `"anonymous"`, on the theory that `drawImage` needs it to be
+   * allowed to read the frame back. That was wrong in both directions: a blob:
+   * URL is same-origin by construction, so there is no CORS to negotiate, and
+   * setting the attribute makes WebKitGTK treat the load as CORS-enabled, fail
+   * its own check, and hand back a surface that paints *nothing*.
+   *
+   * The failure is silent - `drawImage` does not throw and `getImageData` does
+   * not raise a SecurityError, the pixels are simply all zero. The symptom is
+   * a clip that imports perfectly, reports the right size, duration and frame
+   * rate, and shows an empty canvas. Measured on the same 4K frame: with the
+   * attribute every sampled pixel came back transparent; without it, 774
+   * distinct colours.
+   */
   el.src = url;
 
   const cleanup = () => {
@@ -176,6 +232,7 @@ export async function openClip(file: File): Promise<Clip> {
       el.addEventListener("loadedmetadata", ok, { once: true });
       el.addEventListener("error", bad, { once: true });
     });
+    report("metadata");
 
     const width = el.videoWidth;
     const height = el.videoHeight;
@@ -200,10 +257,13 @@ export async function openClip(file: File): Promise<Clip> {
       });
     }
 
+    report("rate");
     const { fps, assumed } = await measureFps(el);
-    el.currentTime = 0;
+
+    report("frame");
 
     const frame = fitFrame(width, height);
+    report("ready");
     return {
       file,
       url,
@@ -265,6 +325,15 @@ export function timeToFrame(clip: Clip, seconds: number): number {
 
 /**
  * Seeks and waits for the decoder to actually present that position.
+ *
+ * Note what this deliberately does *not* do: wait on
+ * `requestVideoFrameCallback` for a presented frame. That callback never fires
+ * on a paused element here, so the wait would time out on every single seek -
+ * measured at eight seeks out of eight - and an export that seeks once per
+ * frame would spend its entire budget in a timeout it can never satisfy.
+ * `seeked` plus `readyState` is sufficient: with the canvas able to read
+ * decoded frames at all, immediate grabs came back complete eight times out of
+ * eight.
  *
  * `seeked` alone is not enough on WebKit: it can fire while `readyState` is
  * still below HAVE_CURRENT_DATA, and drawing then yields the previous frame -
