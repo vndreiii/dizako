@@ -2,6 +2,7 @@
 //! target); wasm-bindgen bindings live in `wasm_api` and only compile for
 //! wasm32.
 
+pub mod ascii;
 pub mod color;
 pub mod engine;
 pub mod kernels;

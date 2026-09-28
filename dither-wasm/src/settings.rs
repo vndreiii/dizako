@@ -52,6 +52,11 @@ pub struct AlgorithmParams {
     pub jpeg_error_density: Option<f64>,
     pub jpeg_error_amplitude: Option<f64>,
     pub jpeg_error_coherence: Option<f64>,
+    pub ascii_match: Option<String>,
+    pub ascii_contrast: Option<f64>,
+    pub ascii_ink: Option<String>,
+    pub ascii_gamma: Option<f64>,
+    pub ascii_invert: Option<bool>,
 }
 
 impl AlgorithmParams {
@@ -63,8 +68,11 @@ impl AlgorithmParams {
             noise_amount, cell_size, screen_angle, noise_scale, riemersma_queue,
             riemersma_decay, dot_class_size, omino_error_strength, omino_across,
             omino_aside, omino_phase, omino_color_count, jpeg_cell_size, jpeg_damage,
-            jpeg_error_rate, jpeg_error_density, jpeg_error_amplitude, jpeg_error_coherence);
+            jpeg_error_rate, jpeg_error_density, jpeg_error_amplitude, jpeg_error_coherence,
+            ascii_contrast, ascii_gamma, ascii_invert);
         if let Some(value) = &self.omino_direction { settings.omino_direction = value.clone(); }
+        if let Some(value) = &self.ascii_match { settings.ascii_match = value.clone(); }
+        if let Some(value) = &self.ascii_ink { settings.ascii_ink = value.clone(); }
     }
 }
 
@@ -163,6 +171,24 @@ pub struct Settings {
     #[serde(default)]
     pub jpeg_error_coherence: f64,
 
+    // --- ascii ---
+    /// `brightness` matches mean ink; `shape` matches where the ink sits.
+    #[serde(default)]
+    pub ascii_match: String,
+    /// How much the shape matcher still cares about overall density, 0..4.
+    #[serde(default)]
+    pub ascii_contrast: f64,
+    /// `palette` inks each cell with its own matched colour; `mono` uses the
+    /// palette's two extremes throughout.
+    #[serde(default)]
+    pub ascii_ink: String,
+    /// Curve applied to cell coverage before matching, 0.2..3.
+    #[serde(default)]
+    pub ascii_gamma: f64,
+    /// Swap ink and paper.
+    #[serde(default)]
+    pub ascii_invert: bool,
+
     // --- tone ---
     #[serde(default)]
     pub invert: bool,
@@ -232,6 +258,11 @@ impl Settings {
             jpeg_error_density: 0.75,
             jpeg_error_amplitude: 1.0,
             jpeg_error_coherence: 0.0,
+            ascii_match: "shape".into(),
+            ascii_contrast: 1.0,
+            ascii_ink: "palette".into(),
+            ascii_gamma: 1.0,
+            ascii_invert: false,
             invert: false,
             grayscale: false,
             brightness: 0.0,

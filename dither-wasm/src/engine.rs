@@ -4,6 +4,7 @@
 //! Storage widths are part of the parity contract: f32 planes with f64 local
 //! arithmetic everywhere the TS engine uses Float32Arrays.
 
+use crate::ascii::GlyphAtlas;
 use crate::color::{luma, rgb_to_oklab};
 use crate::kernels;
 use crate::masks::{bayer_matrix, blue_noise, checker_mask, ign};
@@ -16,6 +17,8 @@ type Matcher = fn(&Palette, f64, f64, f64) -> usize;
 
 struct Ctx<'a> {
     src: &'a [f32],
+    /// Pre-rasterised glyphs, only ever populated for the text algorithm.
+    glyphs: &'a GlyphAtlas,
     out: &'a mut [u8],
     alpha: &'a [u8],
     w: usize,
@@ -682,10 +685,132 @@ fn omino_pass(c: &mut Ctx) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Text mode                                                           */
+/* ------------------------------------------------------------------ */
+
+/// Paints the image out of glyphs, one per cell.
+///
+/// Each cell contributes two things: a coverage map, which decides *which*
+/// glyph belongs there, and a mean colour, which decides what colour its ink
+/// is. Keeping those separate is what lets the output stay a palette image -
+/// the ink is matched through the same palette machinery every other algorithm
+/// uses, so stacking, tonal bias and match mode all behave as expected.
+///
+/// Cells at the right and bottom edges are usually partial. They are matched
+/// on the pixels that exist rather than padded, so a half cell picks a glyph
+/// for the half it can see instead of one biased toward empty paper.
+fn ascii_pass(c: &mut Ctx) {
+    let atlas = c.glyphs;
+    if atlas.is_empty() {
+        // No atlas shipped: a flat threshold is a far better failure than a
+        // blank frame, and the host raises the real error.
+        threshold_pass(c, 0.0);
+        return;
+    }
+
+    let cw = atlas.cell_w;
+    let ch = atlas.cell_h;
+    let gamma = c.s.ascii_gamma.clamp(0.2, 3.0);
+    let contrast = c.s.ascii_contrast.clamp(0.0, 4.0);
+    let invert = c.s.ascii_invert;
+    let by_shape = c.s.ascii_match != "brightness";
+    let mono = c.s.ascii_ink == "mono";
+
+    // The palette's extremes are the paper and, in mono, the ink.
+    let (mut dark, mut light) = (0usize, 0usize);
+    for i in 1..c.p.n {
+        if c.p.y[i] < c.p.y[dark] { dark = i; }
+        if c.p.y[i] > c.p.y[light] { light = i; }
+    }
+
+    let mut cover = vec![0f32; cw * ch];
+
+    let mut cy = 0usize;
+    while cy < c.h {
+        let mut cx = 0usize;
+        while cx < c.w {
+            let rows = ch.min(c.h - cy);
+            let cols = cw.min(c.w - cx);
+
+            let mut sum_r = 0.0f64;
+            let mut sum_g = 0.0f64;
+            let mut sum_b = 0.0f64;
+            let mut n = 0.0f64;
+            for v in cover.iter_mut() { *v = 0.0; }
+
+            for y in 0..rows {
+                for x in 0..cols {
+                    let i = ((cy + y) * c.w + (cx + x)) * 3;
+                    let r = f64::from(c.src[i]);
+                    let g = f64::from(c.src[i + 1]);
+                    let b = f64::from(c.src[i + 2]);
+                    sum_r += r;
+                    sum_g += g;
+                    sum_b += b;
+                    n += 1.0;
+                    // Coverage is ink, so a dark pixel is a full one.
+                    let mut t = 1.0 - (luma(r, g, b) / 255.0).clamp(0.0, 1.0);
+                    if invert { t = 1.0 - t; }
+                    if (gamma - 1.0).abs() > 1e-6 { t = pow_shared(t, gamma); }
+                    cover[y * cw + x] = t as f32;
+                }
+            }
+            if n == 0.0 { cx += cw; continue; }
+
+            let mean_ink = {
+                let mut acc = 0.0f64;
+                for y in 0..rows { for x in 0..cols { acc += f64::from(cover[y * cw + x]); } }
+                acc / n
+            };
+
+            let glyph = if by_shape {
+                atlas.by_shape(&cover, contrast)
+            } else {
+                atlas.by_brightness(mean_ink)
+            };
+
+            let avg_r = sum_r / n;
+            let avg_g = sum_g / n;
+            let avg_b = sum_b / n;
+            let ink_idx = if mono {
+                if invert { dark } else { light }
+            } else {
+                (c.match_fn)(c.p, avg_r, avg_g, avg_b)
+            };
+            // Paper is whichever extreme the ink is not, so text never
+            // disappears into its own background.
+            let paper_idx = if mono {
+                if invert { light } else { dark }
+            } else if f64::from(c.p.y[ink_idx]) > 127.5 { dark } else { light };
+
+            let bits = atlas.bitmaps
+                [glyph * cw * ch..(glyph + 1) * cw * ch]
+                .to_vec();
+            for y in 0..rows {
+                for x in 0..cols {
+                    let i = (cy + y) * c.w + (cx + x);
+                    let on = bits[y * cw + x] >= 128;
+                    put(c, i, if on { ink_idx } else { paper_idx });
+                }
+            }
+
+            cx += cw;
+        }
+        cy += ch;
+    }
+}
+
+/* ------------------------------------------------------------------ */
 /* Entry point                                                         */
 /* ------------------------------------------------------------------ */
 
-fn dither_single(data: &[u8], width: usize, height: usize, s: &Settings) -> Vec<u8> {
+fn dither_single(
+    data: &[u8],
+    width: usize,
+    height: usize,
+    s: &Settings,
+    glyphs: &GlyphAtlas,
+) -> Vec<u8> {
     let px = width * height;
     let mut out = vec![0u8; px * 4];
     let alpha: Vec<u8> = data.chunks_exact(4).map(|q| q[3]).collect();
@@ -701,6 +826,7 @@ fn dither_single(data: &[u8], width: usize, height: usize, s: &Settings) -> Vec<
 
     let mut ctx = Ctx {
         src: &src,
+        glyphs,
         out: &mut out,
         alpha: &alpha,
         w: width,
@@ -769,6 +895,7 @@ fn dither_single(data: &[u8], width: usize, height: usize, s: &Settings) -> Vec<
         "ostromoukhov" => adaptive_diffuse_pass(&mut ctx),
         "omino" => omino_pass(&mut ctx),
         "jpeg-sort" => jpeg_sort_pass(&mut ctx),
+        "ascii" => ascii_pass(&mut ctx),
         other => {
             match kernels::kernel_for(other) {
                 Some((k, div)) => error_diffuse_pass(&mut ctx, k, div),
@@ -786,8 +913,23 @@ fn dither_single(data: &[u8], width: usize, height: usize, s: &Settings) -> Vec<
 /// Run enabled passes from top to bottom. A later pass consumes the blended
 /// pixels from the preceding pass; grading and filters apply only once.
 pub fn dither(data: &[u8], width: usize, height: usize, s: &Settings) -> Vec<u8> {
+    dither_with_glyphs(data, width, height, s, &GlyphAtlas::default())
+}
+
+/// As `dither`, with a glyph atlas available to the text algorithm.
+///
+/// Kept as a separate entry point so the parity harness and every existing
+/// caller keep the signature they were written against; text mode is the only
+/// pass that reads the atlas, and it degrades to a threshold without one.
+pub fn dither_with_glyphs(
+    data: &[u8],
+    width: usize,
+    height: usize,
+    s: &Settings,
+    glyphs: &GlyphAtlas,
+) -> Vec<u8> {
     if s.algorithm_layers.is_empty() {
-        return dither_single(data, width, height, s);
+        return dither_single(data, width, height, s, glyphs);
     }
 
     let mut current = data.to_vec();
@@ -815,7 +957,7 @@ pub fn dither(data: &[u8], width: usize, height: usize, s: &Settings) -> Vec<u8>
             pass_settings.sharpen = defaults.sharpen;
         }
         pass_settings.algorithm = layer.algorithm.clone();
-        let rendered = dither_single(&current, width, height, &pass_settings);
+        let rendered = dither_single(&current, width, height, &pass_settings, glyphs);
         if opacity == 1.0 {
             current = rendered;
         } else {

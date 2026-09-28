@@ -2108,3 +2108,71 @@
   from { left: -28%; }
   to { left: 100%; }
 }
+
+/* ==================================================================
+   Text mode controls
+   ================================================================== */
+
+/* A native select is the right control for fifty-odd scripts: it gets the
+   platform's own long-list behaviour, keyboard type-ahead and grouping for
+   free, which a custom menu would have to re-earn. */
+.panel__select,
+.panel__input,
+.panel__textarea {
+  width: 100%;
+  padding: var(--m3-sp-3) var(--m3-sp-4);
+  border-radius: var(--m3-shape-md);
+  background: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  font: var(--m3-body-md);
+  transition: border-color var(--m3-dur-short3) var(--m3-ease-standard);
+}
+
+.panel__select {
+  appearance: none;
+  /* Room for the chevron, which is painted rather than shipped as an asset. */
+  padding-right: var(--m3-sp-8);
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: right 18px center, right 13px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.panel__select:hover,
+.panel__input:hover,
+.panel__textarea:hover {
+  border-color: var(--md-sys-color-outline);
+}
+
+.panel__select:focus-visible,
+.panel__input:focus-visible,
+.panel__textarea:focus-visible {
+  border-color: var(--md-sys-color-primary);
+}
+
+.panel__select optgroup {
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--m3-label-md);
+}
+
+.panel__select option {
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+}
+
+.panel__textarea {
+  resize: vertical;
+  min-height: 56px;
+  /* The character set is a string of glyphs, not prose - monospace makes it
+     possible to see exactly which characters are in it. */
+  font: 400 15px/1.5 var(--m3-font-mono);
+  letter-spacing: 0.06em;
+}
+
+.panel__input {
+  font: 400 14px/1.4 var(--m3-font-mono);
+}

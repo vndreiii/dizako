@@ -18,6 +18,8 @@ import { appError } from "../errors";
 import { createFrameGrabber, frameToTime, seekClip, type Clip } from "./clip";
 import { captureToVideo, suggestBitrate, type ContainerId } from "./encode";
 import { createRenderPool } from "./pool";
+import { buildGlyphAtlas, fontCss } from "../dither/glyphs";
+import { codepointsFor, codepointsFromText } from "../dither/scripts";
 
 export interface ExportPhaseProgress {
   phase: "render" | "mux";
@@ -100,7 +102,28 @@ export async function exportVideo(request: VideoExportRequest): Promise<VideoExp
   const bail = () => appError("video/export-cancelled", { detail: "cancelled by the user" });
 
   const grabber = createFrameGrabber(width, height);
-  const pool = createRenderPool();
+  // Text mode renders from a resident atlas; without it every exported frame
+  // would fall back to a flat threshold and the clip would not match what the
+  // preview showed.
+  const usesAscii =
+    settings.algorithmLayers.length === 0
+      ? settings.algorithm === "ascii"
+      : settings.algorithmLayers.some((l) => l.enabled && l.opacity > 0 && l.algorithm === "ascii");
+  const glyphs = usesAscii
+    ? buildGlyphAtlas({
+        codepoints:
+          settings.asciiCharset === "custom"
+            ? codepointsFromText(settings.asciiCustom)
+            : codepointsFor(settings.asciiCharset),
+        cellWidth: Math.max(3, Math.round(settings.asciiCellWidth)),
+        cellHeight: Math.max(3, Math.round(settings.asciiCellHeight)),
+        fontFamily: fontCss(settings.asciiFont, settings.asciiFontCustom),
+        fontWeight: settings.asciiFontWeight,
+        fontScale: settings.asciiFontScale,
+        maxGlyphs: Math.round(settings.asciiMaxGlyphs),
+      })
+    : null;
+  const pool = createRenderPool(undefined, { glyphs });
   const rendered: Array<Blob | null> = new Array(total).fill(null);
   const substituted: number[] = [];
   const inFlight = new Set<Promise<void>>();

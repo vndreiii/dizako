@@ -11,6 +11,8 @@ import type { Settings } from "./types";
 export interface WasmEngine {
   set_source(rgba: Uint8ClampedArray | Uint8Array, w: number, h: number): void;
   set_coarse(rgba: Uint8ClampedArray | Uint8Array, w: number, h: number): void;
+  /** Pre-rasterised glyph coverage for the text algorithm. */
+  set_glyphs(bitmaps: Uint8Array, count: number, cellWidth: number, cellHeight: number): void;
   render(stage: "coarse" | "fine", region: Rect | null, settings: Settings): number;
   out_ptr(): number;
 }

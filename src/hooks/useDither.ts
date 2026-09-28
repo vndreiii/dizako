@@ -6,6 +6,8 @@ import type {
 import { loadWasmEngine } from "../dither/engine";
 import { cropImage, regionFor, coversRect, type Rect } from "../dither/region";
 import type { Settings } from "../dither/types";
+import { atlasKey, buildGlyphAtlas, fontCss, type GlyphAtlas } from "../dither/glyphs";
+import { codepointsFor, codepointsFromText } from "../dither/scripts";
 
 /** A finished pass: a ready-to-draw bitmap from the worker, or raw pixels
  *  from the main-thread fallback. `drawImage` consumes either. */
@@ -72,6 +74,46 @@ function watchdogMs(px: number, settings: Settings): number {
 }
 
 const coarseDownscales = new WeakMap<ImageData, Map<string, ImageData>>();
+
+/**
+ * Does this settings object actually use text mode?
+ *
+ * Checked before any rasterisation happens: building an atlas is real work and
+ * must not run for the ninety-nine percent of sessions that never touch the
+ * algorithm.
+ */
+function usesAscii(settings: Settings): boolean {
+  if (settings.algorithmLayers.length === 0) return settings.algorithm === "ascii";
+  return settings.algorithmLayers.some(
+    (layer) => layer.enabled && layer.opacity > 0 && layer.algorithm === "ascii",
+  );
+}
+
+/** The atlas the current settings ask for, memoised against its inputs. */
+let cachedAtlas: { key: string; atlas: GlyphAtlas } | null = null;
+
+function atlasFor(settings: Settings): GlyphAtlas | null {
+  const codepoints =
+    settings.asciiCharset === "custom"
+      ? codepointsFromText(settings.asciiCustom)
+      : codepointsFor(settings.asciiCharset);
+  if (codepoints.length === 0) return null;
+
+  const request = {
+    codepoints,
+    cellWidth: Math.max(3, Math.round(settings.asciiCellWidth)),
+    cellHeight: Math.max(3, Math.round(settings.asciiCellHeight)),
+    fontFamily: fontCss(settings.asciiFont, settings.asciiFontCustom),
+    fontWeight: settings.asciiFontWeight,
+    fontScale: settings.asciiFontScale,
+    maxGlyphs: Math.round(settings.asciiMaxGlyphs),
+  };
+  const key = atlasKey(request);
+  if (cachedAtlas?.key === key) return cachedAtlas.atlas;
+  const atlas = buildGlyphAtlas(request);
+  cachedAtlas = { key, atlas };
+  return atlas;
+}
 
 /** Box-downsamples via canvas, which is far quicker than doing it in JS.
  *  Memoised per `(source, size)`: a slider drag reuses the plane instead of
@@ -166,6 +208,7 @@ export function useDither(
   // What the worker currently holds, so sources ship exactly once.
   const sentSource = useRef<ImageData | null>(null);
   const sentCoarse = useRef<ImageData | null>(null);
+  const sentGlyphs = useRef<string>("");
 
   // Local mirrors for the demoted fallback path.
   const localSource = useRef<ImageData | null>(null);
@@ -235,6 +278,43 @@ export function useDither(
       pixels: w * h,
       sourceTag: src,
     };
+  }
+
+  /**
+   * Ships the glyph atlas when text mode needs one and it has changed.
+   *
+   * Keyed on the atlas identity rather than the settings object, so the
+   * hundreds of kilobytes only move when the characters, font or cell size
+   * actually differ - not on every slider tick that happens to touch an
+   * unrelated control.
+   */
+  function syncGlyphs(cfg: Settings) {
+    if (!usesAscii(cfg)) return;
+    const atlas = atlasFor(cfg);
+    if (!atlas || atlas.count === 0) return;
+    const key = `${atlas.cellWidth}x${atlas.cellHeight}:${atlas.count}:${atlas.chars.join("")}`;
+    if (sentGlyphs.current === key) return;
+
+    const worker = workerRef.current;
+    if (worker && !brokenRef.current) {
+      const copy = new Uint8Array(atlas.bitmaps);
+      worker.postMessage(
+        {
+          type: "setGlyphs",
+          buffer: copy.buffer as ArrayBuffer,
+          count: atlas.count,
+          cellWidth: atlas.cellWidth,
+          cellHeight: atlas.cellHeight,
+        },
+        [copy.buffer as ArrayBuffer],
+      );
+    }
+    // The main-thread rung shares one engine instance, so it needs the atlas
+    // too - and it is the rung that runs when the worker is unavailable.
+    void loadWasmEngine().then((w) => {
+      w?.engine.set_glyphs(atlas.bitmaps, atlas.count, atlas.cellWidth, atlas.cellHeight);
+    });
+    sentGlyphs.current = key;
   }
 
   /** Ensures the worker holds the current planes; returns the coarse plane
@@ -563,6 +643,7 @@ export function useDither(
         setCoarseScale(1);
       }
     }
+    syncGlyphs(settings);
     syncPlanes(source);
     const { job } = coarseJobFor(source, settings);
     setBusy(true);

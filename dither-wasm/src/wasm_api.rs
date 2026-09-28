@@ -4,6 +4,7 @@
 //! the resident pixel planes; jobs carry settings plus geometry only, so
 //! slider ticks stop shipping megabytes across the boundary.
 
+use crate::ascii::GlyphAtlas;
 use crate::engine;
 use crate::region::Rect;
 use crate::settings::Settings;
@@ -18,6 +19,7 @@ pub struct Engine {
     coarse_w: u32,
     coarse_h: u32,
     out: Vec<u8>,
+    glyphs: GlyphAtlas,
 }
 
 #[wasm_bindgen]
@@ -32,6 +34,7 @@ impl Engine {
             coarse_w: 0,
             coarse_h: 0,
             out: Vec::new(),
+            glyphs: GlyphAtlas::default(),
         }
     }
 
@@ -47,6 +50,15 @@ impl Engine {
         self.coarse = rgba.to_vec();
         self.coarse_w = w;
         self.coarse_h = h;
+    }
+
+    /// Pre-rasterised glyph coverage for the text algorithm.
+    ///
+    /// Resident for the same reason the pixel planes are: an atlas is tens to
+    /// hundreds of kilobytes and changes only when the character set, the font
+    /// or the cell size does - never per slider tick. An empty call clears it.
+    pub fn set_glyphs(&mut self, bitmaps: &[u8], count: u32, cell_w: u32, cell_h: u32) {
+        self.glyphs = GlyphAtlas::adopt(bitmaps, count as usize, cell_w as usize, cell_h as usize);
     }
 
     /// Renders a job into the reused output plane; returns its byte length.
@@ -99,7 +111,7 @@ impl Engine {
             _ => (self.master.clone(), self.master_w, self.master_h),
         };
 
-        let out = engine::dither(&data, w as usize, h as usize, &settings);
+        let out = engine::dither_with_glyphs(&data, w as usize, h as usize, &settings, &self.glyphs);
         self.out = out;
         Ok(self.out.len())
     }

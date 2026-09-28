@@ -33,6 +33,22 @@ export interface CoarseInit {
   height: number;
 }
 
+/**
+ * Glyph atlas for text mode.
+ *
+ * Resident like the pixel planes: an atlas is tens to hundreds of kilobytes
+ * and changes only when the characters, font or cell size do. Sending it with
+ * every render would undo exactly the saving the resident-plane design exists
+ * for.
+ */
+export interface GlyphInit {
+  type: "setGlyphs";
+  buffer: ArrayBuffer;
+  count: number;
+  cellWidth: number;
+  cellHeight: number;
+}
+
 export interface RenderRequest {
   type: "render";
   id: number;
@@ -70,7 +86,13 @@ export interface FrameRequest {
   encode: "png" | "pixels";
 }
 
-export type WorkerRequest = SourceInit | CoarseInit | RenderRequest | ExportRequest | FrameRequest;
+export type WorkerRequest =
+  | SourceInit
+  | CoarseInit
+  | GlyphInit
+  | RenderRequest
+  | ExportRequest
+  | FrameRequest;
 
 export interface ReadyResponse {
   type: "ready";
@@ -301,6 +323,11 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
       coarse = adopt(req.buffer, req.width, req.height);
       const c = coarse;
       wasm?.engine.set_coarse(c ? new Uint8ClampedArray(c.data) : new Uint8ClampedArray(0), c?.width ?? 0, c?.height ?? 0);
+      break;
+    }
+    case "setGlyphs": {
+      const bytes = new Uint8Array(req.buffer);
+      wasm?.engine.set_glyphs(bytes, req.count, req.cellWidth, req.cellHeight);
       break;
     }
     case "render":

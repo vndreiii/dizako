@@ -11,6 +11,8 @@ import {
   type Settings,
 } from "../dither/types";
 import { BareSlider, Button, IconButton, Segmented, Slider, Switch } from "./primitives";
+import { FONT_FAMILIES, MAX_GLYPHS } from "../dither/glyphs";
+import { SCRIPTS } from "../dither/scripts";
 import { IconAdd, IconArrowDown, IconArrowUp, IconDelete, IconHidden, IconReset, IconVisible } from "./Icons";
 
 interface Props {
@@ -56,7 +58,34 @@ const RESET_KEYS: Record<ParamKey, Array<keyof Settings>> = {
   jpegErrorDensity: ["jpegErrorDensity"],
   jpegErrorAmplitude: ["jpegErrorAmplitude"],
   jpegErrorCoherence: ["jpegErrorCoherence"],
+  ascii: [
+    "asciiCellWidth",
+    "asciiCellHeight",
+    "asciiCharset",
+    "asciiCustom",
+    "asciiFont",
+    "asciiFontCustom",
+    "asciiFontWeight",
+    "asciiFontScale",
+    "asciiMaxGlyphs",
+    "asciiMatch",
+    "asciiContrast",
+    "asciiInk",
+    "asciiGamma",
+    "asciiInvert",
+  ],
 };
+
+/** Scripts grouped for the picker, in the order the groups should appear. */
+const SCRIPT_GROUPS: Array<{ id: string; scripts: typeof SCRIPTS }> = [
+  "core",
+  "european",
+  "indic",
+  "asian",
+  "african",
+  "symbol",
+  "historic",
+].map((group) => ({ id: group, scripts: SCRIPTS.filter((s) => s.group === group) }));
 
 function AlgorithmPanelImpl({ settings, patch }: Props) {
   const { t } = useI18n();
@@ -357,6 +386,183 @@ function AlgorithmPanelImpl({ settings, patch }: Props) {
                 onChange={(v) => patchParams({ ominoColorCount: v })}
               />
               <p className="panel__note">{t("omino.note")}</p>
+            </>
+          )}
+
+          {has("ascii") && (
+            <>
+              {/* Character set. Atlas-level, so these are global rather than
+                  per-pass - one atlas is resident in the engine. */}
+              <div className="panel__field">
+                <span className="panel__field-label">{t("ascii.charset")}</span>
+                <select
+                  className="panel__select"
+                  value={settings.asciiCharset}
+                  onChange={(e) => patch({ asciiCharset: e.target.value })}
+                  aria-label={t("ascii.charset")}
+                >
+                  <option value="all">{t("ascii.charsetAll")}</option>
+                  <option value="custom">{t("ascii.charsetCustom")}</option>
+                  {SCRIPT_GROUPS.map((group) => (
+                    <optgroup key={group.id} label={t(`ascii.group.${group.id}`)}>
+                      {group.scripts.map((script) => (
+                        <option key={script.id} value={script.id}>
+                          {script.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+
+              {settings.asciiCharset === "custom" && (
+                <div className="panel__field">
+                  <span className="panel__field-label">{t("ascii.characters")}</span>
+                  <textarea
+                    className="panel__textarea"
+                    rows={2}
+                    spellCheck={false}
+                    value={settings.asciiCustom}
+                    placeholder={t("ascii.charactersHint")}
+                    onChange={(e) => patch({ asciiCustom: e.target.value })}
+                    aria-label={t("ascii.characters")}
+                  />
+                  <p className="panel__note">{t("ascii.charactersNote")}</p>
+                </div>
+              )}
+
+              <div className="panel__field">
+                <span className="panel__field-label">{t("ascii.font")}</span>
+                <select
+                  className="panel__select"
+                  value={settings.asciiFont}
+                  onChange={(e) => patch({ asciiFont: e.target.value })}
+                  aria-label={t("ascii.font")}
+                >
+                  {FONT_FAMILIES.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                  <option value="custom">{t("ascii.fontCustom")}</option>
+                </select>
+              </div>
+
+              {settings.asciiFont === "custom" && (
+                <div className="panel__field">
+                  <input
+                    className="panel__input"
+                    type="text"
+                    spellCheck={false}
+                    value={settings.asciiFontCustom}
+                    placeholder={t("ascii.fontCustomHint")}
+                    onChange={(e) => patch({ asciiFontCustom: e.target.value })}
+                    aria-label={t("ascii.fontCustom")}
+                  />
+                </div>
+              )}
+
+              <Slider
+                label={t("ascii.cellWidth")}
+                value={settings.asciiCellWidth}
+                min={3}
+                max={32}
+                display={`${settings.asciiCellWidth}px`}
+                onChange={(v) => patch({ asciiCellWidth: v })}
+              />
+              <Slider
+                label={t("ascii.cellHeight")}
+                value={settings.asciiCellHeight}
+                min={3}
+                max={48}
+                display={`${settings.asciiCellHeight}px`}
+                onChange={(v) => patch({ asciiCellHeight: v })}
+              />
+              <Slider
+                label={t("ascii.fontScale")}
+                value={Math.round(settings.asciiFontScale * 100)}
+                min={50}
+                max={160}
+                step={5}
+                display={`${Math.round(settings.asciiFontScale * 100)}%`}
+                onChange={(v) => patch({ asciiFontScale: v / 100 })}
+              />
+              <Slider
+                label={t("ascii.fontWeight")}
+                value={settings.asciiFontWeight}
+                min={100}
+                max={900}
+                step={100}
+                display={String(settings.asciiFontWeight)}
+                onChange={(v) => patch({ asciiFontWeight: v })}
+              />
+              <Slider
+                label={t("ascii.maxGlyphs")}
+                value={settings.asciiMaxGlyphs}
+                min={2}
+                max={MAX_GLYPHS}
+                step={2}
+                display={String(settings.asciiMaxGlyphs)}
+                onChange={(v) => patch({ asciiMaxGlyphs: v })}
+              />
+              <p className="panel__note">{t("ascii.maxGlyphsNote")}</p>
+
+              <div className="panel__field">
+                <span className="panel__field-label">{t("ascii.match")}</span>
+                <Segmented
+                  ariaLabel={t("ascii.match")}
+                  value={controlSettings.asciiMatch}
+                  onChange={(v) => patchParams({ asciiMatch: v as "brightness" | "shape" })}
+                  options={[
+                    { value: "shape", label: t("ascii.matchShape") },
+                    { value: "brightness", label: t("ascii.matchBrightness") },
+                  ]}
+                />
+                <p className="panel__note">
+                  {controlSettings.asciiMatch === "shape" ? t("ascii.matchShapeNote") : t("ascii.matchBrightnessNote")}
+                </p>
+              </div>
+
+              {controlSettings.asciiMatch === "shape" && (
+                <Slider
+                  label={t("ascii.contrast")}
+                  value={Math.round(controlSettings.asciiContrast * 100)}
+                  min={0}
+                  max={400}
+                  step={10}
+                  display={`${Math.round(controlSettings.asciiContrast * 100)}%`}
+                  onChange={(v) => patchParams({ asciiContrast: v / 100 })}
+                />
+              )}
+
+              <div className="panel__field">
+                <span className="panel__field-label">{t("ascii.ink")}</span>
+                <Segmented
+                  ariaLabel={t("ascii.ink")}
+                  value={controlSettings.asciiInk}
+                  onChange={(v) => patchParams({ asciiInk: v as "palette" | "mono" })}
+                  options={[
+                    { value: "palette", label: t("ascii.inkPalette") },
+                    { value: "mono", label: t("ascii.inkMono") },
+                  ]}
+                />
+              </div>
+
+              <Slider
+                label={t("ascii.gamma")}
+                value={Math.round(controlSettings.asciiGamma * 100)}
+                min={20}
+                max={300}
+                step={5}
+                display={controlSettings.asciiGamma.toFixed(2)}
+                onChange={(v) => patchParams({ asciiGamma: v / 100 })}
+              />
+              <Switch
+                label={t("ascii.invert")}
+                description={t("ascii.invertDesc")}
+                checked={controlSettings.asciiInvert}
+                onChange={(v) => patchParams({ asciiInvert: v })}
+              />
             </>
           )}
 

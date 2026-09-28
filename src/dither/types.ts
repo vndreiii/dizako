@@ -39,7 +39,8 @@ export type AlgorithmId =
   // experimental
   | "dot-diffusion"
   | "omino"
-  | "jpeg-sort";
+  | "jpeg-sort"
+  | "ascii";
 
 export type AlgorithmFamily = "ordered" | "error-diffusion" | "threshold" | "experimental";
 
@@ -56,7 +57,12 @@ export interface AlgorithmLayer {
     "riemersmaQueue" | "riemersmaDecay" | "dotClassSize" | "ominoDirection" |
     "ominoErrorStrength" | "ominoAcross" | "ominoAside" | "ominoPhase" |
     "ominoColorCount" | "jpegCellSize" | "jpegDamage" | "jpegErrorRate" |
-    "jpegErrorDensity" | "jpegErrorAmplitude" | "jpegErrorCoherence"
+    "jpegErrorDensity" | "jpegErrorAmplitude" | "jpegErrorCoherence" |
+    // Only the cheap text-mode knobs are per-pass. Anything that changes the
+    // glyph atlas - character set, font, cell size - is global, because one
+    // atlas is resident in the engine and two passes cannot each have their
+    // own without shipping it twice per render.
+    "asciiMatch" | "asciiContrast" | "asciiInk" | "asciiGamma" | "asciiInvert"
   >>;
 }
 
@@ -95,7 +101,8 @@ export type ParamKey =
   | "jpegErrorRate"
   | "jpegErrorDensity"
   | "jpegErrorAmplitude"
-  | "jpegErrorCoherence";
+  | "jpegErrorCoherence"
+  | "ascii";
 
 /**
  * One colour in the palette stack.
@@ -196,6 +203,34 @@ export interface Settings {
   /** Groups damaged cells together in larger clusters, 0..1. */
   jpegErrorCoherence: number;
 
+  // --- text mode ---
+  /** Glyph cell size in pixels; the grid the image is painted onto. */
+  asciiCellWidth: number;
+  asciiCellHeight: number;
+  /** `all`, a script id from scripts.ts, or `custom`. */
+  asciiCharset: string;
+  /** Characters used when `asciiCharset` is `custom`. */
+  asciiCustom: string;
+  /** A family id from glyphs.ts, or `custom`. */
+  asciiFont: string;
+  /** CSS family list used when `asciiFont` is `custom`. */
+  asciiFontCustom: string;
+  asciiFontWeight: number;
+  /** Type size as a fraction of the cell height. */
+  asciiFontScale: number;
+  /** Upper bound on distinct glyphs kept in the atlas. */
+  asciiMaxGlyphs: number;
+  /** `shape` matches where the ink sits; `brightness` matches its amount. */
+  asciiMatch: "brightness" | "shape";
+  /** How much the shape matcher still weighs overall density, 0..4. */
+  asciiContrast: number;
+  /** `palette` inks each cell with its matched colour; `mono` uses extremes. */
+  asciiInk: "palette" | "mono";
+  /** Curve on cell coverage before matching. */
+  asciiGamma: number;
+  /** Swap ink and paper. */
+  asciiInvert: boolean;
+
   // --- tone ---
   invert: boolean;
   grayscale: boolean;
@@ -275,6 +310,21 @@ export const DEFAULT_SETTINGS: Settings = {
   jpegErrorDensity: 0.75,
   jpegErrorAmplitude: 1,
   jpegErrorCoherence: 0,
+
+  asciiCellWidth: 8,
+  asciiCellHeight: 14,
+  asciiCharset: "ascii",
+  asciiCustom: "@%#*+=-:. ",
+  asciiFont: "auto",
+  asciiFontCustom: "",
+  asciiFontWeight: 500,
+  asciiFontScale: 1,
+  asciiMaxGlyphs: 128,
+  asciiMatch: "shape",
+  asciiContrast: 1,
+  asciiInk: "palette",
+  asciiGamma: 1,
+  asciiInvert: false,
 
   invert: false,
   grayscale: false,
@@ -501,6 +551,13 @@ export const ALGORITHMS: AlgorithmMeta[] = [
     family: "experimental",
     blurb: "Error diffusion applied for the worse. Marching stripes.",
     params: ["omino"],
+  },
+  {
+    id: "ascii",
+    name: "ASCII / text",
+    family: "experimental",
+    blurb: "Paints the image out of characters. Any script, any font.",
+    params: ["ascii"],
   },
   {
     id: "jpeg-sort",

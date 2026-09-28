@@ -69,7 +69,18 @@ export interface RenderPool {
   dispose(): void;
 }
 
-export function createRenderPool(size = suggestedPoolSize()): RenderPool {
+export interface PoolOptions {
+  /**
+   * Glyph atlas for text mode.
+   *
+   * Pool workers are fresh instances with empty engines, so an export would
+   * otherwise render every frame through the text algorithm's no-atlas
+   * fallback and produce a clip that looks nothing like the preview.
+   */
+  glyphs?: { bitmaps: Uint8Array; count: number; cellWidth: number; cellHeight: number } | null;
+}
+
+export function createRenderPool(size = suggestedPoolSize(), options: PoolOptions = {}): RenderPool {
   const slots: Slot[] = [];
   const pending = new Map<number, Pending>();
   const queue: Array<() => void> = [];
@@ -143,6 +154,24 @@ export function createRenderPool(size = suggestedPoolSize()): RenderPool {
       // Nothing else awaits `ready`; without this a rejection before the first
       // dispatch is an unhandled rejection rather than a fallback.
       ready.catch(() => {});
+      // Ship the atlas as soon as the worker is up; every frame after that
+      // finds it already resident.
+      if (options.glyphs && options.glyphs.count > 0) {
+        const atlas = options.glyphs;
+        void ready.then(() => {
+          const copy = new Uint8Array(atlas.bitmaps);
+          worker.postMessage(
+            {
+              type: "setGlyphs",
+              buffer: copy.buffer as ArrayBuffer,
+              count: atlas.count,
+              cellWidth: atlas.cellWidth,
+              cellHeight: atlas.cellHeight,
+            },
+            [copy.buffer as ArrayBuffer],
+          );
+        }).catch(() => {});
+      }
       slots.push(slot);
     } catch {
       // Construction failing for the first worker means it will fail for all
