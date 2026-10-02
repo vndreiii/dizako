@@ -15,6 +15,7 @@
  * that must never happen.
  */
 import { appError } from "../errors";
+import { trace } from "../perf";
 import { readbackFrame, readbackSupported } from "./readback";
 import type { FrameHandle } from "./readback.worker";
 
@@ -134,12 +135,19 @@ export async function measureClipRate(
 
     const estimate = () => {
       if (samples.length < 2) return fallback;
-      const first = samples[0]!;
-      const last = samples[samples.length - 1]!;
-      const frames = last.presentedFrames - first.presentedFrames;
-      const seconds = last.mediaTime - first.mediaTime;
-      if (frames <= 0 || seconds <= 0) return fallback;
-      const raw = frames / seconds;
+      // The fastest pair of consecutive presentations, not the overall average.
+      // A decoder that cannot keep up drops frames, which stretches the media
+      // time between the ones it does present: averaged over the run that read
+      // a 30fps 4K clip as 6fps, and the frame count followed it down to a
+      // fifth of the real length. Any two frames presented back to back give
+      // the true interval, so the best pair is the honest one.
+      let raw = 0;
+      for (let i = 1; i < samples.length; i++) {
+        const frames = samples[i]!.presentedFrames - samples[i - 1]!.presentedFrames;
+        const seconds = samples[i]!.mediaTime - samples[i - 1]!.mediaTime;
+        if (frames > 0 && seconds > 0) raw = Math.max(raw, frames / seconds);
+      }
+      if (raw <= 0) return fallback;
       // Snap to the rates real footage actually uses, so a 23.976 measurement
       // does not become 23.9761904 in the UI or drift the frame index.
       const common = [8, 10, 12, 15, 23.976, 24, 25, 29.97, 30, 48, 50, 59.94, 60, 90, 120];
@@ -376,6 +384,7 @@ export async function seekClip(clip: Clip, seconds: number): Promise<void> {
       else resolve();
     };
     const onSeeked = () => {
+      trace("seek:seeked", { readyState: el.readyState });
       if (el.readyState >= 2) return finish();
       // Data has not arrived yet; wait for it rather than drawing a stale frame.
       el.addEventListener("loadeddata", () => finish(), { once: true });
@@ -398,6 +407,7 @@ export async function seekClip(clip: Clip, seconds: number): Promise<void> {
     );
     el.addEventListener("seeked", onSeeked);
     el.addEventListener("error", onError);
+    trace("seek:start", { target });
     el.currentTime = target;
   });
 }
@@ -421,8 +431,24 @@ export async function seekClip(clip: Clip, seconds: number): Promise<void> {
  */
 export type GrabRoute = "frame" | "bitmap" | "canvas";
 
+/**
+ * Whether the worker routes have been shown to work on this engine.
+ *
+ * They are only proven on Chromium (Chrome, Edge and the WebView2 the Windows
+ * build runs on). On WebKitGTK - the Linux desktop build - both of them exist
+ * and both paint a blank frame: `new VideoFrame(video)` is blank, and
+ * `createImageBitmap(video)` blocks the UI thread for over a second at 4K
+ * before it, too, comes back blank. Falling through to the canvas route after
+ * discovering that cost one 4K import about five seconds of frozen window,
+ * all of it spent on routes that could not work. So the routes are chosen by
+ * engine up front rather than by failing.
+ */
+function workerRoutesProven(): boolean {
+  return typeof navigator !== "undefined" && /(Chrome|Chromium|Edg)\//.test(navigator.userAgent);
+}
+
 function initialRoute(): GrabRoute {
-  if (!readbackSupported()) return "canvas";
+  if (!readbackSupported() || !workerRoutesProven()) return "canvas";
   return typeof VideoFrame !== "undefined" ? "frame" : "bitmap";
 }
 
@@ -492,9 +518,12 @@ export function createFrameGrabber(width: number, height: number) {
       const route = routeState.route;
       if (route === "canvas") return null;
       try {
-        if (route === "frame") return new VideoFrame(el);
-        return await createImageBitmap(el);
+        trace("grab:handle:start", { route });
+        const handle = route === "frame" ? new VideoFrame(el) : await createImageBitmap(el);
+        trace("grab:handle:made", { route });
+        return handle;
       } catch {
+        trace("grab:handle:failed", { route });
         demoteGrabRoute();
       }
     }
@@ -513,6 +542,7 @@ export function createFrameGrabber(width: number, height: number) {
         if (!handle) return grab(el);
         try {
           const { image, blank } = await readbackFrame(handle, width, height);
+          trace("grab:readback", { blank });
           if (!blank) return image;
         } catch {
           // Fall through to demotion below.

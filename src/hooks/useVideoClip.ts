@@ -13,6 +13,7 @@ import {
   type ImportProgress,
 } from "../video/clip";
 import { appError } from "../errors";
+import { trace } from "../perf";
 
 /**
  * Longest side used while a clip is playing.
@@ -201,7 +202,9 @@ export function useVideoClip(onError: (error: unknown) => void): VideoClipApi {
     rateFor.current = current;
     const task = (async (): Promise<Clip | null> => {
       try {
+        trace("video:rate:start");
         const { fps, assumed } = await measureClipRate(current.el, () => rateCancel.current || clipRef.current !== current);
+        trace("video:rate:done", { fps, assumed });
         if (clipRef.current !== current) return clipRef.current;
         if (fps === current.fps && assumed === current.fpsAssumed) {
           await seekClip(current, frameToTime(current, frameRef.current)).catch(() => {});
@@ -235,8 +238,10 @@ export function useVideoClip(onError: (error: unknown) => void): VideoClipApi {
     async (file: File): Promise<boolean> => {
       setOpening(true);
       setImportProgress({ stage: "reading", fraction: 0.05 });
+      trace("video:open", { size: file.size, type: file.type });
       try {
         const next = await openClip(file, setImportProgress);
+        trace("video:opened", { w: next.width, h: next.height, s: next.durationS });
         teardown();
         clipRef.current = next;
         fullGrabber.current = createFrameGrabber(next.frameWidth, next.frameHeight);
@@ -245,11 +250,13 @@ export function useVideoClip(onError: (error: unknown) => void): VideoClipApi {
         next.el.loop = false;
 
         await seekClip(next, frameToTime(next, 0));
+        trace("video:seeked0");
         setClip(next);
         setFrame(0);
         setRange({ start: 0, end: next.frameCount - 1 });
         setPlaying(false);
         await readSharpFrame();
+        trace("video:firstFrame");
 
         // The real frame rate is found in the background, once the picture is
         // up and the user has had a moment to do something else first.
