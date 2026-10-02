@@ -22,7 +22,8 @@ import {
   IconBack,
   IconForward,
 } from "./components/Icons";
-import { SettingsSheet } from "./components/SettingsSheet";
+import { SettingsPage } from "./components/SettingsPage";
+import { isPreviewQuality, type PreviewQuality } from "./dither/budget";
 import { DonateDialog } from "./components/DonateDialog";
 import { WheelStepContext } from "./components/primitives";
 import { WindowControls } from "./components/WindowControls";
@@ -196,6 +197,12 @@ export default function App() {
   const [wheelStep, setWheelStep] = useState(restoredSession.appearance?.wheelStep ?? 2);
   const [wheelBehavior, setWheelBehavior] = useState<"pan" | "zoom">(
     restoredSession.appearance?.wheelBehavior === "zoom" ? "zoom" : "pan",
+  );
+  const [previewQuality, setPreviewQuality] = useState<PreviewQuality>(
+    isPreviewQuality(restoredSession.appearance?.previewQuality) ? restoredSession.appearance.previewQuality : "balanced",
+  );
+  const [exportThreads, setExportThreads] = useState(
+    Math.max(0, Math.min(16, Math.round(restoredSession.appearance?.exportThreads ?? 0))),
   );
   const [dynamicSeed, setDynamicSeed] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -383,7 +390,7 @@ export default function App() {
     exporting,
     error,
     requestExport,
-  } = useDither(source, settings, viewport, { skipFine: video.playing });
+  } = useDither(source, settings, viewport, { skipFine: video.playing, quality: previewQuality });
   const hasResult = Boolean(coarse);
 
   /**
@@ -544,11 +551,22 @@ export default function App() {
   const [frameErrors, setFrameErrors] = useState(0);
   const cancelExport = useRef(false);
 
+  // Opening the dialog is a natural moment to settle the frame rate: the user is
+  // reading options, nothing is playing, and the facts shown update when it lands.
+  const refineRate = video.refineRate;
+  const needsRate = Boolean(video.clip?.fpsAssumed);
+  useEffect(() => {
+    if (exportOpen && needsRate) void refineRate();
+  }, [exportOpen, needsRate, refineRate]);
+
   const runVideoExport = useCallback(
     async (config: VideoExportConfig) => {
-      const clip = video.clip;
-      if (!clip) return;
+      if (!video.clip) return;
       video.pause();
+      // Output frame rate and frame count come from the clip's real rate, which
+      // import no longer waits for. Normally it is long since known; if not,
+      // it is measured now, before a single frame is rendered.
+      const clip = (await video.refineRate()) ?? video.clip;
       cancelExport.current = false;
       setFrameErrors(0);
       setVideoProgress({ phase: "render", done: 0, total: 1, fraction: 0, etaS: null });
@@ -566,6 +584,7 @@ export default function App() {
           bitrate: config.bitrate,
           onProgress: setVideoProgress,
           shouldCancel: () => cancelExport.current,
+          threads: exportThreads,
           onFrameError: (index, err) => {
             // Counted for the progress line and logged individually: a report
             // that says "3 frames repeated" is only actionable with the reason.
@@ -625,7 +644,7 @@ export default function App() {
         setVideoProgress(null);
       }
     },
-    [video, fileName, settings, notify, t, fail],
+    [video, fileName, settings, notify, t, fail, exportThreads],
   );
 
   // eslint-disable-next-line react-hooks/refs -- latest-ref binding for the retry actions
@@ -636,11 +655,11 @@ export default function App() {
   // Persist everything that used to reset on launch.
   useEffect(() => {
     try {
-      saveSession(settings, { mode, themeSource, seed, wheelStep, wheelBehavior });
+      saveSession(settings, { mode, themeSource, seed, wheelStep, wheelBehavior, previewQuality, exportThreads });
     } catch (err) {
       fail(appError("session/save-failed", { detail: String(err), cause: err }), { as: "toast" });
     }
-  }, [settings, mode, themeSource, seed, wheelStep, wheelBehavior, fail]);
+  }, [settings, mode, themeSource, seed, wheelStep, wheelBehavior, previewQuality, exportThreads, fail]);
 
   /**
    * App-level keyboard and pointer behaviour.
@@ -1062,9 +1081,9 @@ export default function App() {
               it is app-level, not another view of the image. */}
           <span className="rail__spacer" />
           <button
-            className="rail__item rail__item--foot"
-            onClick={() => setSettingsOpen(true)}
-            aria-haspopup="dialog"
+            className={`rail__item rail__item--foot ${settingsOpen ? "is-selected" : ""}`}
+            onClick={() => setSettingsOpen((open) => !open)}
+            aria-current={settingsOpen ? "page" : undefined}
           >
             <span className="rail__pill">
               <IconSettings />
@@ -1139,6 +1158,33 @@ export default function App() {
             </div>
           )}
         </main>
+
+        {settingsOpen && (
+          <SettingsPage
+            onClose={() => setSettingsOpen(false)}
+            mode={mode}
+            onMode={setMode}
+            source={themeSource}
+            onSource={setThemeSource}
+            seed={seed}
+            onSeed={setSeed}
+            wheelStep={wheelStep}
+            onWheelStep={setWheelStep}
+            wheelBehavior={wheelBehavior}
+            onWheelBehavior={setWheelBehavior}
+            previewQuality={previewQuality}
+            onPreviewQuality={setPreviewQuality}
+            exportThreads={exportThreads}
+            onExportThreads={setExportThreads}
+            dynamicSeed={dynamicSeed}
+            hasImage={Boolean(native)}
+            onDonate={() => {
+              void openDonatePage().then((ok) => {
+                if (!ok) setDonateOpen(true);
+              });
+            }}
+          />
+        )}
       </div>
 
       <input
@@ -1151,23 +1197,6 @@ export default function App() {
           if (f) void load(f);
           e.target.value = "";
         }}
-      />
-
-      <SettingsSheet
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        mode={mode}
-        onMode={setMode}
-        source={themeSource}
-        onSource={setThemeSource}
-        seed={seed}
-        onSeed={setSeed}
-        wheelStep={wheelStep}
-        onWheelStep={setWheelStep}
-        wheelBehavior={wheelBehavior}
-        onWheelBehavior={setWheelBehavior}
-        dynamicSeed={dynamicSeed}
-        hasImage={Boolean(native)}
       />
 
       {exportOpen && video.clip && (

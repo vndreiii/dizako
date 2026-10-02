@@ -57,6 +57,14 @@ pub struct AlgorithmParams {
     pub ascii_ink: Option<String>,
     pub ascii_gamma: Option<f64>,
     pub ascii_invert: Option<bool>,
+    pub dot_shape: Option<String>,
+    pub dot_scale: Option<f64>,
+    pub dot_cutoff: Option<f64>,
+    pub dot_levels: Option<f64>,
+    pub dot_gamma: Option<f64>,
+    pub dot_stagger: Option<bool>,
+    pub dot_invert: Option<bool>,
+    pub dot_ink: Option<String>,
 }
 
 impl AlgorithmParams {
@@ -69,10 +77,13 @@ impl AlgorithmParams {
             riemersma_decay, dot_class_size, omino_error_strength, omino_across,
             omino_aside, omino_phase, omino_color_count, jpeg_cell_size, jpeg_damage,
             jpeg_error_rate, jpeg_error_density, jpeg_error_amplitude, jpeg_error_coherence,
-            ascii_contrast, ascii_gamma, ascii_invert);
+            ascii_contrast, ascii_gamma, ascii_invert, dot_scale, dot_cutoff, dot_levels,
+            dot_gamma, dot_stagger, dot_invert);
         if let Some(value) = &self.omino_direction { settings.omino_direction = value.clone(); }
         if let Some(value) = &self.ascii_match { settings.ascii_match = value.clone(); }
         if let Some(value) = &self.ascii_ink { settings.ascii_ink = value.clone(); }
+        if let Some(value) = &self.dot_shape { settings.dot_shape = value.clone(); }
+        if let Some(value) = &self.dot_ink { settings.dot_ink = value.clone(); }
     }
 }
 
@@ -189,6 +200,33 @@ pub struct Settings {
     #[serde(default)]
     pub ascii_invert: bool,
 
+    // --- dot grid ---
+    /// `square`, `circle` or `diamond`.
+    #[serde(default)]
+    pub dot_shape: String,
+    /// Size of a full-tone dot relative to its cell, 0.2..1.5.
+    #[serde(default = "default_dot_scale")]
+    pub dot_scale: f64,
+    /// Tone below which a cell gets no dot at all, 0..1.
+    #[serde(default)]
+    pub dot_cutoff: f64,
+    /// Distinct dot sizes; 0 or 1 leaves the size continuous.
+    #[serde(default)]
+    pub dot_levels: f64,
+    /// Curve applied to cell tone before sizing, 0.2..3.
+    #[serde(default = "default_dot_gamma")]
+    pub dot_gamma: f64,
+    /// Offset alternate rows by half a cell, for a hex-packed look.
+    #[serde(default)]
+    pub dot_stagger: bool,
+    /// Dots stand for the light areas instead of the dark ones.
+    #[serde(default)]
+    pub dot_invert: bool,
+    /// `palette` inks each dot with its cell's matched colour; `mono` uses the
+    /// palette's two extremes throughout.
+    #[serde(default)]
+    pub dot_ink: String,
+
     // --- tone ---
     #[serde(default)]
     pub invert: bool,
@@ -220,6 +258,8 @@ pub struct Settings {
     pub pixel_scale: f64,
 }
 
+fn default_dot_scale() -> f64 { 1.0 }
+fn default_dot_gamma() -> f64 { 1.0 }
 fn default_jpeg_cell_size() -> f64 { 8.0 }
 fn default_jpeg_error_density() -> f64 { 0.75 }
 fn default_jpeg_error_amplitude() -> f64 { 1.0 }
@@ -263,6 +303,14 @@ impl Settings {
             ascii_ink: "palette".into(),
             ascii_gamma: 1.0,
             ascii_invert: false,
+            dot_shape: "square".into(),
+            dot_scale: 1.0,
+            dot_cutoff: 0.06,
+            dot_levels: 0.0,
+            dot_gamma: 1.0,
+            dot_stagger: false,
+            dot_invert: false,
+            dot_ink: "palette".into(),
             invert: false,
             grayscale: false,
             brightness: 0.0,

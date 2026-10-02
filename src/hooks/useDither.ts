@@ -4,7 +4,8 @@ import type {
   WorkerResponse,
 } from "../dither/worker";
 import { loadWasmEngine } from "../dither/engine";
-import { cropImage, regionFor, coversRect, type Rect } from "../dither/region";
+import { regionFor, coversRect, type Rect } from "../dither/region";
+import { CoarseBudget, type PreviewQuality } from "../dither/budget";
 import type { Settings } from "../dither/types";
 import { atlasKey, buildGlyphAtlas, fontCss, type GlyphAtlas } from "../dither/glyphs";
 import { codepointsFor, codepointsFromText } from "../dither/scripts";
@@ -46,6 +47,8 @@ export interface DitherOptions {
    * moving; the sharp pass returns the moment the playhead stops.
    */
   skipFine?: boolean;
+  /** How snappy the first preview pass should be; see `PreviewQuality`. */
+  quality?: PreviewQuality;
 }
 
 export interface ExportHandle {
@@ -55,25 +58,12 @@ export interface ExportHandle {
   requestExport(settings: Settings): Promise<{ blob: Blob } | "cancelled">;
 }
 
-/**
- * Pixel budget for the first pass.
- *
- * The point is a picture that lands fast enough to feel attached to the slider
- * being dragged.
- */
-const COARSE_PIXELS = 240_000;
-
-/** Below this the full pass is quick enough that staging it would only flicker. */
-const SINGLE_PASS_PIXELS = 420_000;
-
 function watchdogMs(px: number, settings: Settings): number {
   const passes = settings.algorithmLayers.length
     ? Math.max(1, settings.algorithmLayers.filter((layer) => layer.enabled && layer.opacity > 0).length)
     : 1;
   return Math.max(8000, (px / 1e6) * 4000) * passes;
 }
-
-const coarseDownscales = new WeakMap<ImageData, Map<string, ImageData>>();
 
 /**
  * Does this settings object actually use text mode?
@@ -115,36 +105,6 @@ function atlasFor(settings: Settings): GlyphAtlas | null {
   return atlas;
 }
 
-/** Box-downsamples via canvas, which is far quicker than doing it in JS.
- *  Memoised per `(source, size)`: a slider drag reuses the plane instead of
- *  re-running a multi-megapixel canvas round-trip every tick. */
-function downscale(src: ImageData, w: number, h: number): ImageData {
-  let bySize = coarseDownscales.get(src);
-  if (!bySize) {
-    bySize = new Map();
-    coarseDownscales.set(src, bySize);
-  }
-  const key = `${w}x${h}`;
-  const hit = bySize.get(key);
-  if (hit) return hit;
-
-  const from = document.createElement("canvas");
-  from.width = src.width;
-  from.height = src.height;
-  from.getContext("2d")!.putImageData(src, 0, 0);
-
-  const to = document.createElement("canvas");
-  to.width = w;
-  to.height = h;
-  const ctx = to.getContext("2d", { willReadFrequently: true })!;
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "medium";
-  ctx.drawImage(from, 0, 0, w, h);
-  const out = ctx.getImageData(0, 0, w, h);
-  bySize.set(key, out);
-  return out;
-}
-
 type Stage = "coarse" | "fine";
 
 interface Job {
@@ -153,8 +113,6 @@ interface Job {
   settings: Settings;
   /** Where the result belongs, for a fine pass over a viewport crop. */
   region: Rect | null;
-  /** Source-to-input scale for a coarse pass. */
-  scale: number;
   /** Pixel count, for the watchdog budget. */
   pixels: number;
   /** Identity of the plane this job renders; late results for other
@@ -164,8 +122,6 @@ interface Job {
 
 interface InFlight {
   job: Job;
-  /** Locally rebuilt inputs so a demoted fallback can run without the worker. */
-  input: ImageData;
 }
 
 /**
@@ -196,6 +152,7 @@ export function useDither(
   options: DitherOptions = {},
 ): DitherResult & ExportHandle {
   const skipFine = options.skipFine === true;
+  const quality = options.quality ?? "balanced";
   const workerRef = useRef<Worker | null>(null);
   const brokenRef = useRef(false);
   const readyRef = useRef(false);
@@ -207,12 +164,16 @@ export function useDither(
 
   // What the worker currently holds, so sources ship exactly once.
   const sentSource = useRef<ImageData | null>(null);
-  const sentCoarse = useRef<ImageData | null>(null);
   const sentGlyphs = useRef<string>("");
 
   // Local mirrors for the demoted fallback path.
   const localSource = useRef<ImageData | null>(null);
-  const localCoarse = useRef<ImageData | null>(null);
+  /** What the main-thread engine holds, so the fallback also ships it once. */
+  const mainLoaded = useRef<ImageData | null>(null);
+  const mainBudget = useRef(new CoarseBudget());
+  /** Source-to-result scale of the plane currently on screen as `coarse`.
+   *  1 means the first pass already was full resolution. */
+  const coarseScaleRef = useRef(1);
 
   // Identity of the plane the preview layers were rendered from. When it
   // changes, every on-screen layer is stale by definition - drawing an old
@@ -241,9 +202,9 @@ export function useDither(
   // The latest-ref pattern: callbacks below must read current props without
   // re-subscribing effects on every render.
   // eslint-disable-next-line react-hooks/refs -- assignment happens during render by design
-  const latest = useRef({ source, settings, viewport, skipFine });
+  const latest = useRef({ source, settings, viewport, skipFine, quality });
   // eslint-disable-next-line react-hooks/refs -- see above
-  latest.current = { source, settings, viewport, skipFine };
+  latest.current = { source, settings, viewport, skipFine, quality };
 
   function clearWatchdog() {
     if (timerRef.current !== undefined) {
@@ -263,10 +224,10 @@ export function useDither(
   /** Builds the full-resolution follow-up for whatever is on screen. */
   function fineJobFor(src: ImageData, cfg: Settings, view: Rect | null): Job | null {
     if (latest.current.skipFine) return null;
+    // A follow-up is only worth queuing when the first pass actually lost
+    // detail: if it ran at full resolution there is nothing sharper to show.
+    if (coarseScaleRef.current <= 1.001) return null;
     const r = regionFor(view, src.width, src.height, cfg);
-    // A fine pass over the whole image is only worth queuing when the coarse
-    // one actually lost detail.
-    if (!r && src.width * src.height <= SINGLE_PASS_PIXELS) return null;
     const w = r ? r.width : src.width;
     const h = r ? r.height : src.height;
     return {
@@ -274,7 +235,6 @@ export function useDither(
       stage: "fine",
       settings: cfg,
       region: r,
-      scale: 1,
       pixels: w * h,
       sourceTag: src,
     };
@@ -317,80 +277,34 @@ export function useDither(
     sentGlyphs.current = key;
   }
 
-  /** Ensures the worker holds the current planes; returns the coarse plane
-   *  (or null when the image fits the single-pass budget). */
-  function syncPlanes(src: ImageData): ImageData | null {
-    let plane: ImageData | null = null;
-    const total = src.width * src.height;
-    if (total > SINGLE_PASS_PIXELS) {
-      const scale = Math.sqrt(COARSE_PIXELS / total);
-      const w = Math.max(1, Math.round(src.width * scale));
-      const h = Math.max(1, Math.round(src.height * scale));
-      plane = downscale(src, w, h);
-    }
-
+  /** Ensures the worker holds the current source. */
+  function syncPlanes(src: ImageData) {
     const worker = workerRef.current;
-    if (worker && !brokenRef.current) {
-      if (sentSource.current !== src) {
-        const copy = new Uint8ClampedArray(src.data);
-        worker.postMessage(
-          { type: "setSource", buffer: copy.buffer as ArrayBuffer, width: src.width, height: src.height },
-          [copy.buffer as ArrayBuffer],
-        );
-        sentSource.current = src;
-      }
-      if (sentCoarse.current !== plane) {
-        const copy = plane
-          ? new Uint8ClampedArray(plane.data)
-          : new Uint8ClampedArray(0); // explicit clear: previous image's plane must go
-        worker.postMessage(
-          { type: "setCoarseSource", buffer: copy.buffer as ArrayBuffer, width: plane?.width ?? 0, height: plane?.height ?? 0 },
-          [copy.buffer as ArrayBuffer],
-        );
-        sentCoarse.current = plane;
-      }
+    if (worker && !brokenRef.current && sentSource.current !== src) {
+      const copy = new Uint8ClampedArray(src.data);
+      worker.postMessage(
+        { type: "setSource", buffer: copy.buffer as ArrayBuffer, width: src.width, height: src.height },
+        [copy.buffer as ArrayBuffer],
+      );
+      sentSource.current = src;
     }
     localSource.current = src;
-    localCoarse.current = plane;
-    return plane;
   }
 
-  function coarseJobFor(src: ImageData, cfg: Settings): { job: Job; input: ImageData } {
-    const total = src.width * src.height;
-    if (total <= SINGLE_PASS_PIXELS) {
-      return {
-        job: { id: nextId.current++, stage: "coarse", settings: cfg, region: null, scale: 1, pixels: total, sourceTag: src },
-        input: src,
-      };
-    }
-    const scale = Math.sqrt(COARSE_PIXELS / total);
-    const w = Math.max(1, Math.round(src.width * scale));
-    const h = Math.max(1, Math.round(src.height * scale));
-    const plane = downscale(src, w, h);
+  /** The first pass. The worker (or the engine, in the fallback) decides its
+   *  resolution from what renders have been costing, so the job carries none. */
+  function coarseJobFor(src: ImageData, cfg: Settings): Job {
     return {
-      job: {
-        id: nextId.current++,
-        stage: "coarse",
-        settings: cfg,
-        region: null,
-        scale: src.width / w,
-        pixels: w * h,
-        sourceTag: src,
-      },
-      input: plane,
+      id: nextId.current++,
+      stage: "coarse",
+      settings: cfg,
+      region: null,
+      pixels: src.width * src.height,
+      sourceTag: src,
     };
   }
 
-  function inputFor(job: Job): ImageData | null {
-    if (job.stage === "coarse") {
-      return localCoarse.current ?? localSource.current;
-    }
-    const src = localSource.current;
-    if (!src) return null;
-    return job.region ? cropImage(src, job.region) : src;
-  }
-
-  function settle(job: Job, result: Layer, took: number) {
+  function settle(job: Job, result: Layer, took: number, scale = 1) {
     clearWatchdog();
     strikesRef.current = 0;
     setMs(took);
@@ -403,7 +317,8 @@ export function useDither(
         if (prev instanceof ImageBitmap) retireBitmap(prev);
         return null;
       });
-      setCoarseScale(job.scale);
+      coarseScaleRef.current = scale;
+      setCoarseScale(scale);
       setRegion(null);
       setBusy(false);
     } else {
@@ -442,26 +357,41 @@ export function useDither(
     }, 0);
   }
 
-  /** Main-thread render via initSync — the last rung under the worker.
-   *  `inflight.input` is already the exact plane (cropped if needed), so the
-   *  stateless fallback uploads it whole and renders without a region. */
+  /** Main-thread render - the last rung under the worker. It drives the same
+   *  engine the worker does, with the same resident source, so the result is
+   *  identical and only the thread differs. */
   async function renderMainAsync(inflight: InFlight) {
     const t0 = performance.now();
     try {
       const w = await loadWasmEngine();
       if (!w) throw new Error("wasm unavailable on main thread");
-      const img = inflight.input;
-      w.engine.set_source(
-        new Uint8ClampedArray(img.data),
-        img.width,
-        img.height,
-      );
-      const len = w.engine.render(inflight.job.stage, null, inflight.job.settings);
-      const bytes = w.view(len);
-      const out = new ImageData(new Uint8ClampedArray(bytes), img.width, img.height);
-      if (inflightRef.current?.job.id !== inflight.job.id) return;
+      const src = localSource.current;
+      if (!src) return;
+      if (mainLoaded.current !== src) {
+        w.engine.set_source(new Uint8ClampedArray(src.data), src.width, src.height);
+        mainLoaded.current = src;
+      }
+      const { job } = inflight;
+      let scale = 1;
+      if (job.stage === "coarse") {
+        const target = mainBudget.current.choose(src.width * src.height, job.settings);
+        const start = performance.now();
+        w.engine.render_coarse(target, job.settings);
+        mainBudget.current.observe(
+          performance.now() - start,
+          w.engine.out_width() * w.engine.out_height(),
+          w.engine.last_computed(),
+        );
+        scale = src.width / w.engine.out_width();
+      } else {
+        w.engine.render("fine", job.region, job.settings);
+      }
+      const width = w.engine.out_width();
+      const height = w.engine.out_height();
+      const out = new ImageData(new Uint8ClampedArray(w.view(width * height * 4)), width, height);
+      if (inflightRef.current?.job.id !== job.id) return;
       setError(null);
-      settle(inflight.job, out, performance.now() - t0);
+      settle(job, out, performance.now() - t0, scale);
       return;
     } catch (err) {
       // No engine anywhere. Surface it; there is no third engine to fall
@@ -510,11 +440,7 @@ export function useDither(
     if (inflight || retry) {
       if (retry) setBusy(true);
       if (inflight) runOnMainThread(inflight);
-      else if (retry) {
-        const input = inputFor(retry);
-        if (input) runOnMainThread({ job: retry, input });
-        else setBusy(false);
-      }
+      else if (retry) runOnMainThread({ job: retry });
     } else {
       setBusy(false);
       setRefining(false);
@@ -541,6 +467,7 @@ export function useDither(
       if (msg.type === "ready") {
         readyRef.current = true;
         window.clearTimeout(initTimer);
+        worker.postMessage({ type: "configure", quality: latest.current.quality } satisfies WorkerRequest);
         setBackendLabel(`worker · ${msg.backend}`);
         return;
       }
@@ -558,10 +485,10 @@ export function useDither(
         if (!inflight || inflight.job.id !== msg.id) return;
         if (latest.current.source && inflight.job.sourceTag !== latest.current.source) return;
         if (msg.bitmap) {
-          settle(inflight.job, msg.bitmap, msg.ms);
+          settle(inflight.job, msg.bitmap, msg.ms, msg.scale);
         } else if (msg.buffer && msg.width && msg.height) {
           const img = new ImageData(new Uint8ClampedArray(msg.buffer), msg.width, msg.height);
-          settle(inflight.job, img, msg.ms);
+          settle(inflight.job, img, msg.ms, msg.scale);
         }
         return;
       }
@@ -584,13 +511,12 @@ export function useDither(
   dispatchRef.current = (job: Job) => {
     const worker = workerRef.current;
     if (brokenRef.current || !worker) {
-      const input = inputFor(job);
-      if (!input) return;
-      runOnMainThread({ job, input });
+      if (!localSource.current) return;
+      runOnMainThread({ job });
       return;
     }
 
-    inflightRef.current = { job, input: localSource.current! };
+    inflightRef.current = { job };
 
     const req: WorkerRequest = {
       type: "render",
@@ -611,6 +537,13 @@ export function useDither(
     timerRef.current = window.setTimeout(watchdogStrike, watchdogMs(job.pixels, job.settings));
   };
 
+  // The preview quality is a setting, not a render input: it retunes how big
+  // the first pass is from the next render on and never invalidates one.
+  useEffect(() => {
+    mainBudget.current.setQuality(quality);
+    workerRef.current?.postMessage({ type: "configure", quality } satisfies WorkerRequest);
+  }, [quality]);
+
   /** Source or settings changed: restart from the coarse pass. */
   useEffect(() => {
     if (!source) {
@@ -622,9 +555,9 @@ export function useDither(
       inflightRef.current = null;
       queuedRef.current = null;
       sentSource.current = null;
-      sentCoarse.current = null;
       localSource.current = null;
-      localCoarse.current = null;
+      mainLoaded.current = null;
+      coarseScaleRef.current = 1;
       layerSourceRef.current = null;
       return;
     }
@@ -641,11 +574,12 @@ export function useDither(
         setFine(null);
         setRegion(null);
         setCoarseScale(1);
+        coarseScaleRef.current = 1;
       }
     }
     syncGlyphs(settings);
     syncPlanes(source);
-    const { job } = coarseJobFor(source, settings);
+    const job = coarseJobFor(source, settings);
     setBusy(true);
     setRefining(true);
     if (inflightRef.current) queuedRef.current = job;
@@ -719,7 +653,10 @@ export function useDither(
           try {
             const w = await loadWasmEngine();
             if (!w) throw new Error("wasm unavailable on main thread");
-            w.engine.set_source(new Uint8ClampedArray(src.data), src.width, src.height);
+            if (mainLoaded.current !== src) {
+              w.engine.set_source(new Uint8ClampedArray(src.data), src.width, src.height);
+              mainLoaded.current = src;
+            }
             const len = w.engine.render("fine", null, cfg);
             const bytes = w.view(len);
             const outImg = new ImageData(new Uint8ClampedArray(bytes), src.width, src.height);

@@ -15,6 +15,16 @@ use crate::shared::{pow_shared, sincos_deg, sin_rad};
 
 type Matcher = fn(&Palette, f64, f64, f64) -> usize;
 
+/// One slot of the match memo: the exact input triple and the layer it chose.
+#[derive(Clone, Copy)]
+struct MemoSlot {
+    key: [u64; 3],
+    idx: u32,
+}
+
+const MEMO_SLOTS: usize = 4096;
+const MEMO_EMPTY: u32 = u32::MAX;
+
 struct Ctx<'a> {
     src: &'a [f32],
     /// Pre-rasterised glyphs, only ever populated for the text algorithm.
@@ -25,7 +35,38 @@ struct Ctx<'a> {
     h: usize,
     p: &'a Palette,
     match_fn: Matcher,
+    /// Direct-mapped memo of `match_fn`, only populated for the one matcher
+    /// expensive enough to be worth it (OKLab). Matching is a pure function of
+    /// `(palette, r, g, b)`, so replaying a stored answer for a bit-identical
+    /// input is exact - this is a cache, not an approximation.
+    memo: Vec<MemoSlot>,
     s: &'a Settings,
+}
+
+impl Ctx<'_> {
+    /// Nearest layer for a colour, through the memo when there is one.
+    ///
+    /// Flat regions, posterised input (every pass after the first in a stack)
+    /// and ordered masks with few distinct offsets all feed the matcher the
+    /// same triple again and again.
+    #[inline]
+    fn find(&mut self, r: f64, g: f64, b: f64) -> usize {
+        if self.memo.is_empty() {
+            return (self.match_fn)(self.p, r, g, b);
+        }
+        let key = [r.to_bits(), g.to_bits(), b.to_bits()];
+        let h = key[0].wrapping_mul(0x9E37_79B9_7F4A_7C15)
+            ^ key[1].wrapping_mul(0xC2B2_AE3D_27D4_EB4F)
+            ^ key[2].wrapping_mul(0x1656_67B1_9E37_79F9);
+        let slot = (h >> 40) as usize & (MEMO_SLOTS - 1);
+        let hit = self.memo[slot];
+        if hit.idx != MEMO_EMPTY && hit.key == key {
+            return hit.idx as usize;
+        }
+        let idx = (self.match_fn)(self.p, r, g, b);
+        self.memo[slot] = MemoSlot { key, idx: idx as u32 };
+        idx
+    }
 }
 
 #[inline]
@@ -171,7 +212,8 @@ fn ordered_pass(c: &mut Ctx, mask: impl Fn(usize, usize) -> f64) {
             let r = f64::from(c.src[j]) + shift;
             let g = f64::from(c.src[j + 1]) + shift;
             let b = f64::from(c.src[j + 2]) + shift;
-            put(c, i, (c.match_fn)(c.p, r, g, b));
+            let idx = c.find(r, g, b);
+            put(c, i, idx);
         }
     }
 }
@@ -212,7 +254,8 @@ fn jpeg_sort_pass(c: &mut Ctx) {
                 let v = avg[ch] + (f64::from(c.src[j + ch]) - avg[ch]) * retention;
                 rgb[ch] = (v / quant).round() * quant;
             }
-            put(c, y * w + x, (c.match_fn)(c.p, rgb[0], rgb[1], rgb[2]));
+            let idx = c.find(rgb[0], rgb[1], rgb[2]);
+            put(c, y * w + x, idx);
         }
     }
 
@@ -275,7 +318,8 @@ fn threshold_pass(c: &mut Ctx, noise: f64) {
         let r = f64::from(c.src[j]) + bias + nz;
         let g = f64::from(c.src[j + 1]) + bias + nz;
         let b = f64::from(c.src[j + 2]) + bias + nz;
-        put(c, i, (c.match_fn)(c.p, r, g, b));
+        let idx = c.find(r, g, b);
+        put(c, i, idx);
     }
 }
 
@@ -298,7 +342,7 @@ fn error_diffuse_pass(c: &mut Ctx, kernel: &kernels::Kernel, div: f64) {
             let r = f64::from(c.src[j]) + f64::from(err[j]);
             let g = f64::from(c.src[j + 1]) + f64::from(err[j + 1]);
             let b = f64::from(c.src[j + 2]) + f64::from(err[j + 2]);
-            let idx = (c.match_fn)(c.p, r, g, b);
+            let idx = c.find(r, g, b);
             put(c, i, idx);
 
             let mut er = (r - f64::from(c.p.r[idx])) * strength;
@@ -352,7 +396,7 @@ fn adaptive_diffuse_pass(c: &mut Ctx) {
             let r = f64::from(c.src[j]) + f64::from(err[j]);
             let g = f64::from(c.src[j + 1]) + f64::from(err[j + 1]);
             let b = f64::from(c.src[j + 2]) + f64::from(err[j + 2]);
-            let idx = (c.match_fn)(c.p, r, g, b);
+            let idx = c.find(r, g, b);
             put(c, i, idx);
 
             // Extremity: 0 in the midtones, 1 at either end of the range.
@@ -397,6 +441,9 @@ fn adaptive_diffuse_pass(c: &mut Ctx) {
 /* -------------------------- Riemersma ---------------------------- */
 
 /// Hilbert index → coordinate, for a curve of side `n` (a power of two).
+/// Only the equivalence test walks the curve this way now; the pass itself
+/// uses the pruned traversal.
+#[cfg(test)]
 fn hilbert_xy(n: usize, d: usize) -> (usize, usize) {
     let mut x: usize = 0;
     let mut y: usize = 0;
@@ -454,9 +501,91 @@ impl BitLengthExt for usize {
     }
 }
 
+/// Integer affine map, enough to carry a Hilbert sub-square's orientation.
+#[derive(Clone, Copy)]
+struct Affine {
+    a: i64,
+    b: i64,
+    c: i64,
+    d: i64,
+    e: i64,
+    f: i64,
+}
+
+impl Affine {
+    const IDENTITY: Affine = Affine { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
+
+    #[inline]
+    fn apply(&self, x: i64, y: i64) -> (i64, i64) {
+        (self.a * x + self.b * y + self.e, self.c * x + self.d * y + self.f)
+    }
+
+    /// `self ∘ inner`: apply `inner` first.
+    fn after(&self, inner: &Affine) -> Affine {
+        Affine {
+            a: self.a * inner.a + self.b * inner.c,
+            b: self.a * inner.b + self.b * inner.d,
+            c: self.c * inner.a + self.d * inner.c,
+            d: self.c * inner.b + self.d * inner.d,
+            e: self.a * inner.e + self.b * inner.f + self.e,
+            f: self.c * inner.e + self.d * inner.f + self.f,
+        }
+    }
+}
+
+/// Quadrant `q` of a size-`2s` Hilbert square, as the map from the quadrant's
+/// own coordinates into its parent's. The four cases are exactly the
+/// rotate-then-offset step of `hilbert_xy`, one per value of the digit.
+fn hilbert_quadrant(q: usize, s: i64) -> Affine {
+    match q {
+        0 => Affine { a: 0, b: 1, c: 1, d: 0, e: 0, f: 0 },
+        1 => Affine { a: 1, b: 0, c: 0, d: 1, e: 0, f: s },
+        2 => Affine { a: 1, b: 0, c: 0, d: 1, e: s, f: s },
+        _ => Affine { a: 0, b: -1, c: -1, d: 0, e: 2 * s - 1, f: s - 1 },
+    }
+}
+
+fn hilbert_collect(
+    size: i64,
+    map: &Affine,
+    w: i64,
+    h: i64,
+    out: &mut Vec<u32>,
+) {
+    // The map is a signed permutation, so a square lands on a square and two
+    // opposite corners bound it.
+    let (x0, y0) = map.apply(0, 0);
+    let (x1, y1) = map.apply(size - 1, size - 1);
+    if x0.min(x1) >= w || y0.min(y1) >= h {
+        return;
+    }
+    if size == 1 {
+        out.push((y0 * w + x0) as u32);
+        return;
+    }
+    let half = size / 2;
+    for q in 0..4 {
+        let child = map.after(&hilbert_quadrant(q, half));
+        hilbert_collect(half, &child, w, h, out);
+    }
+}
+
+/// Pixel indices of a `w` x `h` image in Hilbert-curve order.
+///
+/// This is the curve of the enclosing power-of-two square with the cells
+/// outside the image removed, which is what the pass has always walked - but
+/// whole quadrants that fall outside are skipped instead of being generated one
+/// cell at a time and discarded. On a 16:9 frame the square is several times
+/// the image, and that discarded work was most of the pass's overhead.
+fn hilbert_order(w: usize, h: usize) -> Vec<u32> {
+    let side: usize = 1 << ceil_log2(w.max(h).max(2));
+    let mut out = Vec::with_capacity(w * h);
+    hilbert_collect(side as i64, &Affine::IDENTITY, w as i64, h as i64, &mut out);
+    out
+}
+
 fn riemersma_pass(c: &mut Ctx) {
     let (w, h) = (c.w, c.h);
-    let side: usize = 1 << ceil_log2(w.max(h).max(2));
     let q_len = (c.s.riemersma_queue.round().max(1.0)) as usize;
     let decay = c.s.riemersma_decay.clamp(0.01, 0.99);
 
@@ -471,38 +600,38 @@ fn riemersma_pass(c: &mut Ctx) {
     for k in 0..q_len {
         weights[k] = (f64::from(weights[k]) / wsum) as f32;
     }
+    let weights: Vec<f64> = weights.iter().map(|&v| f64::from(v)).collect();
 
     let mut qr = vec![0.0f32; q_len];
     let mut qg = vec![0.0f32; q_len];
     let mut qb = vec![0.0f32; q_len];
     let mut head: usize = 0;
 
-    let total = side * side;
-    for d in 0..total {
-        let (x, y) = hilbert_xy(side, d);
-        if x >= w || y >= h {
-            continue;
-        }
-        let i = y * w + x;
+    for pixel in hilbert_order(w, h) {
+        let i = pixel as usize;
         let j = i * 3;
 
         let mut ar = 0.0;
         let mut ag = 0.0;
         let mut ab = 0.0;
-        for k in 0..q_len {
-            let slot = (head + k) % q_len;
-            ar += f64::from(qr[slot]) * f64::from(weights[k]);
-            ag += f64::from(qg[slot]) * f64::from(weights[k]);
-            ab += f64::from(qb[slot]) * f64::from(weights[k]);
+        let mut slot = head;
+        for &weight in &weights {
+            ar += f64::from(qr[slot]) * weight;
+            ag += f64::from(qg[slot]) * weight;
+            ab += f64::from(qb[slot]) * weight;
+            slot += 1;
+            if slot == q_len {
+                slot = 0;
+            }
         }
 
         let r = f64::from(c.src[j]) + ar * c.s.strength;
         let g = f64::from(c.src[j + 1]) + ag * c.s.strength;
         let b = f64::from(c.src[j + 2]) + ab * c.s.strength;
-        let idx = (c.match_fn)(c.p, r, g, b);
+        let idx = c.find(r, g, b);
         put(c, i, idx);
 
-        head = (head + q_len - 1) % q_len;
+        head = if head == 0 { q_len - 1 } else { head - 1 };
         qr[head] = (r - f64::from(c.p.r[idx])) as f32;
         qg[head] = (g - f64::from(c.p.g[idx])) as f32;
         qb[head] = (b - f64::from(c.p.b[idx])) as f32;
@@ -563,55 +692,62 @@ fn dot_diffuse_pass(c: &mut Ctx) {
     let ranks = size * size;
     let mut err = vec![0.0f32; w * h * 3];
 
+    // Pixels of each class, in the scan order the pass has always used (row by
+    // row, left to right within a row). Walking the whole image once per rank
+    // to find them was `ranks` full scans; bucketing it is one, and visits the
+    // same pixels in the same order.
+    let mut buckets: Vec<Vec<u32>> = vec![Vec::new(); ranks];
+    for y in 0..h {
+        for x in 0..w {
+            buckets[cm[(y % size) * size + (x % size)] as usize].push((y * w + x) as u32);
+        }
+    }
+
     for rank in 0..ranks {
-        for y in 0..h {
-            for x in 0..w {
-                if cm[(y % size) * size + (x % size)] != rank as i32 {
+        for &pixel in &buckets[rank] {
+            let i = pixel as usize;
+            let (x, y) = (i % w, i / w);
+            let j = i * 3;
+            let r = f64::from(c.src[j]) + f64::from(err[j]);
+            let g = f64::from(c.src[j + 1]) + f64::from(err[j + 1]);
+            let b = f64::from(c.src[j + 2]) + f64::from(err[j + 2]);
+            let idx = c.find(r, g, b);
+            put(c, i, idx);
+
+            let er = (r - f64::from(c.p.r[idx])) * c.s.strength;
+            let eg = (g - f64::from(c.p.g[idx])) * c.s.strength;
+            let eb = (b - f64::from(c.p.b[idx])) * c.s.strength;
+
+            // Only neighbours that are still undecided may receive error.
+            let mut div = 0.0;
+            for &(dx, dy, weight) in &NEIGHBOURS {
+                let nx = x as i32 + dx;
+                let ny = y as i32 + dy;
+                if nx < 0 || nx >= w as i32 || ny < 0 || ny >= h as i32 {
                     continue;
                 }
-                let i = y * w + x;
-                let j = i * 3;
-                let r = f64::from(c.src[j]) + f64::from(err[j]);
-                let g = f64::from(c.src[j + 1]) + f64::from(err[j + 1]);
-                let b = f64::from(c.src[j + 2]) + f64::from(err[j + 2]);
-                let idx = (c.match_fn)(c.p, r, g, b);
-                put(c, i, idx);
-
-                let er = (r - f64::from(c.p.r[idx])) * c.s.strength;
-                let eg = (g - f64::from(c.p.g[idx])) * c.s.strength;
-                let eb = (b - f64::from(c.p.b[idx])) * c.s.strength;
-
-                // Only neighbours that are still undecided may receive error.
-                let mut div = 0.0;
-                for &(dx, dy, weight) in &NEIGHBOURS {
-                    let nx = x as i32 + dx;
-                    let ny = y as i32 + dy;
-                    if nx < 0 || nx >= w as i32 || ny < 0 || ny >= h as i32 {
-                        continue;
-                    }
-                    if cm[(ny as usize % size) * size + (nx as usize % size)] <= rank as i32 {
-                        continue;
-                    }
-                    div += weight;
-                }
-                if div == 0.0 {
+                if cm[(ny as usize % size) * size + (nx as usize % size)] <= rank as i32 {
                     continue;
                 }
-                for &(dx, dy, weight) in &NEIGHBOURS {
-                    let nx = x as i32 + dx;
-                    let ny = y as i32 + dy;
-                    if nx < 0 || nx >= w as i32 || ny < 0 || ny >= h as i32 {
-                        continue;
-                    }
-                    if cm[(ny as usize % size) * size + (nx as usize % size)] <= rank as i32 {
-                        continue;
-                    }
-                    let f = weight / div;
-                    let nj = ((ny as usize) * w + nx as usize) * 3;
-                    err[nj] = (f64::from(err[nj]) + er * f) as f32;
-                    err[nj + 1] = (f64::from(err[nj + 1]) + eg * f) as f32;
-                    err[nj + 2] = (f64::from(err[nj + 2]) + eb * f) as f32;
+                div += weight;
+            }
+            if div == 0.0 {
+                continue;
+            }
+            for &(dx, dy, weight) in &NEIGHBOURS {
+                let nx = x as i32 + dx;
+                let ny = y as i32 + dy;
+                if nx < 0 || nx >= w as i32 || ny < 0 || ny >= h as i32 {
+                    continue;
                 }
+                if cm[(ny as usize % size) * size + (nx as usize % size)] <= rank as i32 {
+                    continue;
+                }
+                let f = weight / div;
+                let nj = ((ny as usize) * w + nx as usize) * 3;
+                err[nj] = (f64::from(err[nj]) + er * f) as f32;
+                err[nj + 1] = (f64::from(err[nj + 1]) + eg * f) as f32;
+                err[nj + 2] = (f64::from(err[nj + 2]) + eb * f) as f32;
             }
         }
     }
@@ -681,6 +817,165 @@ fn omino_pass(c: &mut Ctx) {
         }
 
         std::mem::swap(&mut aside_in, &mut aside_out);
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Dot grid                                                            */
+/* ------------------------------------------------------------------ */
+
+/// Rounds a square dot's side to a whole number of pixels *with the parity of
+/// the cell it sits in*. An even cell's centre lies on a pixel boundary and an
+/// odd cell's on a pixel, so a dot of the wrong parity would sit half a pixel
+/// off-centre and look lopsided.
+fn snap_side(side: f64, cell: usize) -> f64 {
+    let mut v = side.round();
+    if (v as i64 - cell as i64).rem_euclid(2) != 0 {
+        v += if side >= v { 1.0 } else { -1.0 };
+    }
+    v.max(if cell % 2 == 1 { 1.0 } else { 2.0 })
+}
+
+/// Pixel-grid halftone: the image is read in coarse cells and each cell is
+/// redrawn as a single crisp dot whose size follows the tone underneath.
+///
+/// Unlike the screen-angle halftones this works on a plain axis-aligned grid
+/// and decides each dot from the *mean* of its cell, so every dot is a clean
+/// shape on whole pixels with paper showing between them - the chunky
+/// bitmap-print look. Tone is mapped to area, not width, so a half-tone cell
+/// gets half the ink.
+///
+/// Cells at the right and bottom edges are usually partial. They are measured
+/// on the pixels that exist and their dot is centred on the cell as drawn, so
+/// an edge never turns into a column of runts.
+fn dot_grid_pass(c: &mut Ctx) {
+    let (w, h) = (c.w, c.h);
+    let cell = c.s.cell_size.round().clamp(2.0, 256.0) as usize;
+    let scale = if c.s.dot_scale > 0.0 { c.s.dot_scale.clamp(0.2, 1.5) } else { 1.0 };
+    let gamma = if c.s.dot_gamma > 0.0 { c.s.dot_gamma.clamp(0.2, 3.0) } else { 1.0 };
+    let cutoff = c.s.dot_cutoff.clamp(0.0, 1.0);
+    let levels = c.s.dot_levels.round().clamp(0.0, 32.0) as usize;
+    let bias = (c.s.threshold - 128.0) / 255.0;
+    let invert = c.s.dot_invert;
+    let mono = c.s.dot_ink == "mono";
+    let stagger = c.s.dot_stagger;
+    let shape = match c.s.dot_shape.as_str() {
+        "circle" => 1u8,
+        "diamond" => 2u8,
+        _ => 0u8,
+    };
+
+    // The palette's extremes are the paper and, in mono, the ink.
+    let (mut dark, mut light) = (0usize, 0usize);
+    for i in 1..c.p.n {
+        if c.p.y[i] < c.p.y[dark] { dark = i; }
+        if c.p.y[i] > c.p.y[light] { light = i; }
+    }
+
+    let half = cell / 2;
+    let rows = h.div_ceil(cell) + 1;
+    for cy in 0..rows {
+        let y0 = (cy * cell) as isize;
+        // Odd rows slide left by half a cell; one extra column covers the gap
+        // that opens up on the right.
+        let shift = if stagger && cy % 2 == 1 { half as isize } else { 0 };
+        let cols = w.div_ceil(cell) + 1;
+        for cx in 0..cols {
+            let x0 = (cx * cell) as isize - shift;
+            let (ax, bx) = (x0.max(0), (x0 + cell as isize).min(w as isize));
+            let (ay, by) = (y0.max(0), (y0 + cell as isize).min(h as isize));
+            if ax >= bx || ay >= by {
+                continue;
+            }
+            let (cols_n, rows_n) = ((bx - ax) as usize, (by - ay) as usize);
+
+            let (mut sr, mut sg, mut sb) = (0.0f64, 0.0f64, 0.0f64);
+            for y in ay as usize..by as usize {
+                for x in ax as usize..bx as usize {
+                    let j = (y * w + x) * 3;
+                    sr += f64::from(c.src[j]);
+                    sg += f64::from(c.src[j + 1]);
+                    sb += f64::from(c.src[j + 2]);
+                }
+            }
+            let n = (cols_n * rows_n) as f64;
+            let (ar, ag, ab) = (sr / n, sg / n, sb / n);
+
+            // Tone is how much ink the cell asks for: dark by default, light
+            // when the dots stand for highlights.
+            let lum = (luma(ar, ag, ab) / 255.0 + bias).clamp(0.0, 1.0);
+            let mut t = if invert { lum } else { 1.0 - lum };
+            if (gamma - 1.0).abs() > 1e-6 { t = pow_shared(t, gamma); }
+            if levels >= 2 {
+                let top = (levels - 1) as f64;
+                t = (t * top).round() / top;
+            }
+            // Paper is fixed: the light end of the palette, or the dark end when
+            // the dots stand for highlights. The ink is the palette colour
+            // nearest the cell that is not the paper, so a mid-grey cell on a
+            // black-and-white palette gets a black dot, never an invisible
+            // white one.
+            let paper_idx = if invert { dark } else { light };
+            let ink_idx = if mono || c.p.n < 2 {
+                if invert { light } else { dark }
+            } else {
+                let (l, a, b) = rgb_to_oklab(ar, ag, ab);
+                let mut best = if paper_idx == 0 { 1 } else { 0 };
+                let mut best_d = f64::INFINITY;
+                for i in 0..c.p.n {
+                    if i == paper_idx {
+                        continue;
+                    }
+                    let dl = l - f64::from(c.p.lab[i * 3]);
+                    let da = a - f64::from(c.p.lab[i * 3 + 1]);
+                    let db = b - f64::from(c.p.lab[i * 3 + 2]);
+                    let d = dl * dl + da * da + db * db;
+                    if d < best_d {
+                        best_d = d;
+                        best = i;
+                    }
+                }
+                best
+            };
+
+            // Cell background first, then the dot over it.
+            for y in ay as usize..by as usize {
+                for x in ax as usize..bx as usize {
+                    put(c, y * w + x, paper_idx);
+                }
+            }
+            if t <= 0.0 || t < cutoff {
+                continue;
+            }
+
+            // Dot geometry in cell coordinates, centred on the drawn cell.
+            let cxm = (ax + bx) as f64 / 2.0;
+            let cym = (ay + by) as f64 / 2.0;
+            let span = cell as f64 * scale;
+            let (side_x, side_y, radius, reach) = match shape {
+                1 => (0.0, 0.0, span * (t / core::f64::consts::PI).sqrt(), 0.0),
+                2 => (0.0, 0.0, 0.0, span * (t / 2.0).sqrt()),
+                _ => {
+                    let side = span * t.sqrt();
+                    (snap_side(side, cols_n), snap_side(side, rows_n), 0.0, 0.0)
+                }
+            };
+            let r2 = radius * radius;
+            for y in ay as usize..by as usize {
+                let dy = (y as f64 + 0.5) - cym;
+                for x in ax as usize..bx as usize {
+                    let dx = (x as f64 + 0.5) - cxm;
+                    let inside = match shape {
+                        1 => dx * dx + dy * dy <= r2,
+                        2 => dx.abs() + dy.abs() <= reach,
+                        _ => dx.abs() <= side_x / 2.0 && dy.abs() <= side_y / 2.0,
+                    };
+                    if inside {
+                        put(c, y * w + x, ink_idx);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -775,7 +1070,7 @@ fn ascii_pass(c: &mut Ctx) {
             let ink_idx = if mono {
                 if invert { dark } else { light }
             } else {
-                (c.match_fn)(c.p, avg_r, avg_g, avg_b)
+                c.find(avg_r, avg_g, avg_b)
             };
             // Paper is whichever extreme the ink is not, so text never
             // disappears into its own background.
@@ -783,9 +1078,7 @@ fn ascii_pass(c: &mut Ctx) {
                 if invert { light } else { dark }
             } else if f64::from(c.p.y[ink_idx]) > 127.5 { dark } else { light };
 
-            let bits = atlas.bitmaps
-                [glyph * cw * ch..(glyph + 1) * cw * ch]
-                .to_vec();
+            let bits = atlas.glyph(glyph);
             for y in 0..rows {
                 for x in 0..cols {
                     let i = (cy + y) * c.w + (cx + x);
@@ -833,6 +1126,11 @@ fn dither_single(
         h: height,
         p: &palette,
         match_fn: matcher_for(&s.match_mode),
+        memo: if s.match_mode == "oklab" {
+            vec![MemoSlot { key: [0; 3], idx: MEMO_EMPTY }; MEMO_SLOTS]
+        } else {
+            Vec::new()
+        },
         s,
     };
 
@@ -896,6 +1194,7 @@ fn dither_single(
         "omino" => omino_pass(&mut ctx),
         "jpeg-sort" => jpeg_sort_pass(&mut ctx),
         "ascii" => ascii_pass(&mut ctx),
+        "dot-grid" => dot_grid_pass(&mut ctx),
         other => {
             match kernels::kernel_for(other) {
                 Some((k, div)) => error_diffuse_pass(&mut ctx, k, div),
@@ -928,21 +1227,132 @@ pub fn dither_with_glyphs(
     s: &Settings,
     glyphs: &GlyphAtlas,
 ) -> Vec<u8> {
+    dither_stack(data, width, height, s, glyphs, 0, &mut LayerCache::disabled())
+}
+
+/// Finished output of every executed pass, so an edit to pass `k` only has to
+/// redo passes `k..n`.
+///
+/// A stack is a chain: pass `k` consumes exactly what pass `k-1` produced, so
+/// its result is a pure function of the source plus the settings of passes
+/// `0..=k`. Each entry is keyed by a hash chained through every pass beneath
+/// it; on the next render the longest run of matching keys is reused as-is and
+/// only the rest is recomputed. Dragging a slider on the top of a ten-pass
+/// stack costs one pass instead of ten.
+///
+/// Reuse is exact - a cached plane is the plane the pass would have produced -
+/// so it can never change what is drawn, only how long drawing takes.
+pub struct LayerCache {
+    enabled: bool,
+    entries: Vec<CacheEntry>,
+    bytes: usize,
+    budget: usize,
+    /// Passes the last run served from the cache.
+    pub reused: usize,
+    /// Passes the last run actually computed.
+    pub computed: usize,
+}
+
+struct CacheEntry {
+    key: u64,
+    pixels: Vec<u8>,
+}
+
+/// Resident memory the cache may hold. Past it later passes simply are not
+/// kept, which costs speed on the next edit and nothing else.
+const CACHE_BUDGET_BYTES: usize = 192 << 20;
+
+impl LayerCache {
+    pub fn new() -> Self {
+        Self { enabled: true, entries: Vec::new(), bytes: 0, budget: CACHE_BUDGET_BYTES, reused: 0, computed: 0 }
+    }
+
+    /// A cache that stores nothing, for one-shot renders.
+    pub fn disabled() -> Self {
+        Self { enabled: false, ..Self::new() }
+    }
+
+    pub fn with_budget(bytes: usize) -> Self {
+        Self { budget: bytes, ..Self::new() }
+    }
+
+    pub fn clear(&mut self) {
+        self.entries.clear();
+        self.bytes = 0;
+    }
+
+    fn truncate(&mut self, keep: usize) {
+        while self.entries.len() > keep {
+            if let Some(e) = self.entries.pop() {
+                self.bytes -= e.pixels.len();
+            }
+        }
+    }
+}
+
+impl Default for LayerCache {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[inline]
+fn mix(h: u64, v: u64) -> u64 {
+    // FNV-1a step over a whole word, then a xor-shift so nearby inputs spread.
+    let mut x = (h ^ v).wrapping_mul(0x0000_0100_0000_01B3);
+    x ^= x >> 29;
+    x.wrapping_mul(0xBF58_476D_1CE4_E5B9)
+}
+
+fn hash_bytes(mut h: u64, bytes: &[u8]) -> u64 {
+    for chunk in bytes.chunks(8) {
+        let mut word = [0u8; 8];
+        word[..chunk.len()].copy_from_slice(chunk);
+        h = mix(h, u64::from_le_bytes(word));
+    }
+    mix(h, bytes.len() as u64)
+}
+
+/// Same as `dither_with_glyphs`, reusing whatever prefix of `cache` still holds.
+///
+/// `base_key` names the input plane (source identity, stage, region); callers
+/// must change it whenever `data` changes. `glyph_key` does the same for the
+/// atlas, which only the text pass reads.
+pub fn dither_stack(
+    data: &[u8],
+    width: usize,
+    height: usize,
+    s: &Settings,
+    glyphs: &GlyphAtlas,
+    base_key: u64,
+    cache: &mut LayerCache,
+) -> Vec<u8> {
+    cache.reused = 0;
+    cache.computed = 0;
     if s.algorithm_layers.is_empty() {
+        cache.clear();
+        cache.computed = 1;
         return dither_single(data, width, height, s, glyphs);
     }
 
-    let mut current = data.to_vec();
     let defaults = Settings::with_defaults();
-    let mut first = true;
+    // One entry per executed pass: its effective settings and opacity.
+    struct Pass {
+        settings: Settings,
+        opacity: f64,
+    }
+    let mut passes: Vec<Pass> = Vec::new();
     for layer in &s.algorithm_layers {
-        if !layer.enabled { continue; }
+        if !layer.enabled {
+            continue;
+        }
         let opacity = layer.opacity.clamp(0.0, 1.0);
-        if opacity == 0.0 { continue; }
-
+        if opacity == 0.0 {
+            continue;
+        }
         let mut pass_settings = s.clone();
         layer.params.apply(&mut pass_settings);
-        if !first {
+        if !passes.is_empty() {
             pass_settings.invert = defaults.invert;
             pass_settings.grayscale = defaults.grayscale;
             pass_settings.brightness = defaults.brightness;
@@ -957,18 +1367,106 @@ pub fn dither_with_glyphs(
             pass_settings.sharpen = defaults.sharpen;
         }
         pass_settings.algorithm = layer.algorithm.clone();
-        let rendered = dither_single(&current, width, height, &pass_settings, glyphs);
-        if opacity == 1.0 {
+        passes.push(Pass { settings: pass_settings, opacity });
+    }
+
+    if passes.is_empty() {
+        cache.clear();
+        return data.to_vec();
+    }
+
+    // Chain the keys. The pass list is stripped from each fingerprint - it
+    // describes the whole stack, and including it would invalidate every pass
+    // whenever any one of them changed.
+    let mut keys = Vec::with_capacity(passes.len());
+    let mut key = mix(mix(base_key, width as u64), height as u64);
+    for (n, pass) in passes.iter().enumerate() {
+        let mut fingerprint = pass.settings.clone();
+        fingerprint.algorithm_layers.clear();
+        // The first pass is the only one that grades; later passes were reset
+        // above, so position is already part of the settings. It is mixed in
+        // anyway so the meaning of "first" can never alias.
+        key = hash_bytes(key, format!("{n}|{:?}|{}", fingerprint, pass.opacity).as_bytes());
+        if pass.settings.algorithm == "ascii" {
+            key = mix(key, glyphs.fingerprint());
+        }
+        keys.push(key);
+    }
+
+    let mut reuse = 0usize;
+    if cache.enabled {
+        while reuse < passes.len()
+            && reuse < cache.entries.len()
+            && cache.entries[reuse].key == keys[reuse]
+        {
+            reuse += 1;
+        }
+        cache.truncate(reuse);
+    }
+    cache.reused = reuse;
+    cache.computed = passes.len() - reuse;
+
+    let mut current: Vec<u8> = if reuse > 0 {
+        cache.entries[reuse - 1].pixels.clone()
+    } else {
+        data.to_vec()
+    };
+    let mut storing = cache.enabled;
+
+    for (n, pass) in passes.iter().enumerate().skip(reuse) {
+        let rendered = dither_single(&current, width, height, &pass.settings, glyphs);
+        if pass.opacity == 1.0 {
             current = rendered;
         } else {
             for (dst, target) in current.chunks_exact_mut(4).zip(rendered.chunks_exact(4)) {
                 for channel in 0..3 {
-                    dst[channel] = to_u8clamp(f64::from(dst[channel]) * (1.0 - opacity)
-                        + f64::from(target[channel]) * opacity);
+                    dst[channel] = to_u8clamp(
+                        f64::from(dst[channel]) * (1.0 - pass.opacity)
+                            + f64::from(target[channel]) * pass.opacity,
+                    );
                 }
             }
         }
-        first = false;
+        if storing {
+            if cache.bytes + current.len() > cache.budget {
+                storing = false;
+            } else {
+                cache.bytes += current.len();
+                cache.entries.push(CacheEntry { key: keys[n], pixels: current.clone() });
+            }
+        }
     }
     current
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The curve the pass originally walked: every cell of the enclosing
+    /// square in index order, keeping those inside the image.
+    fn reference_order(w: usize, h: usize) -> Vec<u32> {
+        let side: usize = 1 << ceil_log2(w.max(h).max(2));
+        let mut out = Vec::new();
+        for d in 0..side * side {
+            let (x, y) = hilbert_xy(side, d);
+            if x < w && y < h {
+                out.push((y * w + x) as u32);
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn rect_limited_hilbert_walk_matches_the_full_curve() {
+        let mut cases = vec![(1, 1), (2, 2), (3, 1), (1, 7), (5, 5), (16, 16), (17, 3), (64, 33)];
+        for w in [7usize, 31, 48, 100, 129] {
+            for h in [4usize, 9, 50, 96, 130] {
+                cases.push((w, h));
+            }
+        }
+        for (w, h) in cases {
+            assert_eq!(hilbert_order(w, h), reference_order(w, h), "{w}x{h}");
+        }
+    }
 }

@@ -15,7 +15,7 @@
  */
 import type { Settings } from "../dither/types";
 import { appError } from "../errors";
-import { createFrameGrabber, frameToTime, seekClip, type Clip } from "./clip";
+import { createFrameGrabber, currentGrabRoute, demoteGrabRoute, frameToTime, seekClip, type Clip } from "./clip";
 import { captureToVideo, suggestBitrate, type ContainerId } from "./encode";
 import { createRenderPool } from "./pool";
 import { buildGlyphAtlas, fontCss } from "../dither/glyphs";
@@ -46,6 +46,8 @@ export interface VideoExportRequest {
   shouldCancel?: () => boolean;
   /** Called per failed frame; the export continues. */
   onFrameError?: (index: number, error: unknown) => void;
+  /** Render workers to use; omitted or 0 means one per spare core. */
+  threads?: number;
 }
 
 export interface VideoExportResult {
@@ -123,12 +125,14 @@ export async function exportVideo(request: VideoExportRequest): Promise<VideoExp
         maxGlyphs: Math.round(settings.asciiMaxGlyphs),
       })
     : null;
-  const pool = createRenderPool(undefined, { glyphs });
+  const pool = createRenderPool(request.threads && request.threads > 0 ? request.threads : undefined, { glyphs });
   const rendered: Array<Blob | null> = new Array(total).fill(null);
   const substituted: number[] = [];
   const inFlight = new Set<Promise<void>>();
-  // Two beyond the pool so the decoder is never the thing waiting.
-  const maxInFlight = pool.size + 2;
+  // Two beyond the pool so the decoder is never the thing waiting - except when
+  // frames are handed over as `VideoFrame`s, which hold on to decoder buffers
+  // until a worker is done with them; there, stay within the pool.
+  const maxInFlight = currentGrabRoute() === "frame" ? pool.size : pool.size + 2;
   const renderStart = performance.now();
   let done = 0;
 
@@ -145,10 +149,13 @@ export async function exportVideo(request: VideoExportRequest): Promise<VideoExp
       if (cancelled()) throw bail();
 
       const frameIndex = start + i;
-      let plane: ImageData;
+      // A decoded frame as a bitmap when the host can: it goes to a worker
+      // untouched, so the UI thread never reads a pixel of it. Pixels are the
+      // fallback, read here.
+      let plane: ImageData | ImageBitmap | VideoFrame;
       try {
         await seekClip(clip, frameToTime(clip, frameIndex));
-        plane = grabber.grab(clip.el);
+        plane = (await grabber.grabHandle(clip.el)) ?? grabber.grab(clip.el);
       } catch (err) {
         request.onFrameError?.(frameIndex, err);
         substituted.push(frameIndex);
@@ -159,9 +166,39 @@ export async function exportVideo(request: VideoExportRequest): Promise<VideoExp
         continue;
       }
 
+      // The first frame is the proof that this route works on this host: its
+      // result is awaited, and if the worker cannot turn it into a real picture
+      // the route steps down (frame → bitmap → canvas) and the frame is read
+      // again, until one works.
+      if (i === 0) {
+        let attempt: ImageData | ImageBitmap | VideoFrame | null = plane;
+        while (attempt && !("data" in attempt)) {
+          try {
+            rendered[0] = await pool.render(attempt, settings, { width, height });
+            attempt = null;
+          } catch {
+            demoteGrabRoute();
+            try {
+              attempt = (await grabber.grabHandle(clip.el)) ?? grabber.grab(clip.el);
+            } catch (err) {
+              request.onFrameError?.(frameIndex, err);
+              substituted.push(frameIndex);
+              attempt = null;
+              plane = null as unknown as ImageData;
+            }
+          }
+        }
+        if (attempt === null) {
+          done++;
+          report("render", done, total);
+          continue;
+        }
+        plane = attempt;
+      }
+
       const slot = i;
       const job = pool
-        .render(plane, settings)
+        .render(plane, settings, { width, height })
         .then((blob) => {
           rendered[slot] = blob;
         })

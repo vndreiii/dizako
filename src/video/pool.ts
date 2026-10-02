@@ -62,10 +62,13 @@ export interface RenderPool {
   /**
    * Dithers one frame and returns it as a PNG blob.
    *
-   * Takes ownership of `image`: its backing buffer is transferred to a worker
-   * and must not be read again by the caller.
+   * Takes ownership of `image`: its backing buffer (or the bitmap itself) is
+   * transferred to a worker and must not be used again by the caller. A decoded
+   * frame (`VideoFrame` or `ImageBitmap`) is the better input - the worker
+   * scales it to `size` and rasterises it, so the UI thread never handles the
+   * pixels. (`size` is the output size; for plain pixels it is the image's own.)
    */
-  render(image: ImageData, settings: Settings): Promise<Blob>;
+  render(image: ImageData | ImageBitmap | VideoFrame, settings: Settings, size: { width: number; height: number }): Promise<Blob>;
   dispose(): void;
 }
 
@@ -206,12 +209,25 @@ export function createRenderPool(size = suggestedPoolSize(), options: PoolOption
     });
   }
 
+  /** A decoded frame as pixels, on this thread - only for the main-thread last rung. */
+  function framePixels(frame: ImageBitmap | VideoFrame, width: number, height: number): ImageData {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) throw appError("image/no-2d-context", { detail: "no context for a decoded frame" });
+    ctx.drawImage(frame, 0, 0, width, height);
+    frame.close();
+    return ctx.getImageData(0, 0, width, height);
+  }
+
   /** Single-threaded last rung: identical pixels, one frame at a time. */
-  async function renderOnMainThread(image: ImageData, settings: Settings): Promise<Blob> {
+  async function renderOnMainThread(frame: ImageData | ImageBitmap | VideoFrame, settings: Settings, size: { width: number; height: number }): Promise<Blob> {
     const wasm = await loadWasmEngine();
     if (!wasm) {
       throw appError("engine/unavailable", { detail: "wasm engine unavailable on the main thread" });
     }
+    const image = "data" in frame ? frame : framePixels(frame, size.width, size.height);
     wasm.engine.set_source(new Uint8ClampedArray(image.data), image.width, image.height);
     wasm.engine.set_coarse(new Uint8ClampedArray(0), 0, 0);
     const len = wasm.engine.render("fine", null, settings);
@@ -223,9 +239,10 @@ export function createRenderPool(size = suggestedPoolSize(), options: PoolOption
     size: slots.length || 1,
     degraded: slots.length === 0,
 
-    render(image, settings) {
+    render(image: ImageData | ImageBitmap | VideoFrame, settings: Settings, requested: { width: number; height: number }): Promise<Blob> {
+      const size = "data" in image ? { width: image.width, height: image.height } : requested;
       if (disposed) return Promise.reject(appError("video/export-cancelled", { detail: "pool disposed" }));
-      if (slots.length === 0) return renderOnMainThread(image, settings);
+      if (slots.length === 0) return renderOnMainThread(image, settings, size);
 
       const dispatch = async (slot: Slot): Promise<Blob> => {
         slot.busy = true;
@@ -236,22 +253,25 @@ export function createRenderPool(size = suggestedPoolSize(), options: PoolOption
           // it goes to the main-thread engine rather than being lost.
           slot.busy = false;
           queue.shift()?.();
-          return renderOnMainThread(image, settings);
+          return renderOnMainThread(image, settings, size);
         }
         const id = seq++;
+        const isPixels = "data" in image;
         const request: FrameRequest = {
           type: "renderFrame",
           id,
-          buffer: image.data.buffer as ArrayBuffer,
-          width: image.width,
-          height: image.height,
+          ...(isPixels ? { buffer: image.data.buffer as ArrayBuffer } : { frame: image }),
+          // A decoded frame is scaled to the export size by the worker; pixels already are.
+          width: size.width,
+          height: size.height,
           settings,
           encode: "png",
         };
+        const transfer: Transferable[] = isPixels ? [image.data.buffer as ArrayBuffer] : [image];
         return new Promise<Blob>((resolve, reject) => {
           // Scaled by frame size: a 4K frame through a twelve-tap kernel is
           // legitimately slow, and a fixed budget would abort a healthy job.
-          const budget = FRAME_TIMEOUT_BASE_MS + (image.width * image.height) / 40_000;
+          const budget = FRAME_TIMEOUT_BASE_MS + (size.width * size.height) / 40_000;
           const timer = window.setTimeout(() => {
             pending.delete(id);
             slot.busy = false;
@@ -264,7 +284,7 @@ export function createRenderPool(size = suggestedPoolSize(), options: PoolOption
           }, budget);
           pending.set(id, { resolve, reject, timer });
           try {
-            slot.worker.postMessage(request, [request.buffer]);
+            slot.worker.postMessage(request, transfer);
           } catch (err) {
             pending.delete(id);
             window.clearTimeout(timer);

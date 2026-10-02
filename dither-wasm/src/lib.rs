@@ -10,6 +10,7 @@ pub mod masks;
 pub mod palette;
 pub mod prepare;
 pub mod region;
+pub mod scale;
 pub mod settings;
 pub mod shared;
 pub mod tables;

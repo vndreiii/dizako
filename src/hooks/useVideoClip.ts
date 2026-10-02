@@ -3,9 +3,11 @@ import {
   closeClip,
   createFrameGrabber,
   frameToTime,
+  measureClipRate,
   openClip,
   seekClip,
   timeToFrame,
+  withRate,
   type Clip,
   type FrameGrabber,
   type ImportProgress,
@@ -48,6 +50,11 @@ export interface VideoClipApi {
   /** Range kept for export, in frames, inclusive. */
   range: { start: number; end: number };
   setRange(range: { start: number; end: number }): void;
+  /**
+   * Measures the real frame rate if only a guess is known, and resolves to the
+   * clip as it is afterwards. Safe to call repeatedly; concurrent calls share one run.
+   */
+  refineRate(): Promise<Clip | null>;
 }
 
 function longEdgeFit(width: number, height: number, longEdge: number) {
@@ -86,6 +93,16 @@ export function useVideoClip(onError: (error: unknown) => void): VideoClipApi {
   /** Detaches the current `ended` handler; re-created on each play. */
   const endedListener = useRef<(() => void) | null>(null);
   const seekSeq = useRef(0);
+  /** Newest frame read wins; an older one finishing late must not paint. */
+  const sharpSeq = useRef(0);
+  const frameRef = useRef(0);
+  const rangeRef = useRef({ start: 0, end: 0 });
+  /** The running background rate measurement, if any. */
+  const rateTask = useRef<Promise<Clip | null> | null>(null);
+  /** The clip that task is measuring, so a stale one is never mistaken for current. */
+  const rateFor = useRef<Clip | null>(null);
+  const rateCancel = useRef(false);
+  const rateTimer = useRef<number | undefined>(undefined);
   const playingRef = useRef(false);
   const loopRef = useRef(loop);
   const onErrorRef = useRef(onError);
@@ -93,6 +110,10 @@ export function useVideoClip(onError: (error: unknown) => void): VideoClipApi {
   onErrorRef.current = onError;
   // eslint-disable-next-line react-hooks/refs -- see above
   loopRef.current = loop;
+  // eslint-disable-next-line react-hooks/refs -- see above
+  frameRef.current = frame;
+  // eslint-disable-next-line react-hooks/refs -- see above
+  rangeRef.current = range;
 
   const stopLoops = useCallback(() => {
     endedListener.current?.();
@@ -109,6 +130,9 @@ export function useVideoClip(onError: (error: unknown) => void): VideoClipApi {
 
   const teardown = useCallback(() => {
     stopLoops();
+    window.clearTimeout(rateTimer.current);
+    rateCancel.current = true;
+    sharpSeq.current++;
     fullGrabber.current?.dispose();
     playGrabber.current?.dispose();
     fullGrabber.current = null;
@@ -130,17 +154,81 @@ export function useVideoClip(onError: (error: unknown) => void): VideoClipApi {
     setRange({ start: 0, end: 0 });
   }, [teardown]);
 
-  /** Reads the frame under the playhead at full working resolution. */
-  const readSharpFrame = useCallback(() => {
+  /**
+   * Reads the frame under the playhead at full working resolution.
+   *
+   * The pixels are read off the UI thread (see `createFrameGrabber`), so this
+   * is asynchronous; a newer read supersedes an older one still in flight.
+   */
+  const readSharpFrame = useCallback(async () => {
     const current = clipRef.current;
     const grabber = fullGrabber.current;
     if (!current || !grabber) return;
+    const token = ++sharpSeq.current;
     try {
-      setFrameImage(grabber.grab(current.el));
+      const image = await grabber.grabAsync(current.el);
+      if (token !== sharpSeq.current || clipRef.current !== current) return;
+      setFrameImage(image);
       setCoarseFrames(false);
     } catch (err) {
-      onErrorRef.current(err);
+      if (token === sharpSeq.current) onErrorRef.current(err);
     }
+  }, []);
+
+  /**
+   * Runs `action` once any background rate measurement has stood down.
+   *
+   * The measurement plays the element, so a transport action issued during it
+   * would fight it for the playhead. Cancelling is immediate from the user's
+   * side - the measurement ends at its next frame - and the action follows.
+   */
+  const afterRate = useCallback((action: () => void) => {
+    const task = rateTask.current;
+    if (!task) {
+      action();
+      return;
+    }
+    rateCancel.current = true;
+    void task.then(action, action);
+  }, []);
+
+  const refineRate = useCallback((): Promise<Clip | null> => {
+    const current = clipRef.current;
+    if (rateTask.current && rateFor.current === current) return rateTask.current;
+    if (!current || !current.fpsAssumed || playingRef.current) return Promise.resolve(current);
+
+    rateCancel.current = false;
+    rateFor.current = current;
+    const task = (async (): Promise<Clip | null> => {
+      try {
+        const { fps, assumed } = await measureClipRate(current.el, () => rateCancel.current || clipRef.current !== current);
+        if (clipRef.current !== current) return clipRef.current;
+        if (fps === current.fps && assumed === current.fpsAssumed) {
+          await seekClip(current, frameToTime(current, frameRef.current)).catch(() => {});
+          return current;
+        }
+        const next = withRate(current, fps, assumed);
+        clipRef.current = next;
+        setClip(next);
+
+        // The frame count moved with the rate; carry the playhead and the kept
+        // range across by position rather than by index.
+        const at = (i: number) => (i >= current.frameCount - 1 ? next.frameCount - 1 : Math.round((i * next.frameCount) / current.frameCount));
+        const frame = Math.min(next.frameCount - 1, at(frameRef.current));
+        setFrame(frame);
+        setRange({ start: at(rangeRef.current.start), end: Math.max(at(rangeRef.current.end), at(rangeRef.current.start)) });
+        // The measurement left the element wherever playback got to.
+        await seekClip(next, frameToTime(next, frame)).catch(() => {});
+        return next;
+      } finally {
+        if (rateFor.current === current) {
+          rateTask.current = null;
+          rateFor.current = null;
+        }
+      }
+    })();
+    rateTask.current = task;
+    return task;
   }, []);
 
   const open = useCallback(
@@ -161,7 +249,12 @@ export function useVideoClip(onError: (error: unknown) => void): VideoClipApi {
         setFrame(0);
         setRange({ start: 0, end: next.frameCount - 1 });
         setPlaying(false);
-        readSharpFrame();
+        await readSharpFrame();
+
+        // The real frame rate is found in the background, once the picture is
+        // up and the user has had a moment to do something else first.
+        window.clearTimeout(rateTimer.current);
+        rateTimer.current = window.setTimeout(() => void refineRate(), 900);
         return true;
       } catch (err) {
         onErrorRef.current(err);
@@ -171,7 +264,7 @@ export function useVideoClip(onError: (error: unknown) => void): VideoClipApi {
         setImportProgress(null);
       }
     },
-    [readSharpFrame, teardown],
+    [readSharpFrame, refineRate, teardown],
   );
 
   const goToFrame = useCallback(
@@ -181,18 +274,23 @@ export function useVideoClip(onError: (error: unknown) => void): VideoClipApi {
       const next = Math.max(0, Math.min(current.frameCount - 1, Math.round(target)));
       setFrame(next);
       const token = ++seekSeq.current;
-      void seekClip(current, frameToTime(current, next))
-        .then(() => {
-          // A scrub fires faster than seeks complete; only the newest one may
-          // paint, or the preview walks backwards behind the handle.
-          if (token !== seekSeq.current || playingRef.current) return;
-          readSharpFrame();
-        })
-        .catch((err) => {
-          if (token === seekSeq.current) onErrorRef.current(err);
-        });
+      afterRate(() => {
+        // The measurement may have changed the clip (and so the frame's time).
+        const active = clipRef.current;
+        if (!active || token !== seekSeq.current) return;
+        void seekClip(active, frameToTime(active, Math.min(next, active.frameCount - 1)))
+          .then(() => {
+            // A scrub fires faster than seeks complete; only the newest one may
+            // paint, or the preview walks backwards behind the handle.
+            if (token !== seekSeq.current || playingRef.current) return;
+            void readSharpFrame();
+          })
+          .catch((err) => {
+            if (token === seekSeq.current) onErrorRef.current(err);
+          });
+      });
     },
-    [readSharpFrame],
+    [afterRate, readSharpFrame],
   );
 
   const step = useCallback(
@@ -219,7 +317,7 @@ export function useVideoClip(onError: (error: unknown) => void): VideoClipApi {
     // Land on a sharp frame the moment motion stops - that is when the user
     // starts judging the dither.
     setFrame(timeToFrame(current, current.el.currentTime));
-    readSharpFrame();
+    void readSharpFrame();
   }, [readSharpFrame, stopLoops]);
 
   const play = useCallback(() => {
@@ -231,19 +329,34 @@ export function useVideoClip(onError: (error: unknown) => void): VideoClipApi {
     playingRef.current = true;
     setPlaying(true);
     setCoarseFrames(true);
+    // Whatever sharp read is in flight is for a frame about to be left behind.
+    sharpSeq.current++;
+
+    /** A frame is being read off-thread; decoded frames meanwhile are skipped
+     *  rather than queued, so the picture stays current instead of lagging. */
+    let reading = false;
 
     const onFrame = () => {
       const active = clipRef.current;
       if (!active || !playingRef.current) return;
-      try {
-        setFrameImage(grabber.grab(active.el));
-        setFrame(timeToFrame(active, active.el.currentTime));
-      } catch (err) {
-        playingRef.current = false;
-        setPlaying(false);
-        active.el.pause();
-        onErrorRef.current(err);
-        return;
+      if (!reading) {
+        reading = true;
+        grabber
+          .grabAsync(active.el)
+          .then((image) => {
+            reading = false;
+            if (!playingRef.current || clipRef.current !== active) return;
+            setFrameImage(image);
+            setFrame(timeToFrame(active, active.el.currentTime));
+          })
+          .catch((err) => {
+            reading = false;
+            if (!playingRef.current) return;
+            playingRef.current = false;
+            setPlaying(false);
+            active.el.pause();
+            onErrorRef.current(err);
+          });
       }
       schedule();
     };
@@ -282,18 +395,22 @@ export function useVideoClip(onError: (error: unknown) => void): VideoClipApi {
       endedListener.current = null;
     };
 
-    void current.el.play().then(schedule, (err) => {
-      playingRef.current = false;
-      setPlaying(false);
-      onErrorRef.current(
-        appError("video/decode-failed", {
-          detail: `play() was rejected: ${String(err)}`,
-          values: { name: current.file.name },
-          cause: err,
-        }),
-      );
+    // A measurement still running owns the element until it stands down.
+    afterRate(() => {
+      if (!playingRef.current) return;
+      void current.el.play().then(schedule, (err) => {
+        playingRef.current = false;
+        setPlaying(false);
+        onErrorRef.current(
+          appError("video/decode-failed", {
+            detail: `play() was rejected: ${String(err)}`,
+            values: { name: current.file.name },
+            cause: err,
+          }),
+        );
+      });
     });
-  }, [pause]);
+  }, [afterRate, pause]);
 
   const toggle = useCallback(() => {
     if (playingRef.current) pause();
@@ -329,10 +446,11 @@ export function useVideoClip(onError: (error: unknown) => void): VideoClipApi {
       setLoop,
       range,
       setRange,
+      refineRate,
     }),
     [
       clip, frame, frameImage, playing, loop, opening, importProgress, coarseFrames,
-      open, close, goToFrame, step, play, pause, toggle, range,
+      open, close, goToFrame, step, play, pause, toggle, range, refineRate,
     ],
   );
 }

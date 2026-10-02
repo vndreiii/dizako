@@ -47,11 +47,11 @@ export function ImportSkeleton({ fileName, progress }: Props) {
               <span style={{ width: `${Math.round(fraction * 100)}%` }} />
             </div>
 
-            {/* The four stages, so the wait has visible structure rather than
+            {/* The stages, so the wait has visible structure rather than
                 a bar creeping across an unexplained gap. */}
             <ol className="import-skeleton__steps">
-              {(["metadata", "rate", "frame"] as const).map((step) => {
-                const order = ["reading", "metadata", "rate", "frame", "ready"];
+              {(["metadata", "frame"] as const).map((step) => {
+                const order = ["reading", "metadata", "frame", "ready"];
                 const done = order.indexOf(stage) > order.indexOf(step);
                 const active = stage === step;
                 return (

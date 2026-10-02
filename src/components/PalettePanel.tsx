@@ -8,9 +8,18 @@ import {
   type PaletteLayer,
   type Settings,
 } from "../dither/types";
-import { hsvToRgb, rgbToHex } from "../dither/color";
-import { ColorPicker } from "./ColorPicker";
-import { BareSlider, IconButton, Segmented, Slider } from "./primitives";
+import { extractPalette } from "../dither/extract";
+import {
+  appendColour,
+  dropLayer,
+  nextColour,
+  randomStack,
+  respread,
+  shiftLayer,
+  starterLayers,
+} from "../dither/paletteOps";
+import { PaletteStudio } from "./PaletteStudio";
+import { BareSlider, Button, IconButton, Segmented, Slider } from "./primitives";
 import {
   IconAdd,
   IconArrowDown,
@@ -19,6 +28,8 @@ import {
   IconDelete,
   IconHidden,
   IconHighlights,
+  IconPalette,
+  IconReset,
   IconShadows,
   IconSwapVert,
   IconVisible,
@@ -38,39 +49,14 @@ const MATCH_MODES: Array<{ value: MatchMode; label: string }> = [
   { value: "tonal", label: "Tonal" },
 ];
 
-/**
- * Re-spaces tonal levels across the stack.
- *
- * Layers are stored shadows-first. After any reorder the levels are spread
- * evenly again so position in the list *is* the tonal band the layer owns -
- * which is what makes dragging a colour upward actually move it into the
- * highlights.
- */
-function respread(layers: PaletteLayer[]): PaletteLayer[] {
-  const n = layers.length;
-  return layers.map((l, i) => ({ ...l, level: n <= 1 ? 0.5 : i / (n - 1) }));
-}
-
-/**
- * Fresh colour per layer, drawn independently.
- *
- * Each layer rolls its own hue/saturation/value with no coordination between
- * them - that is what "randomise" means here: every colour in the stack
- * changes on its own.
- */
-function randomColor(): string {
-  return rgbToHex(
-    hsvToRgb(Math.random() * 360, Math.random(), 0.05 + Math.random() * 0.95),
-  );
-}
-
-function randomStack(n: number): string[] {
-  return Array.from({ length: n }, () => randomColor());
-}
+/** How many colours "reset to image colours" can ask for. */
+const IMAGE_COUNTS = ["3", "4", "6", "8", "12", "16"];
 
 function PalettePanelImpl({ settings, patch, source }: Props) { const { t } = useI18n();
   const layers = settings.layers;
-  const [editing, setEditing] = useState<string | "new" | null>(null);
+  /** The studio overlay, optionally opened straight onto one swatch. */
+  const [studio, setStudio] = useState<{ id: string; fresh: boolean } | "open" | null>(null);
+  const [imageCount, setImageCount] = useState("6");
 
   // {t("palette.layersHint")}
   const display = useMemo(() => [...layers].reverse(), [layers]);
@@ -81,21 +67,15 @@ function PalettePanelImpl({ settings, patch, source }: Props) { const { t } = us
     patch({ layers: layers.map((l) => (l.id === id ? { ...l, ...p } : l)) });
 
   /** `dir` is in display terms: -1 is toward the highlights. */
-  const move = (id: string, dir: -1 | 1) => {
-    const i = layers.findIndex((l) => l.id === id);
-    const j = i - dir;
-    if (i < 0 || j < 0 || j >= layers.length) return;
-    const next = [...layers];
-    [next[i], next[j]] = [next[j], next[i]];
-    setLayers(next);
-  };
+  const move = (id: string, dir: -1 | 1) => patch({ layers: shiftLayer(layers, id, (-dir) as -1 | 1) });
 
-  const remove = (id: string) => {
-    if (layers.length <= 2) return;
-    setLayers(layers.filter((l) => l.id !== id));
-  };
+  const remove = (id: string) => patch({ layers: dropLayer(layers, id) });
 
-  const editingLayer = editing && editing !== "new" ? layers.find((l) => l.id === editing) : null;
+  /** The colours the image is made of, for "reset to image colours". */
+  const imageColours = useMemo(
+    () => (source ? extractPalette(source.data, source.width, source.height, { count: Number(imageCount) }) : null),
+    [source, imageCount],
+  );
 
   return (
     <div className="panel panel--dock">
@@ -146,15 +126,49 @@ function PalettePanelImpl({ settings, patch, source }: Props) { const { t } = us
         </section>
 
         <section className="panel__section">
+          <h3 className="panel__section-title">{t("palette.fromImage")}</h3>
+          <div className="imgpal">
+            <div className="imgpal__strip" aria-hidden="true">
+              {imageColours
+                ? imageColours.map((c, i) => <span key={i} style={{ background: c }} title={c} />)
+                : <span className="imgpal__empty">{t("palette.fromImageEmpty")}</span>}
+            </div>
+            <Segmented
+              ariaLabel={t("palette.fromImageCount")}
+              value={imageCount}
+              onChange={setImageCount}
+              options={IMAGE_COUNTS.map((n) => ({ value: n, label: n }))}
+            />
+            <div className="imgpal__actions">
+              <Button
+                variant="tonal"
+                icon={<IconReset />}
+                disabled={!imageColours}
+                onClick={() => imageColours && patch({ layers: layersFromColors(imageColours) })}
+              >
+                {t("palette.resetToImage")}
+              </Button>
+              <Button
+                variant="text"
+                onClick={() => patch({ layers: layersFromColors(["#000000", "#FFFFFF"]) })}
+              >
+                {t("palette.resetDefault")}
+              </Button>
+            </div>
+            <p className="panel__note">{t("palette.fromImageNote")}</p>
+          </div>
+        </section>
+
+        <section className="panel__section">
           <h3 className="panel__section-title">{t("palette.yourOwn")}</h3>
           <div className="lib-grid">
             <button
               className="lib-card__blank"
               onClick={() => {
-                // Start from a clean two-colour stack rather than whatever was
+                // Start from a fresh five-colour stack rather than whatever was
                 // loaded, so "make your own" is not "edit the last preset".
-                patch({ layers: layersFromColors(["#000000", "#FFFFFF"]) });
-                setEditing("new");
+                patch({ layers: starterLayers() });
+                setStudio("open");
               }}
               title={t("palette.startScratch")}
             >
@@ -223,7 +237,18 @@ function PalettePanelImpl({ settings, patch, source }: Props) { const { t } = us
           >
             <IconCasino />
           </IconButton>
-          <IconButton label={t("palette.addColour")} onClick={() => setEditing("new")}>
+          <IconButton label={t("studio.title")} onClick={() => setStudio("open")}>
+            <IconPalette />
+          </IconButton>
+          <IconButton
+            label={t("palette.addColour")}
+            onClick={() => {
+              const next = appendColour(layers, nextColour(layers));
+              if (next === layers) return;
+              patch({ layers: next });
+              setStudio({ id: next[next.length - 1]!.id, fresh: true });
+            }}
+          >
             <IconAdd />
           </IconButton>
         </div>
@@ -242,7 +267,7 @@ function PalettePanelImpl({ settings, patch, source }: Props) { const { t } = us
               <button
                 className="layer__swatch"
                 style={{ background: l.hex }}
-                onClick={() => setEditing(l.id)}
+                onClick={() => setStudio({ id: l.id, fresh: false })}
                 title={t("palette.editHex").replace("{hex}", l.hex)}
               />
               <div className="layer__body">
@@ -299,22 +324,15 @@ function PalettePanelImpl({ settings, patch, source }: Props) { const { t } = us
         </div>
       </div>
 
-      <ColorPicker
-        open={editing !== null}
-        title={editing === "new" ? t("palette.addColour") : t("palette.editLayer")}
-        value={editingLayer?.hex ?? "#7C4DFF"}
-        source={source}
-        onClose={() => setEditing(null)}
-        onPick={(hex) => {
-          if (editing === "new") setLayers([...layers, makeLayer(hex, 1)]);
-          else if (editing) update(editing, { hex });
-          setEditing(null);
-        }}
-        onPickSet={(hexes) => {
-          setLayers([...layers, ...hexes.map((h) => makeLayer(h, 0.5))]);
-          setEditing(null);
-        }}
-      />
+      {studio && (
+        <PaletteStudio
+          settings={settings}
+          patch={patch}
+          source={source}
+          initial={studio === "open" ? null : studio}
+          onClose={() => setStudio(null)}
+        />
+      )}
     </div>
   );
 }

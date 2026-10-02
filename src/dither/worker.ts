@@ -1,3 +1,5 @@
+import { looksBlank } from "../video/blank";
+import { CoarseBudget, type PreviewQuality } from "./budget";
 import { loadWasmEngine, type WasmBackend } from "./engine";
 import type { Rect } from "./region";
 import type { Settings } from "./types";
@@ -5,10 +7,14 @@ import type { Settings } from "./types";
 /**
  * Render-worker protocol.
  *
- * Pixel planes are resident: the source and its downscaled companion are
- * shipped once per load (`setSource` / `setCoarseSource`) and afterwards jobs
- * carry *only* settings plus geometry. That removes the per-dispatch copy of
- * the whole frame that every slider tick used to pay.
+ * The source plane is resident: it is shipped once per load (`setSource`) and
+ * afterwards jobs carry *only* settings plus geometry. That removes the
+ * per-dispatch copy of the whole frame that every slider tick used to pay.
+ *
+ * Everything derived from it lives in the engine too: the reduced plane the
+ * first preview pass runs on (built there, sized by the adaptive budget) and
+ * the finished result of every pass in a stack, so touching one layer of ten
+ * redoes that layer and the ones above it, not all ten.
  *
  * Results come back as `ImageBitmap`s built inside the worker, so the main
  * thread never calls `putImageData` again; hosts without OffscreenCanvas fall
@@ -21,13 +27,6 @@ import type { Settings } from "./types";
  */
 export interface SourceInit {
   type: "setSource";
-  buffer: ArrayBuffer;
-  width: number;
-  height: number;
-}
-
-export interface CoarseInit {
-  type: "setCoarseSource";
   buffer: ArrayBuffer;
   width: number;
   height: number;
@@ -78,7 +77,11 @@ export interface ExportRequest {
 export interface FrameRequest {
   type: "renderFrame";
   id: number;
-  buffer: ArrayBuffer;
+  /** The plane as pixels... */
+  buffer?: ArrayBuffer;
+  /** ...or as a decoded frame the worker scales and rasterises itself, which
+   *  keeps the pixels off the UI thread altogether. Exactly one of the two is set. */
+  frame?: ImageBitmap | VideoFrame;
   width: number;
   height: number;
   settings: Settings;
@@ -86,9 +89,15 @@ export interface FrameRequest {
   encode: "png" | "pixels";
 }
 
+/** Tunes the adaptive preview budget. Safe to send at any time. */
+export interface ConfigureRequest {
+  type: "configure";
+  quality: PreviewQuality;
+}
+
 export type WorkerRequest =
+  | ConfigureRequest
   | SourceInit
-  | CoarseInit
   | GlyphInit
   | RenderRequest
   | ExportRequest
@@ -118,6 +127,11 @@ export interface ResultResponse {
   buffer?: ArrayBuffer;
   width?: number;
   height?: number;
+  /** Source pixels per result pixel: 1 for a full-resolution pass. */
+  scale: number;
+  /** Stack passes served from the cache vs actually run, for the HUD. */
+  reused: number;
+  computed: number;
 }
 
 export interface ProgressResponse {
@@ -162,61 +176,82 @@ export type WorkerResponse =
   | ExportPixelsResponse
   | ErrorResponse;
 
-let source: ImageData | null = null;
-let coarse: ImageData | null = null;
+let sourceW = 0;
+let sourceH = 0;
 let wasm: WasmBackend | null = null;
+const budget = new CoarseBudget();
 
-function adopt(buffer: ArrayBuffer, width: number, height: number): ImageData | null {
-  // Empty buffer ⇒ "clear this plane" (e.g. switching to an image that fits
-  // the single-pass budget, which has no coarse downscale at all). Without
-  // this the engine would keep dithering the previous image's plane.
-  if (buffer.byteLength === 0) return null;
-  const bytes =
-    buffer instanceof Uint8ClampedArray ? buffer : new Uint8ClampedArray(buffer);
-  return new ImageData(bytes, width, height);
-}
-
-/** Dims a render of `stage`/`region` produces, given resident planes. */
-function dimsFor(stage: "coarse" | "fine", region: Rect | null): { w: number; h: number } | null {
-  if (stage === "coarse") {
-    const plane = coarse ?? source;
-    return plane ? { w: plane.width, h: plane.height } : null;
-  }
-  if (region) return { w: region.width, h: region.height };
-  return source ? { w: source.width, h: source.height } : null;
+/** Copies finished pixels out of wasm memory, which may move on the next call. */
+function readOutput(): ImageData {
+  const w = wasm!;
+  const width = w.engine.out_width();
+  const height = w.engine.out_height();
+  const len = width * height * 4;
+  return new ImageData(new Uint8ClampedArray(w.view(len)), width, height);
 }
 
 async function handleRender(req: RenderRequest) {
+  if (!sourceW || !sourceH) return;
   const t0 = performance.now();
-  const dims = dimsFor(req.stage, req.region);
-  if (!dims) return;
 
-  // The Rust engine owns copies of the planes (shipped once per change
-  // below) and crops regions internally. There is no other engine.
+  // The Rust engine owns the plane and crops regions internally. There is no
+  // other engine.
   if (!wasm) {
     post({ type: "error", id: req.id, message: "wasm engine unavailable in worker" });
     return;
   }
-  const len = wasm.engine.render(req.stage, req.region, req.settings);
-  const bytes = wasm.view(len);
-  const out = new ImageData(new Uint8ClampedArray(bytes), dims.w, dims.h);
 
+  let renderMs: number;
+  let scale = 1;
+  const sourcePixels = sourceW * sourceH;
+  try {
+    if (req.stage === "coarse") {
+      const target = budget.choose(sourcePixels, req.settings);
+      const start = performance.now();
+      wasm.engine.render_coarse(target, req.settings);
+      renderMs = performance.now() - start;
+      const outPixels = wasm.engine.out_width() * wasm.engine.out_height();
+      budget.observe(renderMs, outPixels, wasm.engine.last_computed());
+      scale = sourceW / wasm.engine.out_width();
+    } else {
+      const start = performance.now();
+      wasm.engine.render("fine", req.region, req.settings);
+      renderMs = performance.now() - start;
+    }
+  } catch (err) {
+    post({ type: "error", id: req.id, message: String((err as Error)?.message ?? err) });
+    return;
+  }
+  void renderMs;
+
+  const out = readOutput();
   const payload = await makePayload(out);
   const transfer = payload.bitmap ? [payload.bitmap] : payload.buffer ? [payload.buffer] : [];
-  post({ type: "result", id: req.id, stage: req.stage, ms: performance.now() - t0, ...payload }, transfer);
+  post(
+    {
+      type: "result",
+      id: req.id,
+      stage: req.stage,
+      ms: performance.now() - t0,
+      scale,
+      reused: wasm.engine.last_reused(),
+      computed: wasm.engine.last_computed(),
+      ...payload,
+    },
+    transfer,
+  );
 }
 
 async function handleExport(req: ExportRequest) {
-  if (!source) return;
+  if (!sourceW || !sourceH) return;
   const t0 = performance.now();
   post({ type: "progress", id: req.id, phase: "render" });
   if (!wasm) {
     post({ type: "error", id: req.id, message: "wasm engine unavailable in worker" });
     return;
   }
-  const len = wasm.engine.render("fine", null, req.settings);
-  const bytes = wasm.view(len);
-  const out = new ImageData(new Uint8ClampedArray(bytes), source.width, source.height);
+  wasm.engine.render("fine", null, req.settings);
+  const out = readOutput();
 
   post({ type: "progress", id: req.id, phase: "encode" });
   if (typeof OffscreenCanvas !== "undefined") {
@@ -236,13 +271,46 @@ async function handleExport(req: ExportRequest) {
   });
 }
 
+let rasterCanvas: OffscreenCanvas | null = null;
+
+/** Draws a decoded frame into pixels, scaled to `width` x `height`. Closes it either way. */
+function rasterise(frame: ImageBitmap | VideoFrame, width: number, height: number): Uint8ClampedArray {
+  try {
+    if (typeof OffscreenCanvas === "undefined") throw new Error("OffscreenCanvas is not available in this worker");
+    if (!rasterCanvas || rasterCanvas.width !== width || rasterCanvas.height !== height) {
+      rasterCanvas = new OffscreenCanvas(width, height);
+    }
+    const g = rasterCanvas.getContext("2d", { willReadFrequently: true });
+    if (!g) throw new Error("no 2D context for the frame");
+    g.imageSmoothingQuality = "medium";
+    g.drawImage(frame, 0, 0, width, height);
+    return g.getImageData(0, 0, width, height).data;
+  } finally {
+    frame.close();
+  }
+}
+
 async function handleFrame(req: FrameRequest) {
   const t0 = performance.now();
   if (!wasm) {
     post({ type: "error", id: req.id, message: "wasm engine unavailable in worker" });
     return;
   }
-  const plane = new Uint8ClampedArray(req.buffer);
+  let plane: Uint8ClampedArray;
+  if (req.frame) {
+    try {
+      plane = rasterise(req.frame, req.width, req.height);
+    } catch (err) {
+      post({ type: "error", id: req.id, message: `frame ${req.id}: ${String((err as Error)?.message ?? err)}` });
+      return;
+    }
+    if (looksBlank(plane)) {
+      post({ type: "error", id: req.id, message: `frame ${req.id}: the decoded frame rasterised blank` });
+      return;
+    }
+  } else {
+    plane = new Uint8ClampedArray(req.buffer ?? new ArrayBuffer(0));
+  }
   if (plane.length !== req.width * req.height * 4) {
     post({
       type: "error",
@@ -251,12 +319,11 @@ async function handleFrame(req: FrameRequest) {
     });
     return;
   }
+  // Replacing the source also drops every cached plane, so a frame can never
+  // be composed from the previous one's passes.
   wasm.engine.set_source(plane, req.width, req.height);
-  // A one-shot render has no coarse companion; clearing it keeps a stale plane
-  // from a previous job out of the stack.
-  wasm.engine.set_coarse(new Uint8ClampedArray(0), 0, 0);
-  const len = wasm.engine.render("fine", null, req.settings);
-  const out = new ImageData(new Uint8ClampedArray(wasm.view(len)), req.width, req.height);
+  wasm.engine.render("fine", null, req.settings);
+  const out = readOutput();
 
   if (req.encode === "png" && typeof OffscreenCanvas !== "undefined") {
     const canvas = new OffscreenCanvas(out.width, out.height);
@@ -282,27 +349,36 @@ async function handleFrame(req: FrameRequest) {
 }
 
 /** Rasterises finished pixels into whatever this host can transfer cheapest. */
-function makePayload(
+async function makePayload(
   out: ImageData,
 ): Promise<Pick<ResultResponse, "bitmap" | "buffer" | "width" | "height">> {
-  if (
-    typeof OffscreenCanvas !== "undefined" &&
-    typeof createImageBitmap === "function"
-  ) {
-    const canvas = new OffscreenCanvas(out.width, out.height);
-    const g = canvas.getContext("2d");
-    if (g) {
-      g.putImageData(out, 0, 0);
-      return createImageBitmap(canvas).then((bitmap) => ({ bitmap }));
+  if (typeof createImageBitmap === "function") {
+    try {
+      // Straight from the pixels: no canvas to allocate, draw into and read.
+      return { bitmap: await createImageBitmap(out) };
+    } catch {
+      // Some hosts accept bitmaps only from canvases; fall through.
+    }
+    if (typeof OffscreenCanvas !== "undefined") {
+      const canvas = new OffscreenCanvas(out.width, out.height);
+      const g = canvas.getContext("2d");
+      if (g) {
+        g.putImageData(out, 0, 0);
+        try {
+          return { bitmap: await createImageBitmap(canvas) };
+        } catch {
+          // Legacy path below.
+        }
+      }
     }
   }
   // Legacy path: transfer the raw plane; the main thread uploads it. The plane
   // is freshly allocated above, so its buffer can move outright.
-  return Promise.resolve({
+  return {
     buffer: out.data.buffer as ArrayBuffer,
     width: out.width,
     height: out.height,
-  });
+  };
 }
 
 function post(msg: WorkerResponse, transfer: Transferable[] = []) {
@@ -312,17 +388,21 @@ function post(msg: WorkerResponse, transfer: Transferable[] = []) {
 self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
   const req = e.data;
   switch (req.type) {
-    case "setSource": {
-      source = adopt(req.buffer, req.width, req.height);
-      if (source) {
-        wasm?.engine.set_source(new Uint8ClampedArray(source.data), source.width, source.height);
-      }
+    case "configure":
+      budget.setQuality(req.quality);
       break;
-    }
-    case "setCoarseSource": {
-      coarse = adopt(req.buffer, req.width, req.height);
-      const c = coarse;
-      wasm?.engine.set_coarse(c ? new Uint8ClampedArray(c.data) : new Uint8ClampedArray(0), c?.width ?? 0, c?.height ?? 0);
+    case "setSource": {
+      // Empty buffer ⇒ "clear the source".
+      if (req.buffer.byteLength === 0) {
+        sourceW = 0;
+        sourceH = 0;
+        wasm?.engine.set_source(new Uint8ClampedArray(0), 0, 0);
+        break;
+      }
+      sourceW = req.width;
+      sourceH = req.height;
+      // A view, not a copy: the engine copies into its own memory once.
+      wasm?.engine.set_source(new Uint8ClampedArray(req.buffer), req.width, req.height);
       break;
     }
     case "setGlyphs": {

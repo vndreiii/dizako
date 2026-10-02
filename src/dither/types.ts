@@ -19,6 +19,7 @@ export type AlgorithmId =
   | "halftone-line"
   | "diagonal-line"
   | "checker"
+  | "dot-grid"
   // error diffusion
   | "atkinson"
   | "floyd-steinberg"
@@ -62,7 +63,9 @@ export interface AlgorithmLayer {
     // glyph atlas - character set, font, cell size - is global, because one
     // atlas is resident in the engine and two passes cannot each have their
     // own without shipping it twice per render.
-    "asciiMatch" | "asciiContrast" | "asciiInk" | "asciiGamma" | "asciiInvert"
+    "asciiMatch" | "asciiContrast" | "asciiInk" | "asciiGamma" | "asciiInvert" |
+    "dotShape" | "dotScale" | "dotCutoff" | "dotLevels" | "dotGamma" |
+    "dotStagger" | "dotInvert" | "dotInk"
   >>;
 }
 
@@ -102,7 +105,8 @@ export type ParamKey =
   | "jpegErrorDensity"
   | "jpegErrorAmplitude"
   | "jpegErrorCoherence"
-  | "ascii";
+  | "ascii"
+  | "dotGrid";
 
 /**
  * One colour in the palette stack.
@@ -231,6 +235,24 @@ export interface Settings {
   /** Swap ink and paper. */
   asciiInvert: boolean;
 
+  // --- dot grid ---
+  /** Dot outline. */
+  dotShape: "square" | "circle" | "diamond";
+  /** Size of a full-tone dot relative to its cell, 0.2..1.5. */
+  dotScale: number;
+  /** Tone below which a cell gets no dot, 0..1. */
+  dotCutoff: number;
+  /** Distinct dot sizes; 0 keeps the size continuous. */
+  dotLevels: number;
+  /** Curve applied to cell tone before sizing. */
+  dotGamma: number;
+  /** Offset alternate rows by half a cell. */
+  dotStagger: boolean;
+  /** Dots stand for the light areas rather than the dark ones. */
+  dotInvert: boolean;
+  /** `palette` inks each dot with its cell's colour; `mono` uses the extremes. */
+  dotInk: "palette" | "mono";
+
   // --- tone ---
   invert: boolean;
   grayscale: boolean;
@@ -325,6 +347,15 @@ export const DEFAULT_SETTINGS: Settings = {
   asciiInk: "palette",
   asciiGamma: 1,
   asciiInvert: false,
+
+  dotShape: "square",
+  dotScale: 1,
+  dotCutoff: 0.06,
+  dotLevels: 0,
+  dotGamma: 1,
+  dotStagger: false,
+  dotInvert: false,
+  dotInk: "palette",
 
   invert: false,
   grayscale: false,
@@ -514,6 +545,13 @@ export const ALGORITHMS: AlgorithmMeta[] = [
     family: "ordered",
     blurb: "IGN from realtime rendering. Fine, even dither.",
     params: ["noiseScale", "threshold"],
+  },
+  {
+    id: "dot-grid",
+    name: "Dot Grid",
+    family: "ordered",
+    blurb: "Pixel-grid halftone. Each cell becomes one crisp dot.",
+    params: ["cellSize", "threshold", "dotGrid"],
   },
   // ---------------- threshold ----------------
   {

@@ -20,6 +20,10 @@ export interface Appearance {
   wheelStep?: number;
   /** What an unmodified wheel movement does over the image preview. */
   wheelBehavior?: "pan" | "zoom";
+  /** Preview responsiveness; see `PreviewQuality`. */
+  previewQuality?: "fast" | "balanced" | "sharp";
+  /** Workers used to render video frames; 0 means one per spare core. */
+  exportThreads?: number;
 }
 
 interface StoredSession {

@@ -58,6 +58,16 @@ const RESET_KEYS: Record<ParamKey, Array<keyof Settings>> = {
   jpegErrorDensity: ["jpegErrorDensity"],
   jpegErrorAmplitude: ["jpegErrorAmplitude"],
   jpegErrorCoherence: ["jpegErrorCoherence"],
+  dotGrid: [
+    "dotShape",
+    "dotScale",
+    "dotCutoff",
+    "dotLevels",
+    "dotGamma",
+    "dotStagger",
+    "dotInvert",
+    "dotInk",
+  ],
   ascii: [
     "asciiCellWidth",
     "asciiCellHeight",
@@ -562,6 +572,82 @@ function AlgorithmPanelImpl({ settings, patch }: Props) {
                 description={t("ascii.invertDesc")}
                 checked={controlSettings.asciiInvert}
                 onChange={(v) => patchParams({ asciiInvert: v })}
+              />
+            </>
+          )}
+
+          {has("dotGrid") && (
+            <>
+              <div className="panel__field">
+                <span className="panel__field-label">{t("dot.shape")}</span>
+                <Segmented
+                  ariaLabel={t("dot.shape")}
+                  value={controlSettings.dotShape}
+                  onChange={(v) => patchParams({ dotShape: v as Settings["dotShape"] })}
+                  options={[
+                    { value: "square", label: t("dot.shapeSquare") },
+                    { value: "circle", label: t("dot.shapeCircle") },
+                    { value: "diamond", label: t("dot.shapeDiamond") },
+                  ]}
+                />
+              </div>
+              <Slider
+                label={t("dot.scale")}
+                value={Math.round(controlSettings.dotScale * 100)}
+                min={20}
+                max={150}
+                step={5}
+                display={`${Math.round(controlSettings.dotScale * 100)}%`}
+                onChange={(v) => patchParams({ dotScale: v / 100 })}
+              />
+              <Slider
+                label={t("dot.cutoff")}
+                value={Math.round(controlSettings.dotCutoff * 100)}
+                min={0}
+                max={100}
+                display={controlSettings.dotCutoff === 0 ? t("common.off") : `${Math.round(controlSettings.dotCutoff * 100)}%`}
+                onChange={(v) => patchParams({ dotCutoff: v / 100 })}
+              />
+              <Slider
+                label={t("dot.levels")}
+                value={controlSettings.dotLevels}
+                min={0}
+                max={16}
+                display={controlSettings.dotLevels < 2 ? t("dot.smooth") : String(controlSettings.dotLevels)}
+                onChange={(v) => patchParams({ dotLevels: v })}
+              />
+              <Slider
+                label={t("dot.gamma")}
+                value={Math.round(controlSettings.dotGamma * 100)}
+                min={20}
+                max={300}
+                step={5}
+                display={controlSettings.dotGamma.toFixed(2)}
+                onChange={(v) => patchParams({ dotGamma: v / 100 })}
+              />
+              <div className="panel__field">
+                <span className="panel__field-label">{t("dot.ink")}</span>
+                <Segmented
+                  ariaLabel={t("dot.ink")}
+                  value={controlSettings.dotInk}
+                  onChange={(v) => patchParams({ dotInk: v as "palette" | "mono" })}
+                  options={[
+                    { value: "palette", label: t("ascii.inkPalette") },
+                    { value: "mono", label: t("ascii.inkMono") },
+                  ]}
+                />
+              </div>
+              <Switch
+                label={t("dot.stagger")}
+                description={t("dot.staggerDesc")}
+                checked={controlSettings.dotStagger}
+                onChange={(v) => patchParams({ dotStagger: v })}
+              />
+              <Switch
+                label={t("dot.invert")}
+                description={t("dot.invertDesc")}
+                checked={controlSettings.dotInvert}
+                onChange={(v) => patchParams({ dotInvert: v })}
               />
             </>
           )}

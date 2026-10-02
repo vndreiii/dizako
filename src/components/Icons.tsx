@@ -267,3 +267,36 @@ export const IconStop = () => (
     <path d="M320-640v320h320v-320H320ZM240-240v-480h480v480H240Z" />
   </svg>
 );
+
+/* Stroke-style glyphs, drawn for this app where the Material set has no
+   matching symbol at hand. They follow the same 24px grid and inherit colour. */
+const stroke = {
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.8,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+};
+
+export const IconLanguage = () => (
+  <svg viewBox="0 0 24 24" {...stroke}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3 12h18" />
+    <path d="M12 3c2.6 2.6 4 5.6 4 9s-1.4 6.4-4 9c-2.6-2.6-4-5.6-4-9s1.4-6.4 4-9Z" />
+  </svg>
+);
+
+export const IconKeyboard = () => (
+  <svg viewBox="0 0 24 24" {...stroke}>
+    <rect x="2.5" y="6" width="19" height="12" rx="2.5" />
+    <path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M7.5 14h9" />
+  </svg>
+);
+
+export const IconInfo = () => (
+  <svg viewBox="0 0 24 24" {...stroke}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 11v5" />
+    <path d="M12 7.6h.01" />
+  </svg>
+);

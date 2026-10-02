@@ -50,11 +50,29 @@ against dithered.
 | Area | Includes |
 | --- | --- |
 | **Error diffusion** | Floyd-Steinberg, Jarvis, Stucki, Sierra, Atkinson, and friends |
-| **Ordered** | Bayer, halftone screens, line screens, blue noise, checkerboard |
-| **Threshold / experimental** | Hard threshold, random noise, Riemersma, dot diffusion, Omino-like |
-| **Palette layers** | Colours stacked by tonal position, so you choose what goes where |
+| **Ordered** | Bayer, halftone screens, line screens, blue noise, checkerboard, pixel-grid dot halftone |
+| **Threshold / experimental** | Hard threshold, random noise, Riemersma, dot diffusion, Omino-like, ASCII / text, JPEG sort |
+| **Stacking** | Stack ten or more passes of any mix - experimental ones included - each with its own settings and opacity; editing one pass only recomputes it and the passes above it |
+| **Palette layers** | Colours stacked by tonal position, so you choose what goes where; build your own in a floating studio, or reset to the colours the image is actually made of |
 | **Image controls** | Exposure, contrast, gamma, saturation, hue, blur, sharpen (before dither) |
 | **Video** | Scrub, play and dither footage frame by frame; export MP4, WebM or a PNG sequence |
+
+### Dot Grid
+
+A pixel-grid halftone: the image is read in coarse cells and each cell is redrawn
+as one crisp dot sized by the tone beneath it, with paper showing between them.
+Controls: cell size, dot shape (square, round, diamond), dot size, cutoff (the
+tone below which no dot is drawn), size steps (quantised dot sizes), tone curve,
+staggered rows, and a threshold bias.
+
+## Performance
+
+The engine is Rust compiled to WebAssembly and runs in a worker, so the window
+never waits on a render. The first preview pass is sized to what renders have
+actually been costing (Settings → Performance), the finished result of every
+pass in a stack is cached between edits, and video frames are read and encoded
+off the UI thread (a transferred `VideoFrame` where the host has WebCodecs, a
+worker-side readback elsewhere).
 
 ## Video
 

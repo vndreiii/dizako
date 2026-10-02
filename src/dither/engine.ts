@@ -14,6 +14,18 @@ export interface WasmEngine {
   /** Pre-rasterised glyph coverage for the text algorithm. */
   set_glyphs(bitmaps: Uint8Array, count: number, cellWidth: number, cellHeight: number): void;
   render(stage: "coarse" | "fine", region: Rect | null, settings: Settings): number;
+  /**
+   * Renders the whole image reduced to about `targetPixels`, building and
+   * keeping the reduced plane itself. Read the size back from
+   * `out_width`/`out_height`; at or above the source's pixel count it simply
+   * renders the source.
+   */
+  render_coarse(targetPixels: number, settings: Settings): number;
+  out_width(): number;
+  out_height(): number;
+  /** Stack passes the last render reused from its cache / actually ran. */
+  last_reused(): number;
+  last_computed(): number;
   out_ptr(): number;
 }
 

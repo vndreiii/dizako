@@ -6,6 +6,8 @@ import "@fontsource/roboto-mono/500.css";
 import "./theme/tokens.css";
 import "./theme/components.css";
 import "./theme/app.css";
+import "./theme/palette.css";
+import "./theme/settings.css";
 import App from "./App";
 import { NotifyProvider } from "./components/notify";
 import { ErrorBoundary } from "./components/ErrorBoundary";

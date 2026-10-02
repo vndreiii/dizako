@@ -126,6 +126,28 @@ pub fn prepare(data: &[u8], w: usize, h: usize, s: &Settings) -> Vec<f32> {
     let mut buf = vec![0.0f32; w * h * 3];
     let lut = tone_curve(s);
 
+    // Every pass after the first in a stack runs with grading reset to
+    // defaults, and so does an ungraded still. In that case the curve is the
+    // identity and nothing below changes a value, so the plane is just the
+    // bytes widened to f32 - same numbers, none of the per-pixel arithmetic.
+    let neutral = lut.iter().enumerate().all(|(i, &v)| usize::from(v) == i)
+        && s.hue_shift == 0.0
+        && s.temperature == 0.0
+        && s.tint == 0.0
+        && s.saturation == 0.0
+        && !s.grayscale
+        && !s.invert
+        && s.blur <= 0.0
+        && s.sharpen <= 0.0;
+    if neutral {
+        for (px, out) in data.chunks_exact(4).zip(buf.chunks_exact_mut(3)) {
+            out[0] = f32::from(px[0]);
+            out[1] = f32::from(px[1]);
+            out[2] = f32::from(px[2]);
+        }
+        return buf;
+    }
+
     let hm: Option<[f64; 9]> = if s.hue_shift != 0.0 {
         Some(hue_matrix(s.hue_shift))
     } else {

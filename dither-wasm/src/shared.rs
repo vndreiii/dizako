@@ -9,7 +9,25 @@
 use crate::tables::{CCOS, CEXP, CLN, CSIN, LN2, PI_OVER_180, RAD_TO_DEG, SQRT2};
 
 /// Splits x = m · 2^e with m ∈ [1, 2). Exact: only ±2 multiplies.
+///
+/// Normal positive numbers are split by reading the exponent field, which is
+/// the same split the scaling loop arrives at, minus the data-dependent
+/// branching - that branching is what kept the three colour channels from
+/// overlapping in the pipeline. Subnormals, zero, negatives and non-finite
+/// values take the original loop so every edge keeps its exact behaviour.
+#[inline]
 fn decompose(x: f64) -> (f64, i32) {
+    let bits = x.to_bits();
+    let exp = ((bits >> 52) & 0x7ff) as i32;
+    if x > 0.0 && exp != 0 && exp != 0x7ff {
+        let m = f64::from_bits((bits & 0x000f_ffff_ffff_ffff) | (1023u64 << 52));
+        return (m, exp - 1023);
+    }
+    decompose_slow(x)
+}
+
+#[cold]
+fn decompose_slow(x: f64) -> (f64, i32) {
     let mut m = x;
     let mut e: i32 = 0;
     while m >= 2.0 {
@@ -24,7 +42,24 @@ fn decompose(x: f64) -> (f64, i32) {
 }
 
 /// Returns y · 2^e by exact repeated doubling/halving.
+///
+/// While the result stays in the normal range one multiply by the matching
+/// power of two is the same number, since scaling by 2 never rounds. Past
+/// that the loop's step-by-step subnormal rounding is the contract, so the
+/// loop is kept for it.
+#[inline]
 fn scale_pow2(y: f64, e: i32) -> f64 {
+    if (-1000..=1000).contains(&e) {
+        let a = y.abs();
+        if a >= 1e-290 && a <= 1e290 {
+            return y * f64::from_bits(((e + 1023) as u64) << 52);
+        }
+    }
+    scale_pow2_slow(y, e)
+}
+
+#[cold]
+fn scale_pow2_slow(y: f64, e: i32) -> f64 {
     let mut out = y;
     let mut k = e;
     while k > 0 {
@@ -60,7 +95,15 @@ pub fn cbrt_shared(x: f64) -> f64 {
 
     let mut y = 1.0 + (mm - 1.0) / 3.0;
     for _ in 0..9 {
-        y = (2.0 * y + mm / (y * y)) / 3.0;
+        let next = (2.0 * y + mm / (y * y)) / 3.0;
+        // A fixed point is a fixed point: every later iteration would return
+        // it unchanged, so stopping here yields the same bits as running all
+        // nine, minus the divisions. Oscillating tails never match and simply
+        // run the full count, as before.
+        if next == y {
+            break;
+        }
+        y = next;
     }
 
     let out = scale_pow2(y, q);

@@ -15,6 +15,8 @@
  * that must never happen.
  */
 import { appError } from "../errors";
+import { readbackFrame, readbackSupported } from "./readback";
+import type { FrameHandle } from "./readback.worker";
 
 /** Same budget as still images: keeps the error plane and per-frame cost sane. */
 export const MAX_FRAME_PIXELS = 4_000_000;
@@ -30,7 +32,7 @@ const METADATA_TIMEOUT_MS = 15_000;
  * The whole sequence is a couple of seconds on a large clip, which is long
  * enough that silence reads as a hang.
  */
-export type ImportStage = "reading" | "metadata" | "rate" | "frame" | "ready";
+export type ImportStage = "reading" | "metadata" | "frame" | "ready";
 
 export interface ImportProgress {
   stage: ImportStage;
@@ -40,11 +42,13 @@ export interface ImportProgress {
 
 const STAGE_FRACTION: Record<ImportStage, number> = {
   reading: 0.05,
-  metadata: 0.25,
-  rate: 0.55,
+  metadata: 0.4,
   frame: 0.85,
   ready: 1,
 };
+
+/** Frame rate assumed until a measurement says otherwise. */
+export const ASSUMED_FPS = 30;
 
 export interface Clip {
   file: File;
@@ -90,20 +94,29 @@ function fitFrame(width: number, height: number): { width: number; height: numbe
 }
 
 /**
- * Measures the real frame rate by watching two consecutive presented frames.
+ * Measures the real frame rate by watching consecutive presented frames.
  *
  * `requestVideoFrameCallback` reports each frame's presentation time, so two
  * callbacks are enough for an estimate and a handful gives a stable one. Hosts
  * without it (older WebKitGTK) get the assumed default: guessing 30 and saying
- * so beats blocking import on a measurement that cannot be taken.
+ * so beats blocking on a measurement that cannot be taken.
+ *
+ * This plays the element, so it is never part of opening a clip: starting
+ * playback can take seconds on some decoders and the picture is already on
+ * screen by then. The caller runs it in the background, and `cancelled` lets
+ * the moment the user does anything end it early.
  */
-async function measureFps(el: HTMLVideoElement): Promise<{ fps: number; assumed: boolean }> {
+export async function measureClipRate(
+  el: HTMLVideoElement,
+  cancelled: () => boolean = () => false,
+): Promise<{ fps: number; assumed: boolean }> {
   type WithRvfc = HTMLVideoElement & {
     requestVideoFrameCallback?: (cb: (now: number, meta: { mediaTime: number; presentedFrames: number }) => void) => number;
     cancelVideoFrameCallback?: (handle: number) => void;
   };
   const video = el as WithRvfc;
-  if (typeof video.requestVideoFrameCallback !== "function") return { fps: 30, assumed: true };
+  const fallback = { fps: ASSUMED_FPS, assumed: true };
+  if (typeof video.requestVideoFrameCallback !== "function") return fallback;
 
   return new Promise<{ fps: number; assumed: boolean }>((resolve) => {
     const samples: Array<{ mediaTime: number; presentedFrames: number }> = [];
@@ -119,33 +132,42 @@ async function measureFps(el: HTMLVideoElement): Promise<{ fps: number; assumed:
       resolve(value);
     };
 
-    // 1.2s is enough for ~6 frames even at 5fps, and short enough that import
-    // does not feel like it stalled.
-    const timer = window.setTimeout(() => {
-      if (samples.length < 2) return finish({ fps: 30, assumed: true });
+    const estimate = () => {
+      if (samples.length < 2) return fallback;
       const first = samples[0]!;
       const last = samples[samples.length - 1]!;
       const frames = last.presentedFrames - first.presentedFrames;
       const seconds = last.mediaTime - first.mediaTime;
-      if (frames <= 0 || seconds <= 0) return finish({ fps: 30, assumed: true });
+      if (frames <= 0 || seconds <= 0) return fallback;
       const raw = frames / seconds;
       // Snap to the rates real footage actually uses, so a 23.976 measurement
       // does not become 23.9761904 in the UI or drift the frame index.
       const common = [8, 10, 12, 15, 23.976, 24, 25, 29.97, 30, 48, 50, 59.94, 60, 90, 120];
       const snapped = common.find((c) => Math.abs(c - raw) / c < 0.04);
-      return finish({ fps: snapped ?? Math.round(raw * 100) / 100, assumed: false });
-    }, 1200);
+      return { fps: snapped ?? Math.round(raw * 100) / 100, assumed: false };
+    };
+
+    // 1.2s is enough for ~6 frames even at 5fps.
+    const timer = window.setTimeout(() => finish(estimate()), 1200);
 
     const tick = (_now: number, meta: { mediaTime: number; presentedFrames: number }) => {
       samples.push({ mediaTime: meta.mediaTime, presentedFrames: meta.presentedFrames });
+      // Eight frames settle the estimate; anything the user does ends it now.
+      if (cancelled()) return finish(fallback);
+      if (samples.length >= 8) return finish(estimate());
       if (!done) handle = video.requestVideoFrameCallback!(tick);
     };
     handle = video.requestVideoFrameCallback!(tick);
     // Muted playback is what makes frames present at all; autoplay policies
     // allow it and the user never hears the probe.
     el.muted = true;
-    void el.play().catch(() => finish({ fps: 30, assumed: true }));
+    void el.play().catch(() => finish(fallback));
   });
+}
+
+/** The same clip with a different frame rate; everything derived from it follows. */
+export function withRate(clip: Clip, fps: number, assumed: boolean): Clip {
+  return { ...clip, fps, fpsAssumed: assumed, frameCount: Math.max(1, Math.round(clip.durationS * fps)) };
 }
 
 /** Loads a file into a seekable clip, or throws a `video/*` AppError. */
@@ -257,9 +279,6 @@ export async function openClip(file: File, onProgress?: (p: ImportProgress) => v
       });
     }
 
-    report("rate");
-    const { fps, assumed } = await measureFps(el);
-
     report("frame");
 
     const frame = fitFrame(width, height);
@@ -273,9 +292,10 @@ export async function openClip(file: File, onProgress?: (p: ImportProgress) => v
       frameWidth: frame.width,
       frameHeight: frame.height,
       durationS,
-      fps,
-      fpsAssumed: assumed,
-      frameCount: Math.max(1, Math.round(durationS * fps)),
+      // Refined in the background once the clip is on screen; see `measureClipRate`.
+      fps: ASSUMED_FPS,
+      fpsAssumed: true,
+      frameCount: Math.max(1, Math.round(durationS * ASSUMED_FPS)),
       // Not authoritative on every host, so only ever used to explain that
       // exported video carries no sound.
       hasAudio: detectAudio(el),
@@ -383,10 +403,61 @@ export async function seekClip(clip: Clip, seconds: number): Promise<void> {
 }
 
 /**
+ * How decoded frames get from the video element to pixels.
+ *
+ * - `frame`: a `VideoFrame` is made from the element (it references the
+ *   decoded frame rather than copying it, so it is close to free) and
+ *   transferred to a worker, which does all the conversion and scaling. The UI
+ *   thread's share is effectively nothing. Needs WebCodecs.
+ * - `bitmap`: an `ImageBitmap` at the frame's native size, scaled in a worker.
+ *   Cheaper than the synchronous route, but the bitmap itself still costs the
+ *   UI thread a conversion.
+ * - `canvas`: draw and `getImageData` on the calling thread. Works everywhere
+ *   and blocks for as long as the readback takes.
+ *
+ * Each step down is taken the first time the one above fails or paints a blank
+ * frame, and is permanent for the session: a route that painted nothing once
+ * will paint nothing again, and every later frame must not pay to rediscover it.
+ */
+export type GrabRoute = "frame" | "bitmap" | "canvas";
+
+function initialRoute(): GrabRoute {
+  if (!readbackSupported()) return "canvas";
+  return typeof VideoFrame !== "undefined" ? "frame" : "bitmap";
+}
+
+const routeState = { route: initialRoute() };
+
+/** Test hook: put the route back, or force one. */
+export function resetGrabRoute(route: GrabRoute = initialRoute()): void {
+  routeState.route = route;
+}
+
+export function currentGrabRoute(): GrabRoute {
+  return routeState.route;
+}
+
+/** Steps down one route after a failure. Returns the route now in force. */
+export function demoteGrabRoute(): GrabRoute {
+  routeState.route = routeState.route === "frame" ? "bitmap" : "canvas";
+  return routeState.route;
+}
+
+/**
  * Reusable scratch canvas for frame reads.
  *
  * One canvas per grabber rather than per call: allocating a multi-megapixel
  * canvas 1500 times during an export is most of the cost of the export.
+ *
+ * Two ways to read a frame:
+ *
+ * - `grab` is the synchronous route: draw and `getImageData` on the calling
+ *   thread. It works everywhere, and it blocks - a 4 MP frame is a GPU-to-CPU
+ *   copy of tens to hundreds of milliseconds during which the window cannot
+ *   repaint.
+ * - `grabAsync` takes an `ImageBitmap` (asynchronous, cheap) and has a worker
+ *   do the readback, so the UI thread never touches the pixels. It falls back
+ *   to `grab` by itself if the host cannot, or produces a blank frame.
  */
 export function createFrameGrabber(width: number, height: number) {
   const canvas = document.createElement("canvas");
@@ -399,20 +470,55 @@ export function createFrameGrabber(width: number, height: number) {
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "medium";
 
+  const grab = (el: HTMLVideoElement): ImageData => {
+    try {
+      ctx.drawImage(el, 0, 0, width, height);
+    } catch (err) {
+      throw appError("video/frame-grab-failed", {
+        detail: `drawImage from the video element threw: ${String(err)}`,
+        cause: err,
+      });
+    }
+    return ctx.getImageData(0, 0, width, height);
+  };
+
+  /**
+   * The frame under the playhead as something a worker can take, or null when
+   * this host should use the synchronous route. Creating it is the only work
+   * the calling thread does.
+   */
+  const grabHandle = async (el: HTMLVideoElement): Promise<FrameHandle | null> => {
+    for (;;) {
+      const route = routeState.route;
+      if (route === "canvas") return null;
+      try {
+        if (route === "frame") return new VideoFrame(el);
+        return await createImageBitmap(el);
+      } catch {
+        demoteGrabRoute();
+      }
+    }
+  };
+
   return {
     width,
     height,
-    /** Reads whatever the element is currently presenting. */
-    grab(el: HTMLVideoElement): ImageData {
-      try {
-        ctx.drawImage(el, 0, 0, width, height);
-      } catch (err) {
-        throw appError("video/frame-grab-failed", {
-          detail: `drawImage from the video element threw: ${String(err)}`,
-          cause: err,
-        });
+    /** Reads whatever the element is currently presenting, on this thread. */
+    grab,
+    grabHandle,
+    /** As `grab`, but the readback happens off the UI thread when it can. */
+    async grabAsync(el: HTMLVideoElement): Promise<ImageData> {
+      for (;;) {
+        const handle = await grabHandle(el);
+        if (!handle) return grab(el);
+        try {
+          const { image, blank } = await readbackFrame(handle, width, height);
+          if (!blank) return image;
+        } catch {
+          // Fall through to demotion below.
+        }
+        demoteGrabRoute();
       }
-      return ctx.getImageData(0, 0, width, height);
     },
     dispose() {
       canvas.width = 0;
