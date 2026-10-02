@@ -106,6 +106,47 @@
   width: 100%;
   height: 100%;
 }
+
+/* Outline -> filled glyph. The body is always stroked and takes a fill when its
+   item is selected; the cut details switch to the pill colour so they read as
+   holes. Fill opacity and stroke colour both transition, so it animates. */
+.navglyph {
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform-origin: center;
+  transition: transform var(--m3-dur-med1) var(--m3-ease-emphasized);
+}
+.navglyph .ng-body {
+  fill: currentColor;
+  fill-opacity: 0;
+  transition: fill-opacity var(--m3-dur-med1) var(--m3-ease-standard);
+}
+.navglyph .ng-cut,
+.navglyph .ng-line {
+  fill: none;
+  transition: stroke var(--m3-dur-med1) var(--m3-ease-standard);
+}
+.navglyph .ng-dot {
+  stroke-width: 2.4;
+}
+.navitem.is-selected .navglyph .ng-body {
+  fill-opacity: 1;
+}
+.navitem.is-selected .navglyph .ng-cut {
+  stroke: var(--md-sys-color-secondary-container);
+}
+.navitem.is-selected .navglyph {
+  animation: navglyph-pop var(--m3-dur-med2) var(--m3-ease-emphasized);
+}
+@keyframes navglyph-pop {
+  0% { transform: scale(0.82); }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
 .navitem__text {
   display: flex;
   flex: 1;

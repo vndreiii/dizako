@@ -11,14 +11,10 @@ import {
   IconChevronRight,
   IconDark,
   IconFavorite,
-  IconFit,
-  IconInfo,
-  IconKeyboard,
-  IconLanguage,
   IconLight,
   IconPalette,
-  IconTimer,
 } from "./Icons";
+import { NavGlyph } from "./SettingsIcons";
 
 export type SettingsCategory = "appearance" | "canvas" | "performance" | "language" | "shortcuts" | "about";
 
@@ -47,13 +43,13 @@ interface Props {
   initialCategory?: SettingsCategory | null;
 }
 
-const CATEGORIES: Array<{ id: SettingsCategory; icon: ReactNode }> = [
-  { id: "appearance", icon: <IconPalette /> },
-  { id: "canvas", icon: <IconFit /> },
-  { id: "performance", icon: <IconTimer /> },
-  { id: "language", icon: <IconLanguage /> },
-  { id: "shortcuts", icon: <IconKeyboard /> },
-  { id: "about", icon: <IconInfo /> },
+const CATEGORIES: Array<{ id: SettingsCategory }> = [
+  { id: "appearance" },
+  { id: "canvas" },
+  { id: "performance" },
+  { id: "language" },
+  { id: "shortcuts" },
+  { id: "about" },
 ];
 
 /** Endonyms: a language list has to be readable by people who cannot read the current one. */
@@ -496,7 +492,9 @@ export function SettingsPage(props: Props) {
                     setDetailOpen(true);
                   }}
                 >
-                  <span className="navitem__icon">{c.icon}</span>
+                  <span className="navitem__icon">
+                    <NavGlyph id={c.id} />
+                  </span>
                   <span className="navitem__text">
                     <span className="navitem__title">{categoryName(c.id)}</span>
                     <span className="navitem__summary">{summary(c.id)}</span>
