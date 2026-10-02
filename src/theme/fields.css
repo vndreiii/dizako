@@ -1,0 +1,361 @@
+/* ==================================================================
+   Material 3 form fields: filled text field, exposed dropdown menu,
+   menu surface, search bar
+   ================================================================== */
+
+/* ---------------- Filled text field ---------------- */
+
+.m3-field {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 56px;
+  padding: 0;
+  border: none;
+  border-radius: var(--m3-shape-xs) var(--m3-shape-xs) 0 0;
+  background: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface);
+  text-align: left;
+  cursor: text;
+  box-shadow: inset 0 -1px 0 var(--md-sys-color-on-surface-variant);
+  transition: box-shadow var(--m3-dur-short3) var(--m3-ease-standard);
+}
+.m3-field:hover {
+  box-shadow: inset 0 -1px 0 var(--md-sys-color-on-surface);
+}
+.m3-field:focus-within,
+.m3-select.is-open .m3-field {
+  box-shadow: inset 0 -2px 0 var(--md-sys-color-primary);
+}
+
+/* The state layer: hover and focus tint without touching the fill. */
+.m3-field__state {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--md-sys-color-on-surface);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--m3-dur-short3) var(--m3-ease-standard);
+}
+.m3-field:hover .m3-field__state {
+  opacity: 0.06;
+}
+.m3-field:focus-visible .m3-field__state {
+  opacity: 0.1;
+}
+
+.m3-field__label {
+  position: absolute;
+  left: 16px;
+  top: 8px;
+  right: 48px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font: var(--m3-body-sm);
+  letter-spacing: 0.4px;
+  color: var(--md-sys-color-on-surface-variant);
+  pointer-events: none;
+  transition: color var(--m3-dur-short3) var(--m3-ease-standard),
+    top var(--m3-dur-short4) var(--m3-ease-standard),
+    font-size var(--m3-dur-short4) var(--m3-ease-standard);
+}
+.m3-field:focus-within .m3-field__label,
+.m3-select.is-open .m3-field__label {
+  color: var(--md-sys-color-primary);
+}
+
+.m3-field__input {
+  display: block;
+  width: 100%;
+  min-height: 56px;
+  box-sizing: border-box;
+  padding: 24px 16px 8px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: var(--m3-body-lg);
+  letter-spacing: 0.5px;
+  caret-color: var(--md-sys-color-primary);
+  outline: none;
+  resize: none;
+}
+.m3-field__input::placeholder {
+  color: var(--md-sys-color-on-surface-variant);
+  opacity: 0;
+  transition: opacity var(--m3-dur-short3);
+}
+.m3-field__input:focus::placeholder {
+  opacity: 0.7;
+}
+/* Empty and unfocused: the label sits where the value will go, full size. */
+.m3-field__input:placeholder-shown:not(:focus) ~ .m3-field__label {
+  top: 17px;
+  font: var(--m3-body-lg);
+  letter-spacing: 0.5px;
+}
+.m3-textfield--multi .m3-field__input {
+  line-height: 22px;
+  min-height: 78px;
+}
+.m3-textfield__supporting {
+  margin: 4px 16px 0;
+  font: var(--m3-body-sm);
+  letter-spacing: 0.4px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+.m3-textfield.is-disabled,
+.m3-select.is-disabled {
+  opacity: 0.38;
+  pointer-events: none;
+}
+
+/* ---------------- Exposed dropdown trigger ---------------- */
+
+.m3-select {
+  position: relative;
+}
+.m3-select__trigger {
+  cursor: pointer;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.m3-select__trigger:focus-visible {
+  outline: none;
+  box-shadow: inset 0 -2px 0 var(--md-sys-color-primary);
+}
+.m3-select__trigger .m3-field__value {
+  display: block;
+  box-sizing: border-box;
+  min-height: 56px;
+  padding: 24px 48px 8px 16px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font: var(--m3-body-lg);
+  letter-spacing: 0.5px;
+}
+.m3-select__arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  margin-top: -12px;
+  color: var(--md-sys-color-on-surface-variant);
+  transition: transform var(--m3-dur-med1) var(--m3-spring-default), color var(--m3-dur-short3);
+}
+.m3-select__arrow svg {
+  width: 100%;
+  height: 100%;
+}
+.m3-select.is-open .m3-select__arrow {
+  transform: rotate(180deg);
+  color: var(--md-sys-color-primary);
+}
+
+/* ---------------- Menu surface ---------------- */
+
+.m3-menu {
+  position: fixed;
+  z-index: 80;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--m3-shape-md);
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface);
+  box-shadow: var(--m3-elev-2);
+  transform-origin: top center;
+  animation: m3-menu-in var(--m3-dur-med1) var(--m3-spring-default);
+  scrollbar-width: thin;
+}
+.m3-menu.is-above {
+  transform-origin: bottom center;
+}
+@keyframes m3-menu-in {
+  from {
+    opacity: 0;
+    transform: scaleY(0.88);
+  }
+}
+
+.m3-menu__heading {
+  padding: 12px 16px 4px;
+  font: var(--m3-label-md);
+  letter-spacing: 0.5px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+.m3-menu__divider {
+  height: 1px;
+  margin: 8px 0 0;
+  background: var(--md-sys-color-outline-variant);
+}
+.m3-menu__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  box-sizing: border-box;
+  padding: 8px 12px 8px 16px;
+  cursor: pointer;
+  font: var(--m3-body-lg);
+  letter-spacing: 0.5px;
+}
+.m3-menu__item.is-active {
+  background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
+}
+.m3-menu__item.is-selected {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+.m3-menu__item.is-selected.is-active {
+  background: color-mix(in srgb, var(--md-sys-color-secondary-container) 88%, var(--md-sys-color-on-secondary-container));
+}
+.m3-menu__leading {
+  display: inline-flex;
+  flex: none;
+  min-width: 28px;
+  justify-content: center;
+}
+.m3-menu__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.m3-menu__label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.m3-menu__hint {
+  font: var(--m3-body-sm);
+  color: var(--md-sys-color-on-surface-variant);
+}
+.m3-menu__item.is-selected .m3-menu__hint {
+  color: inherit;
+  opacity: 0.8;
+}
+.m3-menu__check {
+  display: inline-flex;
+  flex: none;
+  width: 24px;
+  height: 24px;
+}
+.m3-menu__check svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------------- Search bar ---------------- */
+
+.m3-search {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 56px;
+  box-sizing: border-box;
+  padding: 0 8px 0 16px;
+  border-radius: var(--m3-shape-full);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  transition: background var(--m3-dur-short3) var(--m3-ease-standard),
+    box-shadow var(--m3-dur-short3) var(--m3-ease-standard);
+}
+.m3-search:hover {
+  background: color-mix(in srgb, var(--md-sys-color-surface-container-high) 92%, var(--md-sys-color-on-surface));
+}
+.m3-search:focus-within {
+  background: var(--md-sys-color-surface-container-highest);
+  box-shadow: var(--m3-elev-1);
+}
+.m3-search__icon {
+  display: inline-flex;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+.m3-search__icon svg {
+  width: 100%;
+  height: 100%;
+}
+.m3-search__input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: var(--m3-body-lg);
+  letter-spacing: 0.5px;
+  caret-color: var(--md-sys-color-primary);
+  outline: none;
+}
+.m3-search__input::placeholder {
+  color: var(--md-sys-color-on-surface-variant);
+}
+.m3-search__input::-webkit-search-cancel-button {
+  display: none;
+}
+.m3-search__clear {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: var(--m3-shape-full);
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+}
+.m3-search__clear:hover {
+  background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
+}
+.m3-search__clear svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* ---------------- Action (overflow) menu ---------------- */
+
+.m3-actionmenu {
+  display: inline-flex;
+}
+.m3-menu--actions {
+  transform-origin: top right;
+  outline: none;
+}
+.m3-menu--actions .m3-menu__item {
+  min-height: 44px;
+}
+.m3-menu__leading--icon {
+  min-width: 24px;
+  width: 24px;
+  height: 24px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+.m3-menu__leading--icon svg {
+  width: 100%;
+  height: 100%;
+}
+.m3-menu__item.is-danger,
+.m3-menu__item.is-danger .m3-menu__leading--icon {
+  color: var(--md-sys-color-error);
+}
+.m3-menu__item.is-disabled {
+  opacity: 0.38;
+  cursor: default;
+}

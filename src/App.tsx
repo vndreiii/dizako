@@ -36,6 +36,7 @@ import type { Rect } from "./dither/region";
 import { savePng, savePngSequence, saveVideo } from "./hooks/saveImage";
 import { DEFAULT_SETTINGS, type Settings } from "./dither/types";
 import { loadSession, saveSession } from "./session";
+import { trace } from "./perf";
 import { appError, isAppError } from "./errors";
 import { looksLikeVideo, VIDEO_EXTENSIONS } from "./video/clip";
 import { probeEncoders } from "./video/encode";
@@ -431,8 +432,10 @@ export default function App() {
   const loadStill = useCallback(
     async (file: File) => {
       setDecoding(true);
+      trace("decode:start", { file: file.name, bytes: file.size });
       try {
         const { data, clampedFrom } = await decode(file);
+        trace("decode:done", { w: data.width, h: data.height });
         video.close();
         setStill(data);
         setFileName(file.name);

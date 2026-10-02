@@ -258,6 +258,17 @@ pub struct Settings {
     pub pixel_scale: f64,
 }
 
+/// A screen cell, shrunk with the plane but never below two pixels, where it
+/// would stop being a cell.
+fn shrink_cell(v: f64, scale: f64) -> f64 {
+    (v / scale).max(2.0_f64.min(v))
+}
+
+/// A compression block, shrunk likewise.
+fn shrink_block(v: f64, scale: f64) -> f64 {
+    (v / scale).max(2.0_f64.min(v))
+}
+
 fn default_dot_scale() -> f64 { 1.0 }
 fn default_dot_gamma() -> f64 { 1.0 }
 fn default_jpeg_cell_size() -> f64 { 8.0 }
@@ -265,6 +276,52 @@ fn default_jpeg_error_density() -> f64 { 0.75 }
 fn default_jpeg_error_amplitude() -> f64 { 1.0 }
 
 impl Settings {
+    /// The same settings for a plane `scale` times smaller than the source.
+    ///
+    /// A reduced preview pass runs on fewer pixels, so every control measured in
+    /// pixels would act on a proportionally larger piece of the picture: an
+    /// 8-pixel halftone cell on a plane eight times smaller covers what 64
+    /// source pixels would. Dividing those controls by the scale makes the
+    /// reduced pass resemble the full-size result instead of a coarser cousin of
+    /// it. At `scale <= 1` nothing changes, so full-resolution renders - exports,
+    /// and every golden - are untouched.
+    ///
+    /// Controls that are not lengths in pixels (strengths, thresholds, the size
+    /// of a Bayer matrix) are left alone, as is the text algorithm, whose cell
+    /// size is baked into the glyph atlas it was given.
+    pub fn for_preview_scale(&self, scale: f64) -> Settings {
+        if !(scale > 1.0001) {
+            return self.clone();
+        }
+        let mut out = self.clone();
+        out.shrink_lengths(scale);
+        for layer in &mut out.algorithm_layers {
+            let p = &mut layer.params;
+            if let Some(v) = p.cell_size.as_mut() {
+                *v = shrink_cell(*v, scale);
+            }
+            if let Some(v) = p.jpeg_cell_size.as_mut() {
+                *v = shrink_block(*v, scale);
+            }
+            if let Some(v) = p.noise_scale.as_mut() {
+                *v = (*v / scale).max(0.1);
+            }
+        }
+        out
+    }
+
+    fn shrink_lengths(&mut self, scale: f64) {
+        self.cell_size = shrink_cell(self.cell_size, scale);
+        self.jpeg_cell_size = shrink_block(self.jpeg_cell_size, scale);
+        self.noise_scale = (self.noise_scale / scale).max(0.1);
+        // A blur that shrinks below half a pixel is no blur at all; the box
+        // filter would otherwise round it back up to a full pixel.
+        if self.blur > 0.0 {
+            let b = self.blur / scale;
+            self.blur = if b < 0.5 { 0.0 } else { b };
+        }
+    }
+
     /// Numeric defaults equal the TS `DEFAULT_SETTINGS`.
     pub fn with_defaults() -> Self {
         Self {
@@ -325,5 +382,65 @@ impl Settings {
             sharpen: 0.0,
             pixel_scale: 1.0,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn full_size_renders_are_untouched() {
+        let mut s = Settings::with_defaults();
+        s.cell_size = 12.0;
+        s.blur = 3.0;
+        for scale in [1.0, 0.5, 1.00001] {
+            let out = s.for_preview_scale(scale);
+            assert_eq!((out.cell_size, out.blur, out.jpeg_cell_size), (12.0, 3.0, 8.0));
+        }
+    }
+
+    #[test]
+    fn pixel_lengths_shrink_with_the_plane_and_other_controls_do_not() {
+        let mut s = Settings::with_defaults();
+        s.cell_size = 24.0;
+        s.blur = 12.0;
+        s.noise_scale = 4.0;
+        s.strength = 0.8;
+        s.threshold = 90.0;
+        s.bayer_size = 8.0;
+        let out = s.for_preview_scale(4.0);
+        assert_eq!(out.cell_size, 6.0);
+        assert_eq!(out.blur, 3.0);
+        assert_eq!(out.noise_scale, 1.0);
+        assert_eq!((out.strength, out.threshold, out.bayer_size), (0.8, 90.0, 8.0));
+    }
+
+    #[test]
+    fn cells_never_collapse_and_never_grow() {
+        let mut s = Settings::with_defaults();
+        s.cell_size = 6.0;
+        s.blur = 1.0;
+        let out = s.for_preview_scale(20.0);
+        assert_eq!(out.cell_size, 2.0);
+        assert_eq!(out.blur, 0.0);
+        // Already tiny: never pushed up to the floor.
+        s.cell_size = 1.0;
+        assert_eq!(s.for_preview_scale(3.0).cell_size, 1.0);
+    }
+
+    #[test]
+    fn per_pass_overrides_follow() {
+        let mut s = Settings::with_defaults();
+        s.algorithm_layers = vec![AlgorithmLayer {
+            id: "a".into(),
+            algorithm: "halftone".into(),
+            opacity: 1.0,
+            enabled: true,
+            params: AlgorithmParams { cell_size: Some(16.0), jpeg_cell_size: Some(32.0), ..Default::default() },
+        }];
+        let out = s.for_preview_scale(4.0);
+        let p = &out.algorithm_layers[0].params;
+        assert_eq!((p.cell_size, p.jpeg_cell_size), (Some(4.0), Some(8.0)));
     }
 }

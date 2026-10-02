@@ -300,3 +300,64 @@ export const IconInfo = () => (
     <path d="M12 7.6h.01" />
   </svg>
 );
+
+export const IconDropDown = () => (
+  <svg viewBox="0 -960 960 960" {...s}>
+    <path d="M480-360 280-560h400L480-360Z" />
+  </svg>
+);
+
+export const IconSearch = () => (
+  <svg viewBox="0 0 24 24" {...stroke}>
+    <circle cx="10.5" cy="10.5" r="6.5" />
+    <path d="m15.5 15.5 5 5" />
+  </svg>
+);
+
+export const IconFolder = () => (
+  <svg viewBox="0 0 24 24" {...stroke}>
+    <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2.5h7.5A2.5 2.5 0 0 1 21 10v7.5a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5v-10Z" />
+  </svg>
+);
+
+export const IconFolderOpen = () => (
+  <svg viewBox="0 0 24 24" {...stroke}>
+    <path d="M3 17.5V7.5A2.5 2.5 0 0 1 5.5 5H9l2 2.5h7.5A2.5 2.5 0 0 1 21 10v1" />
+    <path d="M3.4 18.6 5.6 12a2 2 0 0 1 1.9-1.4H21a1 1 0 0 1 .95 1.3l-1.9 5.7a2.5 2.5 0 0 1-2.4 1.7H5.5a2.5 2.5 0 0 1-2.1-1Z" />
+  </svg>
+);
+
+export const IconSave = () => (
+  <svg viewBox="0 0 24 24" {...stroke}>
+    <path d="M5 4h11l3 3v11.5A1.5 1.5 0 0 1 17.5 20h-11A1.5 1.5 0 0 1 5 18.5V4Z" />
+    <path d="M8 4v5h7V4M8 20v-6h8v6" />
+  </svg>
+);
+
+export const IconEdit = () => (
+  <svg viewBox="0 0 24 24" {...stroke}>
+    <path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3Z" />
+    <path d="m14.5 7.5 3 3" />
+  </svg>
+);
+
+export const IconChevronRight = () => (
+  <svg viewBox="0 0 24 24" {...stroke}>
+    <path d="m9 6 6 6-6 6" />
+  </svg>
+);
+
+export const IconMore = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor">
+    <circle cx="12" cy="5.5" r="1.8" />
+    <circle cx="12" cy="12" r="1.8" />
+    <circle cx="12" cy="18.5" r="1.8" />
+  </svg>
+);
+
+export const IconFolderAdd = () => (
+  <svg viewBox="0 0 24 24" {...stroke}>
+    <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2.5h7.5A2.5 2.5 0 0 1 21 10v7.5a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5v-10Z" />
+    <path d="M12 11v5M9.5 13.5h5" />
+  </svg>
+);

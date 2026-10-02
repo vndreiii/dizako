@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { CoarseBudget, FULL_RES_BUDGET_MS, QUALITY_BUDGETS, RUNGS, isPreviewQuality, passCount } from "../src/dither/budget";
+import { CoarseBudget, FULL_RES_BUDGET_MS, MAX_FINE_PIXELS, MIN_FINE_PIXELS, QUALITY_BUDGETS, RUNGS, isPreviewQuality, passCount } from "../src/dither/budget";
 import { makeAlgorithmLayer, type Settings } from "../src/dither/types";
 
 const stack = (n: number): Pick<Settings, "algorithmLayers"> => ({
@@ -86,5 +86,54 @@ describe("preview resolution budget", () => {
     expect(["fast", "balanced", "sharp"].every(isPreviewQuality)).toBe(true);
     expect(isPreviewQuality("ultra")).toBe(false);
     expect(isPreviewQuality(undefined)).toBe(false);
+  });
+
+  test("a small area is sharpened at full size, a big one as a reduced whole", () => {
+    const b = new CoarseBudget("balanced");
+    // 0.0004 ms per pixel-pass (the starting guess): 800 ms buys ~2M pixels.
+    const settings = stack(1);
+    const viewport = { width: 1400, height: 800 };
+    expect(b.planFine(settings, 14_745_600, viewport)).toEqual({ kind: "region" });
+    const whole = b.planFine(settings, 14_745_600, null);
+    expect(whole.kind).toBe("whole");
+    if (whole.kind === "whole") {
+      expect(whole.target).toBeGreaterThanOrEqual(MIN_FINE_PIXELS);
+      expect(whole.target).toBeLessThan(14_745_600);
+    }
+  });
+
+  test("an image that fits the budget is simply rendered whole at full size", () => {
+    const b = new CoarseBudget("balanced");
+    expect(b.planFine(stack(1), 1_000_000, null)).toEqual({ kind: "region" });
+  });
+
+  test("more passes, or a slower machine, shrink the sharpening target", () => {
+    const b = new CoarseBudget("balanced");
+    const one = b.fineTarget(stack(1));
+    expect(b.fineTarget(stack(10))).toBeLessThan(one);
+    expect(b.fineTarget(stack(10))).toBeGreaterThanOrEqual(MIN_FINE_PIXELS);
+    for (let i = 0; i < 30; i++) b.observe(0.002 * 500_000, 500_000, 1);
+    expect(b.fineTarget(stack(1))).toBeLessThan(one);
+  });
+
+  test("a fast machine and a generous quality earn full-size sharpening", () => {
+    const b = new CoarseBudget("sharp");
+    for (let i = 0; i < 40; i++) b.observe(0.00002 * 1_000_000, 1_000_000, 1);
+    expect(b.fineTarget(stack(1))).toBe(MAX_FINE_PIXELS);
+    expect(b.planFine(stack(1), 14_745_600, null)).toEqual({ kind: "region" });
+  });
+
+  test("the fine budget grows with the quality setting", () => {
+    expect(QUALITY_BUDGETS.fast.fine).toBeLessThan(QUALITY_BUDGETS.balanced.fine);
+    expect(QUALITY_BUDGETS.balanced.fine).toBeLessThan(QUALITY_BUDGETS.sharp.fine);
+  });
+
+  test("the sharpening target sits on a ladder, so measurement jitter does not move it", () => {
+    const b = new CoarseBudget("balanced");
+    const first = b.fineTarget(stack(1));
+    for (let i = 0; i < 20; i++) {
+      b.observe(b.pricePerPixelPass * 1_000_000 * (1 + (i % 2 ? 0.05 : -0.05)), 1_000_000, 1);
+      expect(b.fineTarget(stack(1))).toBe(first);
+    }
   });
 });

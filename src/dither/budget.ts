@@ -28,11 +28,32 @@ export const RUNGS = [60_000, 110_000, 190_000, 300_000, 460_000] as const;
  */
 export type PreviewQuality = "fast" | "balanced" | "sharp";
 
-export const QUALITY_BUDGETS: Record<PreviewQuality, { full: number; coarse: number }> = {
-  fast: { full: 80, coarse: 50 },
-  balanced: { full: 140, coarse: 90 },
-  sharp: { full: 260, coarse: 170 },
+export const QUALITY_BUDGETS: Record<PreviewQuality, { full: number; coarse: number; fine: number }> = {
+  // `fine` is how long the sharpening pass may take. The worker cannot be
+  // interrupted mid-pass, so this is also the longest a slider move can have to
+  // wait behind one.
+  fast: { full: 80, coarse: 50, fine: 350 },
+  balanced: { full: 140, coarse: 90, fine: 800 },
+  sharp: { full: 260, coarse: 170, fine: 2500 },
 };
+
+/** The sharpening pass is never planned below this many pixels. */
+export const MIN_FINE_PIXELS = 600_000;
+export const MAX_FINE_PIXELS = 16_000_000;
+
+/**
+ * Sizes a sharpening pass may take, ~1.5x apart. Like the first-pass ladder, the
+ * point of a ladder is that equal requests are identical: a size picked from a
+ * continuous estimate would shift by a few percent with every measurement, and
+ * each shift is a new reduced plane and a full recompute for nothing visible.
+ */
+const FINE_LADDER = [600_000, 900_000, 1_400_000, 2_100_000, 3_100_000, 4_700_000, 7_000_000, 10_500_000, 16_000_000];
+
+function onFineLadder(px: number): number {
+  let best = FINE_LADDER[0]!;
+  for (const step of FINE_LADDER) if (step <= px) best = step;
+  return best;
+}
 
 export const FULL_RES_BUDGET_MS = QUALITY_BUDGETS.balanced.full;
 export const COARSE_BUDGET_MS = QUALITY_BUDGETS.balanced.coarse;
@@ -47,7 +68,7 @@ const INITIAL_COST = 0.0004;
 const SMOOTHING = 0.45;
 /** Step down above this multiple of budget, up below this one - the dead band. */
 const DOWN_AT = 1.4;
-const UP_AT = 0.7;
+const UP_AT = 0.85;
 
 /** Passes a render of these settings will run at most. */
 export function passCount(settings: Pick<Settings, "algorithmLayers">): number {
@@ -105,6 +126,38 @@ export class CoarseBudget {
       this.rung++;
     }
     return Math.min(RUNGS[this.rung]!, sourcePixels);
+  }
+
+  /**
+   * The most pixels a sharpening pass should render, given what renders have
+   * been costing: the largest plane that still finishes inside the quality's
+   * `fine` budget. A fast machine earns a bigger one.
+   */
+  fineTarget(settings: Pick<Settings, "algorithmLayers">): number {
+    const passes = passCount(settings);
+    const px = this.limits.fine / (this.cost * passes);
+    return onFineLadder(Math.min(MAX_FINE_PIXELS, Math.max(MIN_FINE_PIXELS, px)));
+  }
+
+  /**
+   * What the sharpening pass for `region` (null = the whole image) should be.
+   *
+   * - `region`: the area fits the budget, so it is rendered at full size - this
+   *   is what zooming in lands on, since a viewport is small.
+   * - `whole`: the area is too big to render at full size in good time (a 5K
+   *   image fitted to the window), so the whole image is rendered at the
+   *   largest size that does fit. Zoomed out that far, the extra pixels of a
+   *   full-size pass could not be seen anyway; they would only be waited for.
+   */
+  planFine(
+    settings: Pick<Settings, "algorithmLayers">,
+    sourcePixels: number,
+    region: { width: number; height: number } | null,
+  ): { kind: "region" } | { kind: "whole"; target: number } {
+    const area = region ? region.width * region.height : sourcePixels;
+    const limit = this.fineTarget(settings);
+    if (area <= limit) return { kind: "region" };
+    return { kind: "whole", target: Math.min(limit, sourcePixels) };
   }
 
   get pricePerPixelPass(): number {

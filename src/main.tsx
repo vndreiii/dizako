@@ -6,6 +6,7 @@ import "@fontsource/roboto-mono/500.css";
 import "./theme/tokens.css";
 import "./theme/components.css";
 import "./theme/app.css";
+import "./theme/fields.css";
 import "./theme/palette.css";
 import "./theme/settings.css";
 import App from "./App";

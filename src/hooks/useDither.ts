@@ -6,6 +6,7 @@ import type {
 import { loadWasmEngine } from "../dither/engine";
 import { regionFor, coversRect, type Rect } from "../dither/region";
 import { CoarseBudget, type PreviewQuality } from "../dither/budget";
+import { trace } from "../perf";
 import type { Settings } from "../dither/types";
 import { atlasKey, buildGlyphAtlas, fontCss, type GlyphAtlas } from "../dither/glyphs";
 import { codepointsFor, codepointsFromText } from "../dither/scripts";
@@ -57,6 +58,9 @@ export interface ExportHandle {
    *  pipeline cannot serve it; otherwise resolves with the encoded blob. */
   requestExport(settings: Settings): Promise<{ blob: Blob } | "cancelled">;
 }
+
+/** How long the picture must stay still before the sharpening pass starts. */
+const REFINE_DELAY_MS = 150;
 
 function watchdogMs(px: number, settings: Settings): number {
   const passes = settings.algorithmLayers.length
@@ -174,6 +178,13 @@ export function useDither(
   /** Source-to-result scale of the plane currently on screen as `coarse`.
    *  1 means the first pass already was full resolution. */
   const coarseScaleRef = useRef(1);
+  const refineTimer = useRef<number | undefined>(undefined);
+  /**
+   * What the last reduced-whole refinement answered, with the size limit the
+   * engine applied, so a request for an area over that limit is not made
+   * again: the engine would only plan the same reduced image.
+   */
+  const wholeServed = useRef<{ source: ImageData; settings: Settings; limit: number } | null>(null);
 
   // Identity of the plane the preview layers were rendered from. When it
   // changes, every on-screen layer is stale by definition - drawing an old
@@ -230,6 +241,8 @@ export function useDither(
     const r = regionFor(view, src.width, src.height, cfg);
     const w = r ? r.width : src.width;
     const h = r ? r.height : src.height;
+    const served = wholeServed.current;
+    if (served && served.source === src && served.settings === cfg && w * h > served.limit) return null;
     return {
       id: nextId.current++,
       stage: "fine",
@@ -281,11 +294,13 @@ export function useDither(
   function syncPlanes(src: ImageData) {
     const worker = workerRef.current;
     if (worker && !brokenRef.current && sentSource.current !== src) {
+      trace("source:copy", { px: src.width * src.height });
       const copy = new Uint8ClampedArray(src.data);
       worker.postMessage(
         { type: "setSource", buffer: copy.buffer as ArrayBuffer, width: src.width, height: src.height },
         [copy.buffer as ArrayBuffer],
       );
+      trace("source:posted");
       sentSource.current = src;
     }
     localSource.current = src;
@@ -304,11 +319,18 @@ export function useDither(
     };
   }
 
-  function settle(job: Job, result: Layer, took: number, scale = 1) {
+  function settle(job: Job, result: Layer, took: number, scale = 1, whole = false, fineLimit?: number) {
+    trace(`settle:${job.stage}`, { workerMs: Math.round(took), scale: Number(scale.toFixed(2)), whole, region: job.region ? `${job.region.width}x${job.region.height}` : "all" });
     clearWatchdog();
     strikesRef.current = 0;
     setMs(took);
-    if (job.stage === "coarse") {
+    // A refinement the engine answered with the whole image at a reduced size
+    // is, for display, a sharper first pass rather than a patch over one.
+    if (whole) {
+      const src = latest.current.source;
+      wholeServed.current = src && fineLimit ? { source: src, settings: job.settings, limit: fineLimit } : null;
+    }
+    if (job.stage === "coarse" || whole) {
       setCoarse((prev) => {
         retireBitmap(prev instanceof ImageBitmap ? prev : null);
         return result;
@@ -333,16 +355,36 @@ export function useDither(
     const queued = queuedRef.current;
     queuedRef.current = null;
     if (queued) {
-      dispatchRef.current(queued);
-      return;
+      // A refinement queued while the one before it ran may now be redundant:
+      // the answer that just arrived already covers it.
+      const served = wholeServed.current;
+      const redundant =
+        queued.stage === "fine" &&
+        served !== null &&
+        served.source === queued.sourceTag &&
+        served.settings === queued.settings &&
+        queued.pixels > served.limit;
+      if (!redundant) {
+        dispatchRef.current(queued);
+        return;
+      }
     }
 
     if (job.stage === "coarse") {
       const { source: src, settings: cfg, viewport: view } = latest.current;
       const next = src ? fineJobFor(src, cfg, view) : null;
       if (next) {
+        // Not at once: a drag pauses for a beat between ticks, and the worker
+        // cannot be interrupted, so a refinement started in that beat makes
+        // the next tick wait for it. A short delay lets the drag carry on.
         setRefining(true);
-        dispatchRef.current(next);
+        window.clearTimeout(refineTimer.current);
+        refineTimer.current = window.setTimeout(() => {
+          if (inflightRef.current || queuedRef.current) return;
+          const again = latest.current.source ? fineJobFor(latest.current.source, latest.current.settings, latest.current.viewport) : null;
+          if (again && again.sourceTag === latest.current.source) dispatchRef.current(again);
+          else setRefining(false);
+        }, REFINE_DELAY_MS);
         return;
       }
     }
@@ -373,25 +415,32 @@ export function useDither(
       }
       const { job } = inflight;
       let scale = 1;
+      let whole = false;
+      let fineLimit: number | undefined;
+      const budget = mainBudget.current;
+      const sourcePixels = src.width * src.height;
+      const start = performance.now();
       if (job.stage === "coarse") {
-        const target = mainBudget.current.choose(src.width * src.height, job.settings);
-        const start = performance.now();
-        w.engine.render_coarse(target, job.settings);
-        mainBudget.current.observe(
-          performance.now() - start,
-          w.engine.out_width() * w.engine.out_height(),
-          w.engine.last_computed(),
-        );
+        w.engine.render_coarse(budget.choose(sourcePixels, job.settings), job.settings);
         scale = src.width / w.engine.out_width();
       } else {
-        w.engine.render("fine", job.region, job.settings);
+        const plan = budget.planFine(job.settings, sourcePixels, job.region);
+        fineLimit = budget.fineTarget(job.settings);
+        if (plan.kind === "whole") {
+          w.engine.render_coarse(plan.target, job.settings);
+          scale = src.width / w.engine.out_width();
+          whole = true;
+        } else {
+          w.engine.render("fine", job.region, job.settings);
+        }
       }
+      budget.observe(performance.now() - start, w.engine.out_width() * w.engine.out_height(), w.engine.last_computed());
       const width = w.engine.out_width();
       const height = w.engine.out_height();
       const out = new ImageData(new Uint8ClampedArray(w.view(width * height * 4)), width, height);
       if (inflightRef.current?.job.id !== job.id) return;
       setError(null);
-      settle(job, out, performance.now() - t0, scale);
+      settle(job, out, performance.now() - t0, scale, whole, fineLimit);
       return;
     } catch (err) {
       // No engine anywhere. Surface it; there is no third engine to fall
@@ -485,10 +534,10 @@ export function useDither(
         if (!inflight || inflight.job.id !== msg.id) return;
         if (latest.current.source && inflight.job.sourceTag !== latest.current.source) return;
         if (msg.bitmap) {
-          settle(inflight.job, msg.bitmap, msg.ms, msg.scale);
+          settle(inflight.job, msg.bitmap, msg.ms, msg.scale, msg.whole, msg.fineLimit);
         } else if (msg.buffer && msg.width && msg.height) {
           const img = new ImageData(new Uint8ClampedArray(msg.buffer), msg.width, msg.height);
-          settle(inflight.job, img, msg.ms, msg.scale);
+          settle(inflight.job, img, msg.ms, msg.scale, msg.whole, msg.fineLimit);
         }
         return;
       }
@@ -498,6 +547,7 @@ export function useDither(
 
     return () => {
       window.clearTimeout(initTimer);
+      window.clearTimeout(refineTimer.current);
       clearWatchdog();
       worker.terminate();
       workerRef.current = null;
@@ -580,6 +630,7 @@ export function useDither(
     syncGlyphs(settings);
     syncPlanes(source);
     const job = coarseJobFor(source, settings);
+    window.clearTimeout(refineTimer.current);
     setBusy(true);
     setRefining(true);
     if (inflightRef.current) queuedRef.current = job;

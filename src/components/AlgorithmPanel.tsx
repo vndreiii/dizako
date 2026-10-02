@@ -11,6 +11,7 @@ import {
   type Settings,
 } from "../dither/types";
 import { BareSlider, Button, IconButton, Segmented, Slider, Switch } from "./primitives";
+import { SearchBar, Select, TextField, type SelectOption } from "./fields";
 import { FONT_FAMILIES, MAX_GLYPHS } from "../dither/glyphs";
 import { SCRIPTS } from "../dither/scripts";
 import { IconAdd, IconArrowDown, IconArrowUp, IconDelete, IconHidden, IconReset, IconVisible } from "./Icons";
@@ -97,9 +98,36 @@ const SCRIPT_GROUPS: Array<{ id: string; scripts: typeof SCRIPTS }> = [
   "historic",
 ].map((group) => ({ id: group, scripts: SCRIPTS.filter((s) => s.group === group) }));
 
+/** Character-set choices: a few fixed ones, then every script grouped by region. */
+function CHARSET_OPTIONS(t: (key: string) => string): SelectOption[] {
+  return [
+    { value: "all", label: t("ascii.charsetAll") },
+    { value: "custom", label: t("ascii.charsetCustom") },
+    ...SCRIPT_GROUPS.flatMap((group) =>
+      group.scripts.map((script) => ({ value: script.id, label: script.name, group: group.id })),
+    ),
+  ];
+}
+
+function FONT_OPTIONS(t: (key: string) => string): SelectOption[] {
+  return [
+    ...FONT_FAMILIES.map((f) => ({ value: f.id, label: f.name })),
+    { value: "custom", label: t("ascii.fontCustom") },
+  ];
+}
+
 function AlgorithmPanelImpl({ settings, patch }: Props) {
   const { t } = useI18n();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const needle = query.trim().toLowerCase();
+  /** Name, id, family and description all count, in the language shown. */
+  const visible = (a: (typeof ALGORITHMS)[number]) =>
+    !needle ||
+    [a.name, a.id.replace(/-/g, " "), t(`family.${a.family}`), t(`algo.${a.id}.blurb`)].some((text) =>
+      text.toLowerCase().includes(needle),
+    );
+  const matchCount = ALGORITHMS.filter(visible).length;
   const stack = settings.algorithmLayers.length
     ? settings.algorithmLayers
     : [{ id: "legacy", algorithm: settings.algorithm, enabled: true, opacity: 1 }];
@@ -165,11 +193,24 @@ function AlgorithmPanelImpl({ settings, patch }: Props) {
       </header>
 
       <div className="panel__scroll">
-        {GROUPS.map((g) => (
+        <div className="panel__search">
+          <SearchBar
+            value={query}
+            onChange={setQuery}
+            placeholder={t("algorithm.search")}
+            clearLabel={t("common.clearSearch")}
+          />
+        </div>
+
+        {needle && matchCount === 0 && (
+          <p className="panel__empty">{t("common.noMatches").replace("{q}", query.trim())}</p>
+        )}
+
+        {GROUPS.filter((g) => ALGORITHMS.some((a) => a.family === g && visible(a))).map((g) => (
           <section key={g} className="panel__section">
             <h3 className="panel__section-title">{t(`family.${g}`)}</h3>
             <div className="algo-grid">
-              {ALGORITHMS.filter((a) => a.family === g).map((a) => (
+              {ALGORITHMS.filter((a) => a.family === g && visible(a)).map((a) => (
                 <div className="algo-choice" key={a.id}>
                   <button
                     className={`algo-card ${a.id === selected.algorithm ? "is-selected" : ""}`}
@@ -404,70 +445,45 @@ function AlgorithmPanelImpl({ settings, patch }: Props) {
               {/* Character set. Atlas-level, so these are global rather than
                   per-pass - one atlas is resident in the engine. */}
               <div className="panel__field">
-                <span className="panel__field-label">{t("ascii.charset")}</span>
-                <select
-                  className="panel__select"
+                <Select
+                  label={t("ascii.charset")}
                   value={settings.asciiCharset}
-                  onChange={(e) => patch({ asciiCharset: e.target.value })}
-                  aria-label={t("ascii.charset")}
-                >
-                  <option value="all">{t("ascii.charsetAll")}</option>
-                  <option value="custom">{t("ascii.charsetCustom")}</option>
-                  {SCRIPT_GROUPS.map((group) => (
-                    <optgroup key={group.id} label={t(`ascii.group.${group.id}`)}>
-                      {group.scripts.map((script) => (
-                        <option key={script.id} value={script.id}>
-                          {script.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
+                  options={CHARSET_OPTIONS(t)}
+                  groupLabel={(g) => t(`ascii.group.${g}`)}
+                  onChange={(v) => patch({ asciiCharset: v })}
+                />
               </div>
 
               {settings.asciiCharset === "custom" && (
                 <div className="panel__field">
-                  <span className="panel__field-label">{t("ascii.characters")}</span>
-                  <textarea
-                    className="panel__textarea"
+                  <TextField
+                    multiline
                     rows={2}
-                    spellCheck={false}
-                    value={settings.asciiCustom}
+                    label={t("ascii.characters")}
                     placeholder={t("ascii.charactersHint")}
-                    onChange={(e) => patch({ asciiCustom: e.target.value })}
-                    aria-label={t("ascii.characters")}
+                    supporting={t("ascii.charactersNote")}
+                    value={settings.asciiCustom}
+                    onChange={(v) => patch({ asciiCustom: v })}
                   />
-                  <p className="panel__note">{t("ascii.charactersNote")}</p>
                 </div>
               )}
 
               <div className="panel__field">
-                <span className="panel__field-label">{t("ascii.font")}</span>
-                <select
-                  className="panel__select"
+                <Select
+                  label={t("ascii.font")}
                   value={settings.asciiFont}
-                  onChange={(e) => patch({ asciiFont: e.target.value })}
-                  aria-label={t("ascii.font")}
-                >
-                  {FONT_FAMILIES.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.name}
-                    </option>
-                  ))}
-                  <option value="custom">{t("ascii.fontCustom")}</option>
-                </select>
+                  options={FONT_OPTIONS(t)}
+                  onChange={(v) => patch({ asciiFont: v })}
+                />
               </div>
 
               {settings.asciiFont === "custom" && (
                 <div className="panel__field">
-                  <input
-                    className="panel__input"
-                    type="text"
-                    spellCheck={false}
-                    value={settings.asciiFontCustom}
+                  <TextField
+                    label={t("ascii.fontCustom")}
                     placeholder={t("ascii.fontCustomHint")}
-                    onChange={(e) => patch({ asciiFontCustom: e.target.value })}
-                    aria-label={t("ascii.fontCustom")}
+                    value={settings.asciiFontCustom}
+                    onChange={(v) => patch({ asciiFontCustom: v })}
                   />
                 </div>
               )}

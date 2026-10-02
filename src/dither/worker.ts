@@ -1,4 +1,5 @@
 import { looksBlank } from "../video/blank";
+import { trace } from "../perf";
 import { CoarseBudget, type PreviewQuality } from "./budget";
 import { loadWasmEngine, type WasmBackend } from "./engine";
 import type { Rect } from "./region";
@@ -129,6 +130,14 @@ export interface ResultResponse {
   height?: number;
   /** Source pixels per result pixel: 1 for a full-resolution pass. */
   scale: number;
+  /**
+   * The result covers the whole image at a reduced size, although it answers a
+   * refinement request: the area asked for was too big to render at full size
+   * in good time. The caller treats it as a better first pass.
+   */
+  whole: boolean;
+  /** For a refinement: the most pixels the engine will render at full size right now. */
+  fineLimit?: number;
   /** Stack passes served from the cache vs actually run, for the HUD. */
   reused: number;
   computed: number;
@@ -201,28 +210,35 @@ async function handleRender(req: RenderRequest) {
     return;
   }
 
+  trace(`worker:render ${req.stage}:start`);
   let renderMs: number;
   let scale = 1;
+  let whole = false;
+  let fineLimit: number | undefined;
   const sourcePixels = sourceW * sourceH;
   try {
+    const start = performance.now();
     if (req.stage === "coarse") {
-      const target = budget.choose(sourcePixels, req.settings);
-      const start = performance.now();
-      wasm.engine.render_coarse(target, req.settings);
-      renderMs = performance.now() - start;
-      const outPixels = wasm.engine.out_width() * wasm.engine.out_height();
-      budget.observe(renderMs, outPixels, wasm.engine.last_computed());
+      wasm.engine.render_coarse(budget.choose(sourcePixels, req.settings), req.settings);
       scale = sourceW / wasm.engine.out_width();
     } else {
-      const start = performance.now();
-      wasm.engine.render("fine", req.region, req.settings);
-      renderMs = performance.now() - start;
+      const plan = budget.planFine(req.settings, sourcePixels, req.region);
+      fineLimit = budget.fineTarget(req.settings);
+      if (plan.kind === "whole") {
+        wasm.engine.render_coarse(plan.target, req.settings);
+        scale = sourceW / wasm.engine.out_width();
+        whole = true;
+      } else {
+        wasm.engine.render("fine", req.region, req.settings);
+      }
     }
+    renderMs = performance.now() - start;
+    budget.observe(renderMs, wasm.engine.out_width() * wasm.engine.out_height(), wasm.engine.last_computed());
   } catch (err) {
     post({ type: "error", id: req.id, message: String((err as Error)?.message ?? err) });
     return;
   }
-  void renderMs;
+  trace(`worker:render ${req.stage}:engine`, { ms: Math.round(renderMs), out: `${wasm.engine.out_width()}x${wasm.engine.out_height()}`, whole, reused: wasm.engine.last_reused(), computed: wasm.engine.last_computed() });
 
   const out = readOutput();
   const payload = await makePayload(out);
@@ -234,6 +250,8 @@ async function handleRender(req: RenderRequest) {
       stage: req.stage,
       ms: performance.now() - t0,
       scale,
+      whole,
+      fineLimit,
       reused: wasm.engine.last_reused(),
       computed: wasm.engine.last_computed(),
       ...payload,
@@ -392,6 +410,7 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
       budget.setQuality(req.quality);
       break;
     case "setSource": {
+      trace("worker:setSource", { bytes: req.buffer.byteLength });
       // Empty buffer ⇒ "clear the source".
       if (req.buffer.byteLength === 0) {
         sourceW = 0;
@@ -403,6 +422,7 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
       sourceH = req.height;
       // A view, not a copy: the engine copies into its own memory once.
       wasm?.engine.set_source(new Uint8ClampedArray(req.buffer), req.width, req.height);
+      trace("worker:setSource done");
       break;
     }
     case "setGlyphs": {

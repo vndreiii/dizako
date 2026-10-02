@@ -15,6 +15,8 @@ import {
 import { layersFromColors, makeLayer, type PaletteLayer, type Settings } from "../dither/types";
 import { useI18n } from "../i18n";
 import { ColorEditor } from "./ColorPicker";
+import { PaletteLibraryPanel } from "./PaletteLibrary";
+import { usePaletteLibrary } from "../hooks/usePaletteLibrary";
 import { BareSlider, Button, IconButton } from "./primitives";
 import {
   IconAdd,
@@ -61,6 +63,7 @@ const luminance = (hex: string) => {
 export function PaletteStudio({ settings, patch, source, onClose, initial = null }: Props) {
   const { t } = useI18n();
   const layers = settings.layers;
+  const { library, update: updateLibrary, replace: replaceLibrary } = usePaletteLibrary();
   const [selected, setSelected] = useState<string | null>(initial?.id ?? layers[0]?.id ?? null);
   /**
    * The swatch open in the colour editor, with what a cancel puts back: its
@@ -158,6 +161,16 @@ export function PaletteStudio({ settings, patch, source, onClose, initial = null
   const body = (
     <div className="studio-layer" onPointerDown={onClose}>
       <div className="studio-wrap" onPointerDown={(e) => e.stopPropagation()}>
+        <PaletteLibraryPanel
+          library={library}
+          update={updateLibrary}
+          replace={replaceLibrary}
+          layers={layers}
+          onApply={(next) => {
+            setLayers(next);
+            setSelected(next[0]?.id ?? null);
+          }}
+        />
         <section className="pstudio" role="dialog" aria-label={t("studio.title")}>
           <header className="pstudio__head">
             <div>

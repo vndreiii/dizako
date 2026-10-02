@@ -19,6 +19,7 @@ import {
   starterLayers,
 } from "../dither/paletteOps";
 import { PaletteStudio } from "./PaletteStudio";
+import { SearchBar } from "./fields";
 import { BareSlider, Button, IconButton, Segmented, Slider } from "./primitives";
 import {
   IconAdd,
@@ -57,6 +58,22 @@ function PalettePanelImpl({ settings, patch, source }: Props) { const { t } = us
   /** The studio overlay, optionally opened straight onto one swatch. */
   const [studio, setStudio] = useState<{ id: string; fresh: boolean } | "open" | null>(null);
   const [imageCount, setImageCount] = useState("6");
+  const [query, setQuery] = useState("");
+  const needle = query.trim().toLowerCase();
+  /** Presets matching the search, by name or group; all of them when it is empty. */
+  const groups = useMemo(
+    () =>
+      PALETTE_GROUPS.map((group) => ({
+        ...group,
+        palettes: needle
+          ? group.palettes.filter(
+              (p) => p.name.toLowerCase().includes(needle) || group.group.toLowerCase().includes(needle),
+            )
+          : group.palettes,
+      })).filter((group) => group.palettes.length > 0),
+    [needle],
+  );
+  const matchCount = groups.reduce((n, g) => n + g.palettes.length, 0);
 
   // {t("palette.layersHint")}
   const display = useMemo(() => [...layers].reverse(), [layers]);
@@ -90,6 +107,20 @@ function PalettePanelImpl({ settings, patch, source }: Props) { const { t } = us
       </header>
 
       <div className="panel__scroll">
+        <div className="panel__search">
+          <SearchBar
+            value={query}
+            onChange={setQuery}
+            placeholder={t("palette.search")}
+            clearLabel={t("common.clearSearch")}
+          />
+        </div>
+
+        {needle && matchCount === 0 && (
+          <p className="panel__empty">{t("common.noMatches").replace("{q}", query.trim())}</p>
+        )}
+
+        {!needle && (
         <section className="panel__section">
           <h3 className="panel__section-title">{t("palette.matching")}</h3>
           <Segmented
@@ -125,6 +156,10 @@ function PalettePanelImpl({ settings, patch, source }: Props) { const { t } = us
           )}
         </section>
 
+        )}
+
+        {!needle && (
+        <>
         <section className="panel__section">
           <h3 className="panel__section-title">{t("palette.fromImage")}</h3>
           <div className="imgpal">
@@ -179,8 +214,10 @@ function PalettePanelImpl({ settings, patch, source }: Props) { const { t } = us
             </button>
           </div>
         </section>
+        </>
+        )}
 
-        {PALETTE_GROUPS.map((group) => (
+        {groups.map((group) => (
           <section key={group.group} className="panel__section">
             <h3 className="panel__section-title">{group.group}</h3>
             <div className="lib-grid">

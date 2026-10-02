@@ -237,6 +237,16 @@ impl Engine {
             (Cow::Borrowed(&self.master[..]), self.master_w, self.master_h, key_of(&[0]))
         };
 
+        // A reduced plane is a smaller picture: pixel-length controls follow it.
+        let scale = if region.is_none() && w > 0 { f64::from(self.master_w) / f64::from(w) } else { 1.0 };
+        let scaled;
+        let settings = if scale > 1.0001 {
+            scaled = settings.for_preview_scale(scale);
+            &scaled
+        } else {
+            settings
+        };
+
         let base = key_of(&[self.source_gen, plane_key]);
         let at = match self.caches.iter().position(|(k, _)| *k == base) {
             Some(at) => at,
